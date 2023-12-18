@@ -5,10 +5,10 @@
 *.a
 *.log
 *.so
-parallel_build.o*
 
 *___.F90
 *___.f90
+*___.s90
 *___.h
 *___.rc
 
@@ -20,6 +20,8 @@ r8i8/
 
 *.xx
 
+parallel_build.o*
+BUILD_LOG_DIR/
 /Config
 /Linux/
 
