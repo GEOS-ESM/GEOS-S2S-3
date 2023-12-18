@@ -1,0 +1,10 @@
+path:
+  assim: /discover/nobackup/lren1/pre_proc/NRT/SMAP/L2_SMAP_SSS_7.0
+  raw: /discover/nobackup/lren1/pre_proc/NRT/SMAP/RAW
+  run: /discover/nobackup/lren1/odas_pre_proc/SMAP
+ver: V5.0
+url:
+  nrt: https://cmr.earthdata.nasa.gov/virtual-directory/collections/C2208418228-POCLOUD/temporal
+  dt: https://cmr.earthdata.nasa.gov/virtual-directory/collections/C2208418228-POCLOUD/temporal
+ndayAGO: 10
+

@@ -1,0 +1,655 @@
+MODULE EN4_NETCDF_MODULE
+  
+  IMPLICIT NONE
+  PUBLIC :: read_en4_init, read_en4, read_en4_pid
+      
+  CONTAINS
+
+
+  ! .................................................................
+    SUBROUTINE read_en4_init(fname_in,N_PROF_len,N_LEVELS_len)
+  ! .................................................................
+    IMPLICIT NONE
+    INCLUDE 'netcdf.inc'
+
+!   character*256         :: fname_in
+    character*115         :: fname_in
+    integer,  intent(out) :: N_PROF_len, N_LEVELS_len
+    integer               :: ncid, nstatus, ndims, nvars, nlen
+    integer               :: N_PROF_id, N_LEVELS_id
+
+
+  ! ******************************************************************
+  ! Open Dataset
+  ! ............................ 
+    nstatus = nf_open(trim(fname_in),0, ncid)
+    print *, nstatus, ncid, trim(fname_in)
+    if (nstatus>0) then
+      N_PROF_len = 0
+      N_LEVELS_len = 0
+      nstatus = nf_close(ncid)
+      return
+    endif
+
+  ! Inquire about Dataset
+  ! .................................
+    nstatus = nf_inq_ndims(ncid,ndims)
+    nstatus = nf_inq_nvars(ncid,nvars)
+
+  ! Inquire about Dimensions
+  ! .....................................................
+    nstatus = nf_inq_dimid(ncid,'N_PROF',N_PROF_id)
+    nstatus = nf_inq_dimlen(ncid,N_PROF_id,N_PROF_len)
+
+    nstatus = nf_inq_dimid(ncid,'N_LEVELS',N_LEVELS_id)
+    nstatus = nf_inq_dimlen(ncid,N_LEVELS_id,N_LEVELS_len)
+
+    nstatus = nf_close(ncid)
+
+  return
+  END SUBROUTINE read_en4_init
+
+
+  ! ..................................................................................
+    SUBROUTINE read_en4 (fname_in,ver,miss2,N_PROF_len,N_LEVELS_len,PLATFORM_NUMBER,&
+                          INST_REFERENCE,WMO_INST_TYPE,PROJECT_NAME,LAT,LON,D,T,S,&
+			  DQC,TQC,SQC,PRF_DEPH_QC,PRF_TEMP_QC,PRF_PSAL_QC,POS_QC, &
+                          DIRECTION,DATA_STATE_INDICATOR,NPTS,JULD,&
+                          XBT_CORR,QC_FLAGS_PRF,QC_FLAGS_LEV)
+  ! ..................................................................................
+    IMPLICIT NONE
+    INCLUDE 'netcdf.inc'
+
+  ! This data should all be 'D' delayed-mode
+  ! If using TEMP (in-situ), use QC field for POTM
+  ! Output POTM also for density inversion checks
+
+  ! Input Variables
+!   character*110, intent(in) :: fname_in
+    character*115, intent(in) :: fname_in
+    character*3               :: basin, ver
+    character*8               :: sdate
+    integer,       intent(in) :: N_PROF_len, N_LEVELS_len
+    
+    
+    real                      :: miss
+    real, intent(out)         :: miss2
+    integer                   :: NPTS_T(N_PROF_len), NPTS_S(N_PROF_len), NPTS(N_PROF_len)
+    integer                   :: NPTS_TD(N_PROF_len)
+    integer                   :: NPTS_SD(N_PROF_len)
+    integer                   :: NPTS_DD(N_PROF_len)
+    integer                   :: NPTS_TD_QC(N_PROF_len)
+    integer                   :: NPTS_SD_QC(N_PROF_len)
+
+  ! Define Dataset
+    integer :: ncid, status, i, j, status_psal
+    integer :: ndims, nvars, ngatts, unlimdimid
+    integer :: start1, count1
+    integer :: start2(2), count2(2)
+
+  ! Define Dimensions
+    integer :: N_PROF_id
+    integer :: N_LEVELS_id
+    integer :: STRING1_id,   STRING1_len
+    integer :: STRING2_id,   STRING2_len
+    integer :: STRING4_id,   STRING4_len
+    integer :: STRING8_id,   STRING8_len
+    integer :: STRING16_id,  STRING16_len
+    integer :: STRING64_id,  STRING64_len
+
+  ! Define Variables
+    integer              :: PLATFORM_NUMBER_id, PLATFORM_NUMBER_dim
+    character*8          :: PLATFORM_NUMBER(N_PROF_len)
+
+    integer              :: PROJECT_NAME_id, PROJECT_NAME_dim
+    character*64         :: PROJECT_NAME(N_PROF_len)
+
+    integer              :: INST_REFERENCE_id, INST_REFERENCE_dim
+    character*64         :: INST_REFERENCE(N_PROF_len)
+
+    integer              :: WMO_INST_TYPE_id, WMO_INST_TYPE_dim
+    character*4          :: WMO_INST_TYPE(N_PROF_len)
+    
+    integer              :: DATA_STATE_INDICATOR_id, DATA_STATE_INDICATOR_dim
+    character*4          :: DATA_STATE_INDICATOR(N_PROF_len)
+
+    integer              :: DIRECTION_id, DIRECTION_dim
+    character*1          :: DIRECTION(N_PROF_len)
+    
+    integer              :: DATA_MODE_id, DATA_MODE_dim
+    character*1          :: DATA_MODE(N_PROF_len)   
+
+    integer              :: DC_REFERENCE_id, DC_REFERENCE_dim
+    character*16         :: DC_REFERENCE(N_PROF_len)
+
+    integer              :: CYCLE_NUMBER_id, CYCLE_NUMBER_dim
+    character*1          :: CYCLE_NUMBER(N_PROF_len)
+
+    integer              :: DATA_CENTRE_id, DATA_CENTRE_dim
+    character*2          :: DATA_CENTRE(N_PROF_len)
+
+    integer              :: XBT_CORR_id, XBT_CORR_dim
+    real*4               :: XBT_CORR(N_PROF_len)
+    
+    integer              :: LATITUDE_id, LATITUDE_dim
+    double precision     :: LATITUDE(N_PROF_len)
+    real*4               :: LAT(N_PROF_len)
+
+    integer              :: LONGITUDE_id, LONGITUDE_dim
+    double precision     :: LONGITUDE(N_PROF_len)
+    real*4               :: LON(N_PROF_len)
+
+    integer              :: JULD_id, JULD_dim
+    double precision     :: JULD(N_PROF_len)
+    real*4               :: JULIANDAY(N_PROF_len)
+    integer              :: iday(N_PROF_len),ihh(N_PROF_len)
+
+    integer              :: POSITION_QC_id, POSITION_QC_dim
+    character            :: POSITION_QC(N_PROF_len)
+
+    integer              :: PROFILE_DEPH_QC_id, PROFILE_DEPH_QC_dim
+    character            :: PROFILE_DEPH_QC(N_PROF_len)
+
+    integer              :: PROFILE_TEMP_QC_id, PROFILE_TEMP_QC_dim
+    character            :: PROFILE_TEMP_QC(N_PROF_len)
+
+    integer              :: PROFILE_PSAL_QC_id, PROFILE_PSAL_QC_dim
+    character            :: PROFILE_PSAL_QC(N_PROF_len)
+
+    integer              :: QC_FLAGS_PRF_id, QC_FLAGS_PRF_dim
+    integer              :: QC_FLAGS_PRF(N_PROF_len)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    integer              :: QC_FLAGS_LEV_id, QC_FLAGS_LEV_dim
+    integer              :: QC_FLAGS_LEV(N_LEVELS_len,N_PROF_len)
+    integer              :: QC_FLAGS_LEV_2(N_PROF_len,N_LEVELS_len)
+
+    integer              :: DEPH_CORRECTED_id, DEPH_CORRECTED_dim
+    real                 :: DEPH_CORRECTED(N_LEVELS_len,N_PROF_len)
+    real                 :: DEPH_CORRECTED_2(N_PROF_len,N_LEVELS_len)
+    
+    integer              :: DEPH_CORRECTED_QC_id, DEPH_CORRECTED_QC_dim
+    character            :: DEPH_CORRECTED_QC(N_LEVELS_len,N_PROF_len)    
+    character            :: DEPH_CORRECTED_QC_2(N_PROF_len,N_LEVELS_len)
+    
+    integer              :: PSAL_CORRECTED_id, PSAL_CORRECTED_dim
+    real                 :: PSAL_CORRECTED(N_LEVELS_len,N_PROF_len)
+    real                 :: PSAL_CORRECTED_2(N_PROF_len,N_LEVELS_len)
+    
+    integer              :: PSAL_CORRECTED_QC_id, PSAL_CORRECTED_QC_dim
+    character            :: PSAL_CORRECTED_QC(N_LEVELS_len,N_PROF_len)
+    character            :: PSAL_CORRECTED_QC_2(N_PROF_len,N_LEVELS_len)
+    
+    integer              :: POTM_CORRECTED_id, POTM_CORRECTED_dim
+    real                 :: POTM_CORRECTED(N_LEVELS_len,N_PROF_len)
+    real                 :: POTM_CORRECTED_2(N_PROF_len,N_LEVELS_len)
+    
+    integer              :: POTM_CORRECTED_QC_id, POTM_CORRECTED_QC_dim
+    character            :: POTM_CORRECTED_QC(N_LEVELS_len,N_PROF_len)
+    character            :: POTM_CORRECTED_QC_2(N_PROF_len,N_LEVELS_len)
+    
+    ! Final data after checking DATA_MODE
+    real                 :: T(N_LEVELS_len,N_PROF_len),   S(N_LEVELS_len,N_PROF_len)
+    real                 :: D(N_LEVELS_len,N_PROF_len)
+    real                 :: TQC(N_LEVELS_len,N_PROF_len), SQC(N_LEVELS_len,N_PROF_len)
+    real                 :: DQC(N_LEVELS_len,N_PROF_len)
+
+    real                 :: PRF_TEMP_QC(N_PROF_len),PRF_PSAL_QC(N_PROF_len),PRF_DEPH_QC(N_PROF_len)
+    real                 :: POS_QC(N_PROF_len) 
+
+
+    miss  = 99999.0
+    miss2 = 999.e9
+
+  ! ****************************************************************************
+  ! Open Dataset
+  ! ............................
+!   status   = nf_open(fname_in, 0, ncid)
+    status   = nf_open(trim(fname_in), 0, ncid)
+!   write(6,*)'in read_en4',status,ncid,fname_in
+
+  ! Inquire about Dataset
+  ! .................................
+    status = nf_inq_ndims(ncid,ndims)
+    status = nf_inq_nvars(ncid,nvars)
+!   write(6,*)'in read_en4',status,ndims,nvars
+
+
+  ! Inquire about Dimensions
+  ! .....................................................
+    status = nf_inq_dimid(ncid,'N_PROF',N_PROF_id)
+
+    status = nf_inq_dimid(ncid,'N_LEVELS',N_LEVELS_id)
+
+    status = nf_inq_dimid(ncid,'STRING1',STRING1_id)
+    status = nf_inq_dimlen(ncid,STRING1_id,STRING1_len)
+
+    status = nf_inq_dimid(ncid,'STRING2',STRING2_id)
+    status = nf_inq_dimlen(ncid,STRING2_id,STRING2_len)
+
+    status = nf_inq_dimid(ncid,'STRING4',STRING4_id)
+    status = nf_inq_dimlen(ncid,STRING4_id,STRING4_len)
+
+    status = nf_inq_dimid(ncid,'STRING8',STRING8_id)
+    status = nf_inq_dimlen(ncid,STRING8_id,STRING8_len)
+
+    status = nf_inq_dimid(ncid,'STRING16',STRING16_id)
+    status = nf_inq_dimlen(ncid,STRING16_id,STRING16_len)
+
+    status = nf_inq_dimid(ncid,'STRING64',STRING64_id)     
+    status = nf_inq_dimlen(ncid,STRING64_id,STRING64_len)
+
+
+  ! Inquire about Variables
+  ! .....................................................................
+    if (ver=='v1d') then
+      status = nf_inq_varid(ncid,'WIJFFELS_DEPTH_CORRECTION',XBT_CORR_id)
+      status = nf_inq_varndims(ncid,XBT_CORR_id,XBT_CORR_dim)
+    endif
+    if (ver=='v2a') then
+      status = nf_inq_varid(ncid,'QC_FLAGS_PROFILES',QC_FLAGS_PRF_id)
+      status = nf_inq_varndims(ncid,QC_FLAGS_PRF_id,QC_FLAGS_PRF_dim)
+      status = nf_inq_varid(ncid,'QC_FLAGS_LEVELS',QC_FLAGS_LEV_id)
+      status = nf_inq_varndims(ncid,QC_FLAGS_LEV_id,QC_FLAGS_LEV_dim)
+    endif
+
+    status = nf_inq_varid(ncid,'PLATFORM_NUMBER',PLATFORM_NUMBER_id)
+    status = nf_inq_varndims(ncid,PLATFORM_NUMBER_id,PLATFORM_NUMBER_dim)
+
+    status = nf_inq_varid(ncid,'PROJECT_NAME',PROJECT_NAME_id)
+    status = nf_inq_varndims(ncid,PROJECT_NAME_id,PROJECT_NAME_dim)
+ 
+    status = nf_inq_varid(ncid,'INST_REFERENCE',INST_REFERENCE_id)     
+    status = nf_inq_varndims(ncid,INST_REFERENCE_id,INST_REFERENCE_dim)
+
+    status = nf_inq_varid(ncid,'WMO_INST_TYPE',WMO_INST_TYPE_id)
+    status = nf_inq_varndims(ncid,WMO_INST_TYPE_id,WMO_INST_TYPE_dim)
+
+    status = nf_inq_varid(ncid,'DIRECTION',DIRECTION_id)
+    status = nf_inq_varndims(ncid,DIRECTION_id,DIRECTION_dim)
+
+    status = nf_inq_varid(ncid,'DATA_MODE',DATA_MODE_id)
+    status = nf_inq_varndims(ncid,DATA_MODE_id,DATA_MODE_dim)
+    
+    status = nf_inq_varid(ncid,'DATA_STATE_INDICATOR',DATA_STATE_INDICATOR_id)
+    status = nf_inq_varndims(ncid,DATA_STATE_INDICATOR_id,DATA_STATE_INDICATOR_dim)
+
+    status = nf_inq_varid(ncid,'CYCLE_NUMBER',CYCLE_NUMBER_id)
+    status = nf_inq_varndims(ncid,CYCLE_NUMBER_id,CYCLE_NUMBER_dim)
+
+    status = nf_inq_varid(ncid,'DATA_CENTRE',DATA_CENTRE_id)
+    status = nf_inq_varndims(ncid,DATA_CENTRE_id,DATA_CENTRE_dim)
+
+    status = nf_inq_varid(ncid,'DC_REFERENCE',DC_REFERENCE_id)
+    status = nf_inq_varndims(ncid,DC_REFERENCE_id,DC_REFERENCE_dim)
+
+    status = nf_inq_varid(ncid,'LATITUDE',LATITUDE_id)
+!   write(6,*)'lat inq varid',status
+    status = nf_inq_varndims(ncid,LATITUDE_id,LATITUDE_dim)
+
+    status = nf_inq_varid(ncid,'LONGITUDE',LONGITUDE_id)
+    status = nf_inq_varndims(ncid,LONGITUDE_id,LONGITUDE_dim)
+
+    status = nf_inq_varid(ncid,'JULD',JULD_id)
+    status = nf_inq_varndims(ncid,JULD_id,JULD_dim)
+
+    status = nf_inq_varid(ncid,'POSITION_QC',POSITION_QC_id)
+    status = nf_inq_varndims(ncid,POSITION_QC_id,POSITION_QC_dim)
+
+    status = nf_inq_varid(ncid,'PROFILE_DEPH_QC',PROFILE_DEPH_QC_id)
+    status = nf_inq_varndims(ncid,PROFILE_DEPH_QC_id,PROFILE_DEPH_QC_dim)
+
+    status = nf_inq_varid(ncid,'PROFILE_POTM_QC',PROFILE_TEMP_QC_id)
+    status = nf_inq_varndims(ncid,PROFILE_TEMP_QC_id,PROFILE_TEMP_QC_dim)
+
+    status_psal = nf_inq_varid(ncid,'PROFILE_PSAL_QC',PROFILE_PSAL_QC_id)
+!   write(6,*)'get id1',PROFILE_PSAL_QC_id, status
+    status = nf_inq_varndims(ncid,PROFILE_PSAL_QC_id,PROFILE_PSAL_QC_dim)
+
+!!!!! Adjusted Values   
+    status = nf_inq_varid(ncid,'DEPH_CORRECTED',DEPH_CORRECTED_id)
+!   write(6,*)'get id2',DEPH_CORRECTED_id, status
+    status = nf_inq_varndims(ncid,DEPH_CORRECTED_id,DEPH_CORRECTED_dim)
+
+    status = nf_inq_varid(ncid,'DEPH_CORRECTED_QC',DEPH_CORRECTED_QC_id)     
+    status = nf_inq_varndims(ncid,DEPH_CORRECTED_QC_id,DEPH_CORRECTED_QC_dim)
+
+    status = nf_inq_varid(ncid,'PSAL_CORRECTED',PSAL_CORRECTED_id)
+    status = nf_inq_varndims(ncid,PSAL_CORRECTED_id,PSAL_CORRECTED_dim)
+
+    status = nf_inq_varid(ncid,'PSAL_CORRECTED_QC',PSAL_CORRECTED_QC_id)     
+    status = nf_inq_varndims(ncid,PSAL_CORRECTED_QC_id,PSAL_CORRECTED_QC_dim)
+
+    status = nf_inq_varid(ncid,'POTM_CORRECTED',POTM_CORRECTED_id)
+!   write(6,*)'get id3',POTM_CORRECTED_id, status
+    status = nf_inq_varndims(ncid,POTM_CORRECTED_id,POTM_CORRECTED_dim)
+
+    status = nf_inq_varid(ncid,'POTM_CORRECTED_QC',POTM_CORRECTED_QC_id)     
+    status = nf_inq_varndims(ncid,POTM_CORRECTED_QC_id,POTM_CORRECTED_QC_dim)
+
+
+  ! Get Variables
+  ! ............................................................................
+    start2 = (/1,1/)
+    count2 = (/STRING8_len,N_PROF_len/)
+      status = nf_get_vara_text(ncid,PLATFORM_NUMBER_id,start2,count2,PLATFORM_NUMBER)
+
+    count2 = (/STRING16_len,N_PROF_len/)
+      status = nf_get_vara_text(ncid,DC_REFERENCE_id,start2,count2,DC_REFERENCE)
+
+    count2 = (/STRING2_len,N_PROF_len/)
+      status = nf_get_vara_text(ncid,DATA_CENTRE_id,start2,count2,DATA_CENTRE)
+
+    count2 = (/STRING64_len,N_PROF_len/)  
+      status = nf_get_vara_text(ncid,INST_REFERENCE_id,start2,count2,INST_REFERENCE)
+      status = nf_get_vara_text(ncid,PROJECT_NAME_id,start2,count2,PROJECT_NAME)
+
+    count2 = (/STRING4_len,N_PROF_len/)  
+      status = nf_get_vara_text(ncid,WMO_INST_TYPE_id,start2,count2,WMO_INST_TYPE)
+      status = nf_get_vara_text(ncid,DATA_STATE_INDICATOR_id,start2,count2,DATA_STATE_INDICATOR)
+ 
+    start1 = 1
+    count1 = N_PROF_len         
+      status = nf_get_vara_text(ncid,DIRECTION_id,start1,count1,DIRECTION)
+      status = nf_get_vara_text(ncid,DATA_MODE_id,start1,count1,DATA_MODE)        
+      status = nf_get_vara_double(ncid,LATITUDE_id,start1,count1,LATITUDE)
+      status = nf_get_vara_double(ncid,LONGITUDE_id,start1,count1,LONGITUDE)
+      status = nf_get_vara_double(ncid,JULD_id,start1,count1,JULD)
+
+      if (ver=='v1d') then
+        status = nf_get_vara_real(ncid,XBT_CORR_id,start1,count1,XBT_CORR)   
+      else
+        XBT_CORR = 99999. 
+      endif
+ 
+    start1 = 1
+    count1 = N_PROF_len
+      status = nf_get_vara_text(ncid,POSITION_QC_id,start1,count1,POSITION_QC)
+      status = nf_get_vara_text(ncid,PROFILE_DEPH_QC_id,start1,count1,PROFILE_DEPH_QC)
+      status = nf_get_vara_text(ncid,PROFILE_TEMP_QC_id,start1,count1,PROFILE_TEMP_QC)
+      status = nf_get_vara_text(ncid,PROFILE_PSAL_QC_id,start1,count1,PROFILE_PSAL_QC)
+
+    start2 = (/1,1/)
+    count2 = (/N_LEVELS_len,N_PROF_len/)
+      status = nf_get_vara_real(ncid,DEPH_CORRECTED_id,start2,count2,DEPH_CORRECTED)
+!     write(6,*)'DEPH_CORRECTED status',status
+      status = nf_get_vara_real(ncid,PSAL_CORRECTED_id,start2,count2,PSAL_CORRECTED)
+!     write(6,*)'PSAL_CORRECTED status',status
+      status = nf_get_vara_real(ncid,POTM_CORRECTED_id,start2,count2,POTM_CORRECTED)
+!     write(6,*)'POTM_CORRECTED status',status
+
+      status = nf_get_vara_text(ncid,DEPH_CORRECTED_QC_id,start2,count2,DEPH_CORRECTED_QC)
+!     write(6,*)'DEPH_CORRECTED_QC status',status
+      status = nf_get_vara_text(ncid,PSAL_CORRECTED_QC_id,start2,count2,PSAL_CORRECTED_QC)
+!     write(6,*)'PSAL_CORRECTED_QC status',status
+      status = nf_get_vara_text(ncid,POTM_CORRECTED_QC_id,start2,count2,POTM_CORRECTED_QC)
+!     write(6,*)'just read', status, POTM_CORRECTED_QC
+!     write(6,*)'just read start2', start2
+!     write(6,*)'just read N_LEVELS_len, N_PROF_len', N_LEVELS_len,N_PROF_len
+
+      if (ver=='v1d') then
+        status = nf_get_vara_int(ncid,QC_FLAGS_PRF_id,start1,count1,QC_FLAGS_PRF)
+        status = nf_get_vara_int(ncid,QC_FLAGS_LEV_id,start2,count2,QC_FLAGS_LEV)
+      else
+        !QC_FLAGS_PRF = 0. 
+        !QC_FLAGS_LEV = 0. 
+      endif
+ 
+  ! Need to set double precision values to real values (memory problem)
+    LAT = LATITUDE
+    LON = LONGITUDE
+    ! This is not acceptable for JULD since we need the precision for the hours
+    JULIANDAY = JULD
+
+
+  ! If Depth QC field is empty, give it a '1', we'll check it later
+    DO i = 1, N_PROF_len
+          if (LAT(i) == miss) then
+              LAT(i) = miss2
+          endif
+          if (LON(i) == miss) then
+              LON(i) = miss2
+          endif
+
+          if (PROFILE_DEPH_QC(i) /= '1' .and. PROFILE_DEPH_QC(i) /= '4' .and. &
+              PROFILE_DEPH_QC(i) /= '9' .and. PROFILE_DEPH_QC(i) /= '0') then
+              PROFILE_DEPH_QC(i) = '1'
+          endif
+       DO j = 1, N_LEVELS_len
+          if (DEPH_CORRECTED_QC(j,i) /= '1' .and. DEPH_CORRECTED_QC(j,i) /= '4' .and. &
+              DEPH_CORRECTED_QC(j,i) /= '9' .and. DEPH_CORRECTED_QC(j,i) /= '0') then
+              DEPH_CORRECTED_QC(j,i) = '1'
+          endif
+       ENDDO
+    ENDDO
+   
+
+  ! Backtrack from end of profile get number of valid levels: NPTS
+  ! ...............................................................
+    DO i = 1,  N_PROF_len
+       j = N_LEVELS_len         
+       if ( POTM_CORRECTED(N_LEVELS_len,i) >= miss ) then 
+          DO WHILE ( POTM_CORRECTED(j,i) >= miss .and. j > 0 )
+             j=j-1       
+          ENDDO
+          NPTS_TD(i) = j
+       else
+          NPTS_TD(i) = N_LEVELS_len
+       endif
+    ENDDO
+    
+    DO i = 1,  N_PROF_len
+        j = N_LEVELS_len         
+        if ( PSAL_CORRECTED(N_LEVELS_len,i) >= miss ) then 
+          DO WHILE ( PSAL_CORRECTED(j,i) >= miss .and. j > 0 )
+             j=j-1       
+          ENDDO
+          NPTS_SD(i) = j
+       else
+          NPTS_SD(i) = N_LEVELS_len
+       endif
+    ENDDO    
+
+    DO i = 1,  N_PROF_len
+       j = N_LEVELS_len         
+       if ( DEPH_CORRECTED(N_LEVELS_len,i) >= miss ) then 
+          DO WHILE ( DEPH_CORRECTED(j,i) >= miss .and. j > 0 )
+             j=j-1       
+          ENDDO
+          NPTS_DD(i) = j
+       else
+          NPTS_DD(i) = N_LEVELS_len
+       endif 
+    ENDDO 
+
+  ! Assign QC Values (1: accept, 4: reject, 0: no data and no qc)
+  ! Changing from character to real
+    DO i = 1,N_PROF_len 
+
+          if (POSITION_QC(i) == '4') then
+            POS_QC(i) = -1;
+          elseif (POSITION_QC(i) == '0') then
+            POS_QC(i) = -1;
+          else
+            POS_QC(i) = 1;
+          endif
+
+         ! Temperature
+!         write(6,*)'before loop',i,NPTS_TD
+          if (NPTS_TD(i) > 0) then
+             T(:,i)  = POTM_CORRECTED(:,i)
+!            write(6,*)'in sub',i,NPTS_TD
+             read (POTM_CORRECTED_QC(:,i),*) TQC(:,i)
+!            write(6,*)'past read',POTM_CORRECTED_QC(:,i), TQC(:,i)
+
+	     NPTS_T(i) = NPTS_TD(i)
+             if (PROFILE_TEMP_QC(i) == '4') then	
+	        PRF_TEMP_QC(i) = -1
+	        T(:,i) = miss2
+ 	        TQC(:,i) = -1		
+	        NPTS_T(i) = 0
+             elseif (PROFILE_TEMP_QC(i) == '0') then	
+	        PRF_TEMP_QC(i) = -1
+ 	        T(:,i) = miss2
+ 	        TQC(:,i) = -1		
+	        NPTS_T(i) = 0
+            else
+	        PRF_TEMP_QC(i) = 1	
+             endif    
+	  else
+	     T(:,i) = miss2
+ 	     TQC(:,i) = -1
+	     NPTS_T(i) = 0  
+	     PRF_TEMP_QC(i) = -1 
+	  endif
+	  
+         ! Salinity
+          if (NPTS_SD(i) > 0) then	  
+             S(:,i)   = PSAL_CORRECTED(:,i)
+             read (PSAL_CORRECTED_QC(:,i),*) SQC(:,i)
+	     NPTS_S(i) = NPTS_SD(i)
+             if (PROFILE_PSAL_QC(i) == '4') then	
+	        PRF_PSAL_QC(i) = -1
+	        S(:,i) = miss2
+	        SQC(:,i) = -1		
+	        NPTS_S(i) = NPTS_SD(i)	! Want to keep S in case there is T
+             elseif (PROFILE_TEMP_QC(i) == '0') then	
+ 	        PRF_PSAL_QC(i) = -1	
+	        S(:,i) = miss2
+	        SQC(:,i) = -1		
+	        NPTS_S(i) = NPTS_SD(i)	! Want to keep S in case there is T
+             else
+	        PRF_PSAL_QC(i) = 1	
+             endif    
+	  else
+	     S(:,i) = miss2
+	     SQC(:,i) = -1		
+	     NPTS_S(i) = 0	
+	     PRF_PSAL_QC(i) = -1	          	  
+	  endif
+	  
+          if (NPTS_DD(i) > 0) then
+            D(:,i)   = DEPH_CORRECTED(:,i)
+            read (DEPH_CORRECTED_QC(:,i),*) DQC(:,i)
+            if (PROFILE_DEPH_QC(i) == '4') then	
+	        PRF_DEPH_QC(i) = -1
+	        D(:,i) = miss2
+	        DQC(:,i) = -1		     
+	        NPTS_S(i) = 0
+	        NPTS_T(i) = 0	     	
+	        PRF_PSAL_QC(i) = -1	          	  
+	        PRF_TEMP_QC(i) = -1		     
+	        SQC(:,i) = -1   
+	        TQC(:,i) = -1 	            	  	          
+             elseif (PROFILE_DEPH_QC(i) == '0') then	
+	        PRF_DEPH_QC(i) = 9
+	        D(:,i) = miss2
+	        DQC(:,i) = -1		     
+	        NPTS_S(i) = 0
+	        NPTS_T(i) = 0	     	
+	        PRF_PSAL_QC(i) = -1	          	  
+	        PRF_TEMP_QC(i) = -1		     
+	        SQC(:,i) = -1   
+	        TQC(:,i) = -1 	            	  	          
+             else
+	        PRF_DEPH_QC(i) = 1	
+             endif    
+	  else  
+	     D(:,i)   = miss	
+	     DQC(:,i) = -1
+	     PRF_DEPH_QC(i) = -1	     
+	     NPTS_S(i) = 0
+	     NPTS_T(i) = 0	     	
+	     PRF_PSAL_QC(i) = -1	          	  
+	     PRF_TEMP_QC(i) = -1		     
+	     SQC(:,i) = -1   
+	     TQC(:,i) = -1 	            	  	          
+	  endif
+       NPTS(i) = NPTS_T(i)
+       !print *, i, NPTS_T(i),PROFILE_TEMP_QC(i)
+       !print *, i, NPTS_S(i),PROFILE_PSAL_QC(i)
+    ENDDO
+    status = nf_close(ncid)
+     
+
+  return
+  END SUBROUTINE read_en4
+
+  ! ..................................................................................
+    SUBROUTINE read_en4_pid (fname_in,N_PROF_len,PLATFORM_NUMBER,WMO_INST_TYPE)
+  ! ..................................................................................
+    IMPLICIT NONE
+    INCLUDE 'netcdf.inc'
+
+  ! Input Variables
+    character*256, intent(in) :: fname_in
+    integer,       intent(in) :: N_PROF_len
+    
+  ! Define Dataset
+    integer :: ncid, status, i, j
+    integer :: ndims, nvars, ngatts, unlimdimid
+    integer :: start1, count1
+    integer :: start2(2), count2(2)
+
+  ! Define Dimensions
+    integer :: N_PROF_id
+    integer :: STRING4_id,   STRING4_len
+    integer :: STRING8_id,   STRING8_len
+ 
+  ! Define Variables
+    integer              :: PLATFORM_NUMBER_id, PLATFORM_NUMBER_dim
+    character*8          :: PLATFORM_NUMBER(N_PROF_len)
+
+    integer              :: WMO_INST_TYPE_id, WMO_INST_TYPE_dim
+    character*4          :: WMO_INST_TYPE(N_PROF_len)
+    
+
+  ! ****************************************************************************
+  ! Open Dataset
+  ! ............................
+    status   = nf_open(fname_in, 0, ncid)
+
+
+  ! Inquire about Dataset
+  ! .................................
+    status = nf_inq_ndims(ncid,ndims)
+    status = nf_inq_nvars(ncid,nvars)
+
+
+  ! Inquire about Dimensions
+  ! .....................................................
+    status = nf_inq_dimid(ncid,'N_PROF',N_PROF_id)
+
+    status = nf_inq_dimid(ncid,'STRING4',STRING4_id)
+    status = nf_inq_dimlen(ncid,STRING4_id,STRING4_len)
+
+    status = nf_inq_dimid(ncid,'STRING8',STRING8_id)
+    status = nf_inq_dimlen(ncid,STRING8_id,STRING8_len)
+
+ 
+  ! Inquire about Variables
+  ! .....................................................................
+    status = nf_inq_varid(ncid,'PLATFORM_NUMBER',PLATFORM_NUMBER_id)
+    status = nf_inq_varndims(ncid,PLATFORM_NUMBER_id,PLATFORM_NUMBER_dim)
+ 
+    status = nf_inq_varid(ncid,'WMO_INST_TYPE',WMO_INST_TYPE_id)
+    status = nf_inq_varndims(ncid,WMO_INST_TYPE_id,WMO_INST_TYPE_dim)
+
+
+  ! Get Variables
+  ! ............................................................................
+    start2 = (/1,1/)
+    count2 = (/STRING8_len,N_PROF_len/)
+      status = nf_get_vara_text(ncid,PLATFORM_NUMBER_id,start2,count2,PLATFORM_NUMBER)
+
+    count2 = (/STRING4_len,N_PROF_len/)  
+      status = nf_get_vara_text(ncid,WMO_INST_TYPE_id,start2,count2,WMO_INST_TYPE)
+
+
+    status = nf_close(ncid)
+     
+
+  return
+  END SUBROUTINE read_en4_pid
+
+
+END MODULE EN4_NETCDF_MODULE

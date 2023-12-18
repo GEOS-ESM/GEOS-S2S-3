@@ -1,0 +1,20 @@
+# make libprofiles
+basenetcdf      = /usr/local/other/SLES11.1/netcdf/3.6.3/intel-12.1.0.233/
+
+F90_COMPILE     = ifort
+F90FLAGS        = -g -traceback -convert big_endian
+INC             = -I$(basenetcdf)/include/ -I.
+LIB_PATH        = -L$(basenetcdf)lib
+LIBS            = -lnetcdf 
+
+clean:
+	rm *.o *.a *.mod
+ 
+libprofiles:
+	ifort $(LIBPATH) $(INC) -c data_id_module.f90
+	ifort $(LIBPATH) $(INC) -c argo_netcdf_module.f90
+
+	ar rcs libprofiles.a data_id_module.o argo_netcdf_module.o 
+
+	ranlib libprofiles.a
+

@@ -1,0 +1,58 @@
+!DIR$ ID "%Z%	%Y% $Id: zeus_clocks.astime.code,v 1.1 2023/12/05 20:23:25 yvikhlia Exp $ P Schopf"
+
+!*---------------------------------------------
+!*- this code is to be included in the as_time
+!*- and as_datetime routines. return the number
+!*- of real seconds
+!*---------------------------------------------
+
+    real(kind=SELECTED_REAL_KIND(15)) :: rsec
+    real(kind=SELECTED_REAL_KIND(15)) :: julian_corr
+
+    logical :: seconds_, julian_
+    
+
+     ! (ORIGIN_J and JULIAN_OFFSET are declared at the module level)
+     !  ORIGIN_J is user-changeable, 
+     !  JULIAN_OFFSET is a parameter
+
+!*-- assign values to the local logical flags
+
+    seconds_  = .TRUE.
+    if ( PRESENT( days    ) ) seconds_ = .not. days
+    if ( PRESENT( seconds ) ) seconds_ = seconds
+
+
+    julian_   = ORIGIN_J  ! Default is to use OPTIONS origin
+    if ( present( julian ) )  julian_ = julian
+    if ( present( daysad ) )  julian_ = .NOT. daysad
+
+!*-- assign a value to rsec based on the local logical flags
+
+    if ( seconds_ ) then
+      julian_corr = JULIAN_OFFSET * 86400.
+    else
+      julian_corr = JULIAN_OFFSET
+    endif
+    
+!*-- If the user says this time is relative to Julian calendar,
+!    then we need to SUBTRACT the julian correction if we are
+!    using the modern epoch for our calendar.
+!    ( If both are Julian, no correction will be applied anyway
+   
+    if ( julian_ .EQV. ORIGIN_J ) then
+      rsec = value 
+    else 
+      if ( julian_ ) then
+        rsec = value  - julian_corr
+      else
+        rsec = value + julian_corr
+      endif
+    endif
+    
+
+    if ( seconds_ ) then
+      rv = rsec
+    else 
+      rv = rsec * 86400.
+    endif

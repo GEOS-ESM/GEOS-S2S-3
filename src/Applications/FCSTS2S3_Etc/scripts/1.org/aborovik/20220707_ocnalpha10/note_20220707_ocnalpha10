@@ -1,0 +1,2 @@
+Anna provided ocn_alpha10_* files with "reduced weights" for dates that failed to create perturbation rst in rstmkpert scripts.
+- dates that rstmkpert were able to create perturbation: 19960629 19990425

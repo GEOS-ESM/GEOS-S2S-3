@@ -1,0 +1,61 @@
+#
+# Resource file for CO2 parameters. 
+#
+
+number_CO2_bins:      1 
+CO2_regions:          ExtData/PIESA/sfc/ARCTAS.region_mask.x540_y361.2008.nc
+CO2_regions_indices: -1 1 2 5
+
+# Run year-specific CMS emissions (0 runs climatological monthly mean emissions, 1 runs CMS)
+# ------------------------------------------------------------------------------------------
+CMS_EMIS: 1
+
+#                                 ---------------
+#                                 Biomass Burning 
+#                                 ---------------
+
+# For biomass burning emissions -- assume the units are kg m-2 s-1 of something
+# Use emission factors to scale.  E.g., if emissions provided are
+# CO2 already, the emission factor is 1; if the emissions are
+# something else (like dry matter) then use an appropriate scaling
+# factor
+
+# HFED-v1.x: emission file provides kg CO2 m-2 s-1
+# ------------------------------------------------
+CO2_biomass_emission_filename: ExtData/MERRA2/sfc/HFED/v1.0/Y%y4/hfed.emis_co2.x576_y361_t14.%y4.nc4
+CO2_biomass_emission_factor: 1.
+
+
+#                               ------------------------
+#                               Climatological Emissions
+#                               ------------------------
+
+CO2_fossilfuel_emissions_filename: ExtData/MERRA2/sfc/edgar-v42.emis_co2.anthropogenic.x3600_y1800.19700703T12z_20200703T00z.nc4
+CO2_fossilfuel_emissions_factor: 0.27273    # units conversion: 'kgCO2 m-2 s-1' to 'kgC m-2 s-1'
+
+CO2_biosphere_emissions_filename:  ExtData/PIESA/sfc/bian.co2.x288_y181_t12.2001.nc
+CO2_ocean_emissions_filename:      ExtData/PIESA/sfc/bian.co2.x288_y181_t12.2001.nc
+
+#                                  -------------
+#                                  CMS Emissions
+#                                  -------------
+
+CMS_biomass_emission_filename: ExtData/MERRA2/sfc/HFED/v1.0/Y%y4/hfed.emis_co2.x576_y361_t14.%y4.nc4
+CMS_biomass_emission_factor: 0.27273
+
+CMS_fossilfuel_emissions_filename: ExtData/MERRA2/sfc/EDGAR.emis_co2.x3600_y1800.t14.%y4.nc4
+CMS_fossilfuel_emissions_factor: 1.
+
+CMS_biosphere_emissions_filename:  ExtData/MERRA2/sfc/daily_CO2_bio/Y%y4/M%m2/CASA_CO2.3hr.NEE.x3600_y1800.t8.%y4%m2%d2.nc4
+CMS_ocean_emissions_filename: ExtData/PIESA/sfc/CMS/NOBM_fco2.daily.1x1.25.%y4.nc
+
+
+# Biosphere drawdown enhancement factor used for climatological emissions.
+# Range: < 0 invalid, < 1 reduce sink, 1 neutral, > 1 enhance sink.
+# ------------------------------------------------------------------------
+Biosphere_drawdown_factor: 1.2448
+
+
+# Run-time debug switch (0 off, 1 on)
+# -----------------------------------
+DEBUG: 0

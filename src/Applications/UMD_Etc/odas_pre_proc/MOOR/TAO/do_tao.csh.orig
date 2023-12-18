@@ -1,0 +1,100 @@
+#!/bin/csh
+#		
+# TAO
+#
+set main = /gpfsm/dhome/gmaofcst/ODAS/OBS/V3/
+cd $main/MOOR/TAO
+source config.csh
+
+set year=`date +"20%y" `
+set month=`date +%m`
+set day=`date +%-d`
+set lyear=`expr $year - 1`
+set llyear=`expr $year - 2`
+
+cd $pathhome
+
+# Process T
+##########################################################
+  #echo 'Process T'
+  cd $pathhome
+  rm -f $pathfinal/T_TAO_$year*nc
+  rm -f $pathfinal/T_TAO_$lyear*nc
+  rm -f $pathfinal/T_TAO_$llyear.nc
+  ./read_tao.x TEMP
+  
+  cp $pathfinal/T_TAO_$year*nc $pathfinal/IN_SITU/
+  cp $pathfinal/T_TAO_$lyear*nc $pathfinal/IN_SITU/
+  cp $pathfinal/T_TAO_$llyear*nc $pathfinal/IN_SITU/
+
+  #echo 'Process S'
+  rm -f $pathfinal/S_TAO_$year*nc
+  rm -f $pathfinal/S_TAO_$lyear*nc
+  rm -f $pathfinal/S_TAO_$llyear*nc
+  
+  ./read_tao.x SALT
+  
+  cp $pathfinal/S_TAO_$year*nc $pathfinal/SALT/
+  cp $pathfinal/S_TAO_$lyear*nc $pathfinal/SALT/
+  cp $pathfinal/S_TAO_$llyear*nc $pathfinal/SALT/
+
+# Process SYN S
+##########################################################
+  #echo 'Process SYN'
+  cd $syn
+  
+  rm -f $pathfinal/SYN*_TAO_$year.nc
+  ./syn_salt_cdf.x $year tao
+  cp $pathfinal/SYN_TAO_$year*nc $pathfinal/SYN/
+
+  rm -f $pathfinal/SYN*_TAO_$lyear.nc
+  ./syn_salt_cdf.x $lyear tao
+  cp $pathfinal/SYN_TAO_$lyear*nc $pathfinal/SYN/
+
+  rm -f $pathfinal/SYN*_TAO_$llyear.nc
+  ./syn_salt_cdf.x $llyear tao
+  cp $pathfinal/SYN_TAO_$llyear*nc $pathfinal/SYN/
+
+# In-situ to potential
+##########################################################
+ #echo 'Insitu_2_pot'
+ cd $pathhome
+ module load matlab/R2014a   
+ matlab -nosplash -nojvm -nodisplay -nodesktop < insitu2pot.m > out.matlab
+ cp $pathfinal/T_TAO_$year*nc $pathfinal/POT/
+ cp $pathfinal/T_TAO_$lyear*nc $pathfinal/POT/
+ cp $pathfinal/T_TAO_$llyear*nc $pathfinal/POT/
+ 
+  #echo 'Process S'
+  ##########################################################
+  rm -f $pathfinal/S_TAO_$year*nc
+  rm -f $pathfinal/S_TAO_$lyear*nc
+  rm -f $pathfinal/S_TAO_$llyear*nc
+  
+  ./read_tao.x SALT
+  
+  cp $pathfinal/S_TAO_$year*nc $pathfinal/SALT/
+  cp $pathfinal/S_TAO_$lyear*nc $pathfinal/SALT/
+  cp $pathfinal/S_TAO_$llyear*nc $pathfinal/SALT/
+
+
+##########################################################
+  set new_date = `head -1 latest_data | awk '{printf "%s",substr($1,1,8)}' `;
+  echo '   TAO    ' $new_date
+cd $pathfinal
+
+./vertical_thin.x T_TAO_$year.nc TEMP                > out.qc.tao.$year
+./vertical_thin.x S_TAO_$year.nc SALT               >> out.qc.tao.$year
+
+./vertical_thin.x T_TAO_$lyear.nc TEMP                > out.qc.tao.$lyear
+./vertical_thin.x S_TAO_$lyear.nc SALT               >> out.qc.tao.$lyear
+
+./vertical_thin.x T_TAO_$llyear.nc TEMP                > out.qc.tao.$llyear
+./vertical_thin.x S_TAO_$llyear.nc SALT               >> out.qc.tao.$llyear
+
+#
+#  the end
+#
+
+
+

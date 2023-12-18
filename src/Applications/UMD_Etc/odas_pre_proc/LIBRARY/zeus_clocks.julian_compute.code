@@ -1,0 +1,30 @@
+!DIR$ ID "%Z%	%Y% $Id: zeus_clocks.julian_compute.code,v 1.1 2023/12/05 20:22:57 yvikhlia Exp $ P Schopf"
+!*------------------------------------
+!*- calculate the julian day
+
+  ! rv is the return value
+
+ integer,PARAMETER :: igreg=(15+31*(10+12*1582))
+ integer iy,jy,jm,ja
+ real (kind=SELECTED_REAL_KIND(15)) :: day_frac
+ 
+ iy = year
+ 
+ if ( year < 0 )  iy = year+1
+ if ( month > 2 ) then
+    jy = iy
+    jm = month+1
+ else
+    jy = iy-1
+    jm = month+13
+ endif
+ 
+ rv = INT(365.25*jy) + INT(30.6001*jm)+day+1720995
+ if ( day + 31*( month + 12*year) >= igreg ) then
+   ja = INT( 0.01*jy )
+   rv = rv + 2 - ja + INT(0.25*ja)
+ endif
+ day_frac = hour * 3600.0 + min * 60.0 + sec 
+ day_frac = (day_frac - 43200.0)  / 86400.0
+ rv = rv + day_frac 
+ 

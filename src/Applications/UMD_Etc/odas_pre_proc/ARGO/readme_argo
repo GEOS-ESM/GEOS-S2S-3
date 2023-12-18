@@ -1,0 +1,13 @@
+GEOS-5: USGODAE ARGO DAC Profiles
+
+February 2021
+V3 Argo Obs on SLES-12 nodes
+
+/gpfsm/dhome/gmaofcst/ODAS/OBS/V3/D_BOSS/run_argo_1.csh
+
+/gpfsm/dhome/gmaofcst/ODAS/OBS/V3/ARGO/run_argo_2.csh
+        read_argo.x
+        read_argo_2.x
+        vertical_thin.x     
+        dboss_check_argo_v3.py
+	

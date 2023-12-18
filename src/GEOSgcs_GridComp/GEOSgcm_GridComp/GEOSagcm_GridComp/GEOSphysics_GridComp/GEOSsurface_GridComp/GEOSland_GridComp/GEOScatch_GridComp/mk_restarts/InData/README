@@ -1,0 +1,26 @@
+
+In the repository, this directory contains this README and the surface
+property data for the Pfafstetter catchments.
+
+If you are running with a destination .til file that is consistent
+with the archived Pfaffstteter data (Cubed fortuna tags and later),
+update this directory to the head to make sure you have all those
+data files in your sandbox. If you are working with an earlier 
+.til file, make sure those files ARE NOT in the sand box. In this case
+you will need to put files laigrn.data nirdf.dat and vis.dat from 
+the source run. 
+
+In all cases, you will need to put the four 
+(landice,lake,salt, and catch) source restarts and the
+corresponding .til file in this directory.
+
+The destination .til goes in ../OutData
+
+You can then run mk_Restarts from the parent directory
+(mk_restarts).
+
+See the READMEs in .. and ../OutData.
+
+Do not add anything to the repository.
+
+

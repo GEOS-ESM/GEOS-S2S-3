@@ -1,0 +1,37 @@
+#
+
+
+PrimaryExports%%
+# -------------|--------------|----|---|----------------------|--------|-----------|-----------------------------------------   
+#  Export      |              |    |Con|_______ Refresh ______|____ Factors _______|____________ External File __________
+#  Name        |     Units    |Clim|Rgr|     Time Template    | Offset |   Scale   |     Variable     |      Template
+# -------------|--------------|----|---|----------------------|--------|-----------|------------------|----------------------   
+SRC_2D_CO_25    'kg m-2 s-1'    Y    Y   %y4-%m2-%d2t12:00:00    none      none      emission_flux     ExtData/g5chem/sfc/RETRO.co.x144_y91_t12.2000.nc
+SRC_2D_CO_50    'kg m-2 s-1'    Y    Y   %y4-%m2-%d2t12:00:00    none      none      emission_flux     ExtData/g5chem/sfc/RETRO.co.x144_y91_t12.2000.nc
+SRC_2D_CO_50_na 'kg m-2 s-1'    Y    Y   %y4-%m2-%d2t12:00:00    none      none      emission_flux     ExtData/g5chem/sfc/RETRO.co.x144_y91_t12.2000.nc
+SRC_2D_CO_50_eu 'kg m-2 s-1'    Y    Y   %y4-%m2-%d2t12:00:00    none      none      emission_flux     ExtData/g5chem/sfc/RETRO.co.x144_y91_t12.2000.nc
+SRC_2D_CO_50_ea 'kg m-2 s-1'    Y    Y   %y4-%m2-%d2t12:00:00    none      none      emission_flux     ExtData/g5chem/sfc/RETRO.co.x144_y91_t12.2000.nc
+SRC_2D_CO_50_sa 'kg m-2 s-1'    Y    Y   %y4-%m2-%d2t12:00:00    none      none      emission_flux     ExtData/g5chem/sfc/RETRO.co.x144_y91_t12.2000.nc
+SRC_2D_SF6      'kg m-2 s-1'    N    Y   %y4-%m2-%d2t12:00:00    none      none      sf6               /discover/nobackup/mmanyin/CCM/EXT_DATA/SF6/EDGAR_IPCC.sf6.x144_y91_t12.%y4.nc
+SRC_2D_Rn222    'kg m-2 s-1'    N    Y          -                none      none      Rn222_emissions   ExtData/g5chem/sfc/Rn222_Jacob_et_al.x540_y361.nc
+SRC_2D_CH3I     'kg m-2 s-1'    N    N          -                none   2.35694e-21  unity_array       ExtData/g5chem/sfc/unity.x144_y91.nc
+#
+SRC_3D_Be7      'mol mol-1 s-1' N    Y          -                none      none      koch_be7_mr       ExtData/g5chem/L72/Koch.beryllium.x144_y91_z72.nc4
+SRC_3D_Be10     'mol mol-1 s-1' N    Y          -                none      none      koch_be10_mr      ExtData/g5chem/L72/Koch.beryllium.x144_y91_z72.nc4
+#
+# For tracers using dry deposition:
+TR_VEG_FRAC          'mil'      N    N   %y4-%m2-%d2t12:00:00    none      none      VEG_FRAC          /discover/nobackup/mmanyin/CCM/emissions/LAI/half_degree/veg_fraction_x720_y360_t12_%y4.nc
+TR_LAI_FRAC           '1'       N    N   %y4-%m2-%d2t12:00:00    none      none      LAI_FRAC          /discover/nobackup/mmanyin/CCM/emissions/LAI/half_degree/lai_x720_y360_v72_t12_%y4.nc
+#
+TR_regionMask         NA        N    V          -                none      none      REGION_MASK       ExtData/g5chem/sfc/RADON.region_mask.x540_y361.2001.nc
+TR_regionMask2        NA        N    V          -                none      none      REGION_MASK       ExtData/AeroCom/sfc/ARCTAS.region_mask.x540_y361.2008.nc
+# -------------|--------------|-----|----|----|---|----------------------|--------|-----------|------------------|----------------------   
+%%
+
+DerivedExports%%
+# ---------|---------|--------------------------------------------|
+#  Export  | Primary |_________________ Mask _____________________|
+#  Name    |  Name   |    Name    |           Expression          |    
+# ---------|---------|------------|-------------------------------|
+# ---------|---------|------------|-------------------------------|
+%%

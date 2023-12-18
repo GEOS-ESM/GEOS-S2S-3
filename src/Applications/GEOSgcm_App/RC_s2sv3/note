@@ -1,0 +1,12 @@
+02/07/2020
+*_ExtData in this dir is copied from: 
+
+~/src/Applications/CPLFCST_Etc/RC/??_GridComp_ExtData-clim.rc
+
+... and editted to point to qfed files from:
+
+pfe:/nobackup/gmao_SIteam/ModelData/fvInput/g5chem/sfc/QFED/v2.5r1/0.25/climatology
+discover:/discover/nobackup/projects/gmao/share/dao_ops/fvInputg5chem/sfc/QFED/v2.5r1/0.25/climatology
+
+In gcm_run.j, symlinks are created for these qfed files.
+

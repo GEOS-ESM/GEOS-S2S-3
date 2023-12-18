@@ -1,0 +1,126 @@
+#Notes
+#1982-2010 is a default range. 
+strexpid=fcst
+      ctag=knakada_s2s3_unstable_FullModel_20211203
+    DBUILD=/discover/nobackup/projects/gmao/t2ssp/GEOSS2S3/GEOS_mod/$ctag/GEOSodas/src
+     DFCST=/discover/nobackup/projects/gmao/t2ssp/GEOSS2S3/GEOS_fcst
+      DRST=/discover/nobackup/projects/gmao/t2ssp/GEOSS2S3/GEOS_rst
+     DFMOD=/discover/nobackup/projects/gmao/t2ssp/GEOSS2S3/GEOS_mod
+#  DBUILD=/gpfsm/dnb05/projects/p58/GEOSS2S3/GEOS_mod/$ctag/GEOSodas/src
+#   DFCST=/gpfsm/dnb05/projects/p58/GEOSS2S3/GEOS_fcst
+#    DRST=/gpfsm/dnb05/projects/p58/GEOSS2S3/GEOS_rst
+#   DFMOD=/gpfsm/dnb05/projects/p58/GEOSS2S3/GEOS_mod
+     DARCH=/archive/u/gmaofcst/GEOSS2S3/GEOS_fcst
+  DARCHRST=/u/$USER/GEOSS2S3/GEOS_rst
+HSTARCHRST=lfe
+
+#note:  DRSTPROC1 &2 can be the same or different dir.
+#       There two dirs are used for v3 hindcast between 198112 and 199811. 
+#       Rst from 199812 are originates in GiOCEAN dir
+DRSTPROC1=/discover/nobackup/projects/gmao/merra2-ocean/M2OCEAN_S2SV3/hindcast_restarts
+DRSTPROC2=/archive/u/gmaofcst/GEOS5.0/M2OCEAN_S2SV3/hindcast_restarts
+
+#note:  used in rst* scripts 
+strdout=$strexpid
+
+arrintens=($( seq 1 15 ))
+enscont=ens1
+
+#note:  used in gcmsetupwrap.sh to run gcm_setup
+#       This var is used to determine OGCM_NX/OGCM_NY in gcm_GEOSS2S3_setup. 
+#       Set this to TRUE regardless of this exp is fcst or not. 
+blfcst=TRUE
+#true if keeping outputs on pfe (true only this exp is hindcast/forecast)
+blleaveout=true
+#
+#note:  As of 2022-09-30, bltar is used in make_tar_sst function, which not in use. 
+#       Regardless of setting here,this will not affect the rest of archiving process. 
+#       But keep this for now. 
+bltar=true
+
+#True if you submit to run_gcmarch.sh to computing node at NAS. 
+#False if run_arch.sh (wrapper script) is running run_gcmarch.sh. 
+blrsync=true
+
+#bbscp is a command mainly used in gcm_archive.j for transfering files on discover.
+#If you are using run_gcmarch.sh, set blrsync = true and blbbscp=false. bbscp 
+#does not preserve timestamp when files are trasferred to dirac. And that will cause
+#run_gcmarch.sh to run infinitely!!
+blbbscp=false
+
+#06/16/2022 - Need to rerun ens11-15. run_gcmsetup.sh will use blskip to determine
+#             which experiments to create
+blskip=false
+
+#true to run gcmsetup.sh instead of gcmsetupmine.sh. If this is not defined
+#run_gcmsetup.sh set blgcmsetup as false
+#blgcmsetup=true
+#mname=rom_ait
+
+#note:  used in monitor.sh
+collsst=sst_tavg_1dy_glo_L720x361_slv
+
+#note:  used in various scripts in FUTIL dir. 
+blmsgmutt=false
+
+#note:  used in run_perturbations_V3.sh
+arratmens=($( seq 2 5 ))
+arrocnens=($( seq 6 15 ))
+
+#note:  used in pckwinners.sh
+reg=nino3.4
+thisvar=TSFG
+
+#note:  used in pckwinners.sh, run_rstlfe2pfe.sh, & run_rstpreps.sh ( exp_checknumrst func)
+ arrens4=($( seq 1 5  | sed 's/[^ ]* */ens&/g' ))
+arrens10=($( seq 6 15 | sed 's/[^ ]* */ens&/g' ))
+
+#note:  used in run_rstlfe2pfe.sh
+pert_start=2
+pert_end_atm=5
+pert_end_ocn=15
+
+#note:  used in runsetupwinner.sh
+dwinpfe=$DFCST/winners
+dwinlfe=$DARCH/winners
+
+#%%%%%  These vars have default in each script, but if you want to %%%%%
+#%%%%%  set your own, do so here.                                  %%%%%
+#gcmsetup.sh
+rerun=FALSE
+
+#**** ogcm_[nx,ny]_geoss2s3 is for agcm nx/ny
+##use 360 cores  
+#ogcm_nx=36
+#ogcm_ny=10
+#ogcm_nx_geoss2s3=10
+#ogcm_ny_geoss2s3=36
+#numc=28
+#walltime=12:00:00
+
+
+#use 120 nodes (+2 for async) on sky_ele or cas_ait
+ogcm_nx=80
+ogcm_ny=60
+ogcm_nx_geoss2s3=40
+ogcm_ny_geoss2s3=120
+numc=40
+walltime=12:00:00
+
+##use 30 rome nodes (+1 for async) 
+#ogcm_nx=60
+#ogcm_ny=60
+#ogcm_nx_geoss2s3=20
+#ogcm_ny_geoss2s3=180
+#numc=125
+##walltime=12:00:00
+#walltime=08:00:00
+#walltime_pst=08:00:00
+
+
+
+
+
+
+
+

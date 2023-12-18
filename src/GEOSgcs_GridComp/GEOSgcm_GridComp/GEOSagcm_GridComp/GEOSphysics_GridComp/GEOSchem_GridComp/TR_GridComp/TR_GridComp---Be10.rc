@@ -1,0 +1,61 @@
+#
+# Resource file for Beryllium-10 tracer
+#
+
+# SHOULD THE TRACER SOURCE BE ADDED FIRST, OR THE SINK APPLIED FIRST
+# ---------------------------
+  first_phase: sink
+
+# SOURCE - MODE:  constant  |  file2d  |  file3d  |  model_field  |  maintain_mixing_ratio
+# ---------------------------
+  src_mode: file3d
+  src_add: TRUE
+# --- Specify SRC_3D_Be10 in TR_ExtData.rc
+# --- ASSUME UNITS: mol/mol/sec
+
+# SOURCE - Horizontal coverage: all  |  lat_zone  |  latlon_box
+# ---------------------------
+  src_horiz: all
+
+# SOURCE - Vertical coverage:  all  |  surface  |  levels  |  pressures  |  troposphere  | stratosphere
+# ---------------------------
+  src_vert: all
+
+# SINK - MODE:  constant  |  efolding  |  halflife  |  none
+# ---------------------------
+  snk_mode: halflife
+  snk_period: 5.84e8 days
+
+# SINK - Horizontal coverage:  all  |  lat_zone  |  latlon_box
+# ---------------------------
+  snk_horiz: all
+
+# SINK - Vertical coverage:  all  |  surface  |  levels  |  pressures  |  troposphere  | stratosphere
+# ---------------------------
+  snk_vert: all
+
+
+# DEPOSITION
+# ---------------------------
+  dry_deposition: TRUE
+# (as in gmi_aerosol.h)
+  aerosol_density: 1769.e0
+  effective_radius: 0.1000e-6
+  c1: 0.4809e0
+  c2: 3.082e0
+  c3: 3.110e-11
+  c4: -1.428e0
+
+# NOTE: must provide for dry dep and wet dep
+  mw: 10.0
+  hstar:              0.0e0  # as in setkin_depos.h
+  delH_298_over_R:    0.0e0  # as in setkin_depos.h
+  treat_as_aerosol: TRUE     # as in setkin_depos.h
+  f0:                 0.0e0  # as in setkin_depos.h  (oxidize)
+
+  wet_removal: TRUE
+  rel_scav_eff:       1.0e0  # as in gmi_aerosol.h
+  retention_eff:      0.0e0  # as in setkin_depos.h
+  treat_as_h2o2:    FALSE
+  treat_as_hno3:    FALSE
+

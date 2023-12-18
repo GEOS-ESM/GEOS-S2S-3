@@ -1,0 +1,26 @@
+Grid File for new 50 levels
+/gpfsm/dnb42/projects/p17/ehackert/geos5/sandbox_version3/grid_spec.nc
+
+Gui's Code 
+/gpfsm/dnb42/projects/p17/gvernier/SAND_BOXES/PLOT_ODAS/OBS_ERROR
+
+./thin.exe T_ARGO_$year.nc TEMP               
+./thin.exe S_ARGO_$year.nc SALT             
+./levitus_qc_prof.exe T_ARGO_$year.nc TEMP 6
+./levitus_qc_prof.exe S_ARGO_$year.nc SALT 6
+
+module purge
+module load comp/intel-12.1.0.233
+module load lib/mkl-10.0.3.020
+module load mpi/impi-3.2.2.006
+
+
+/gpfsm/dnb04/projects/p71/aogcm/g5odas/obs/raw//
+
+module purge
+module load comp/intel-11.1.038
+module load mpi/impi-4.1.0.024
+module load other/comp/gcc-4.5 
+module load other/SIVO-PyD/spd_1.1.2_un
+
+

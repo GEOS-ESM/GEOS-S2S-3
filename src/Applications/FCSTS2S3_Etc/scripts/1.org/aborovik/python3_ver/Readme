@@ -1,0 +1,18 @@
+Modules for discover-sles12:
+
+module purge
+module load comp/gcc/9.2.0
+module load python/GEOSpyD/Ana2019.10_py3.7  #python 3
+
+Inside the script text_indices_S2S_fcst_full_v3_daily_select.py change the location of the geosgcm_sst collection from the forecasts (to be read from) and the location of the nino3.4 daily indices (to be written to)
+
+Inside the script seasonal_S2S_v3_daily_stratify.py change the location of the nino3.4 daily indices as above (now they are read)
+
+Run run_indices_daily_labels.csh, it will call text_indices_S2S_fcst_full_v3_daily_select.py.  This computes the nino3.4 indices.
+
+Run seasonal_S2S_v3_daily_stratify.py to do the stratification.  You should have a "winners" files like SAMPLE_winners_eh020_nino3.4_12_2015.txt.
+
+There are 3 arguments (they are described inside the script), so the call should look like this:
+seasonal_S2S_v3_daily_stratify.py -y 2015 -m jan -e eh020
+
+

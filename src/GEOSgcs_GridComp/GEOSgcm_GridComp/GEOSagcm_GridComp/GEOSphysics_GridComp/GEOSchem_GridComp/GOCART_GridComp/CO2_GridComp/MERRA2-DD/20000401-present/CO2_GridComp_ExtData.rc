@@ -1,0 +1,15 @@
+PrimaryExports%%
+# -------------|-------|-------|--------|----------------------|--------|--------|-------------|----------|
+#  Import      |       |       | Regrid |        Refresh       | OffSet | Scale  | Variable On |   File   |
+#  Name        | Units | Clim  | Method |     Time Template    | Factor | Factor |     File    | Template |
+# -------------|-------|-------|--------|----------------------|--------|--------|-------------|----------|
+CO2_BIOMASS NA  N Y %y4-%m2-%d2t12:00:00 none none    biomass    ExtData/PIESA/sfc/QFED/v2.4r8/0.1/Y%y4/M%m2/qfed2.emis_co2.005.%y4%m2%d2.nc4
+CO2_FF      NA  N Y %y4-%m2-%d2t12:00:00 none none    emco2ff    ExtData/MERRA2/sfc/edgar-v42.emis_co2.anthropogenic.x3600_y1800.19700703T12z_20200703T00z.nc4
+CO2_NEP     NA  Y Y %y4-%m2-%d2t12:00:00 none none    emco2nep   ExtData/PIESA/sfc/bian.co2.x288_y181_t12.2001.nc
+CO2_OCN     NA  Y Y %y4-%m2-%d2t12:00:00 none none    emco2ocn   ExtData/PIESA/sfc/bian.co2.x288_y181_t12.2001.nc
+CO2_CMS_BIOMASS NA  N Y %y4-%m2-%d2t12:00:00 none none biomass  ExtData/PIESA/sfc/QFED/v2.4r8/0.1/Y%y4/M%m2/qfed2.emis_co2.005.%y4%m2%d2.nc4
+CO2_CMS_FF      NA  N Y %y4-%m2-%d2t12:00:00 none none emco2ff  ExtData/MERRA2/sfc/EDGAR.emis_co2.x3600_y1800.t14.%y4.nc4
+CO2_CMS_NEP     NA  N Y P0000-00-00T03:00    none none emco2nep ExtData/MERRA2/sfc/daily_CO2_bio/Y%y4/M%m2/CASA_CO2.3hr.NEE.x3600_y1800.t8.%y4%m2%d2.nc4
+CO2_CMS_OCN     NA  N Y %y4-%m2-%d2t12:00:00 none none fco2     ExtData/PIESA/sfc/CMS/NOBM_fco2.daily.1x1.25.%y4.nc
+CO2_regionMask NA  N V - none none REGION_MASK ExtData/PIESA/sfc/ARCTAS.region_mask.x540_y361.2008.nc
+%%

@@ -1,0 +1,19 @@
+In the repository, this directory contains only this README file.
+
+Put the destination (new) .til file for
+which we are creating restarts in this directory and
+the old restarts in ../InData,
+and then run mk_Restarts from the
+parent directory (mk_restarts). 
+
+You have to be aware whether the .til your a putting here
+is consistent with the new Pfafstteter data. See comments in InData/README.
+
+See the READMEs in .. and ../InData.
+
+The five restarts for landice, lake, salt, vegdyn, and catch will be
+created here, as well as albedo files, an lai-greeness 12-month climatology
+and a vegdyn restart, all of which the model reads on the land tiles.
+
+Do not add anything to the repository.
+

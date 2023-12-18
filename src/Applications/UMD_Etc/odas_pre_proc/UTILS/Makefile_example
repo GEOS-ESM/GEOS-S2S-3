@@ -1,0 +1,15 @@
+SUBDIRS = LIBRARY ARGO
+
+.PHONY: subdirs $(SUBDIRS) clean veryclean
+
+subdirs: $(SUBDIRS)
+
+$(SUBDIRS):
+	$(MAKE) -C $@ $(MAKECMDGOALS)
+
+ARGO: LIBRARY
+
+clean: $(SUBDIRS)
+
+veryclean: $(SUBDIRS)
+

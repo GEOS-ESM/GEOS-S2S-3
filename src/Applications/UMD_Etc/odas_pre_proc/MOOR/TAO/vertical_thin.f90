@@ -1,0 +1,289 @@
+!======================================================================================
+!======================================================================================
+program vertical_thin
+!======================================================================================
+!======================================================================================
+
+!QC of profiles based on climatology
+
+  use netcdf
+  use Buoyancy_module, only: buoyancy
+
+  implicit none
+
+  integer, parameter                          :: im  = 360
+  integer, parameter                          :: jm  = 180
+  character (len = 200)                       :: FNAME, ODAS_FNAME
+  character (len = 4)                         :: VAR_NAME
+  integer                                     :: N_PROF
+  integer                                     :: N_LEVS
+
+  real, parameter                             :: REF_DENSITY = 30
+  real, parameter                             :: rho_0 = 1000 + REF_DENSITY
+  real, parameter                             :: g = 9.7976
+
+  real, allocatable, dimension(:)             :: LON, LAT
+  integer, allocatable, dimension(:)          :: QC_FLAG, NPTS
+  real, allocatable, dimension(:,:)           :: VAR, DEPTH, QC_LEV
+  !real, allocatable, dimension(:)             :: s_lev1d, std_lev1d, density
+  real, dimension(100)                        :: zobs, obs
+  integer                                     :: iobs, new_npts
+  real, dimension(50)                         :: zt
+  real, dimension(51)                         :: zb
+  
+  real                                        :: flag=9e11
+  
+  integer                                     :: ncid, varid
+
+  integer                                     :: index, ii, jj, imax, itest(1), io(1), jo(1), Nf, No, cnt
+
+
+  character*300                               :: BUFFER  
+
+
+  call getarg(1,BUFFER)
+  read(BUFFER,*) ODAS_FNAME
+
+  call getarg(2,BUFFER)
+  read(BUFFER,*) VAR_NAME
+
+
+  !Initialize vertical bins from MOM's resolution
+  !##############################################
+
+
+   zb = (/0.0,   10.0671,  20.16,   30.2889,   40.4674,  50.7148,  61.0575, 71.5323, 82.1899,  &
+	93.1001, 104.3597, 116.1014, 128.5076, 141.8276, 156.4002, 172.6831,   &
+	191.2877, 213.0201, 238.9227, 270.3095, 308.7793, 356.1864, 414.5457,  &
+    	485.8544, 571.8428, 673.6976, 791.8428, 925.8544, 1074.546, 1236.186,  &
+    	1408.779, 1590.31, 1778.923, 1973.02, 2171.288, 2372.683, 2576.4,      &
+    	2781.828, 2988.508, 3196.102, 3404.36, 3613.1, 3822.19, 4031.532,      &
+    	4241.058, 4450.715, 4660.467, 4870.289, 5080.16, 5290.067, 5500. /)
+
+   zt = (/5.03355, 15.10065, 25.21935, 35.35845, 45.57635, 55.85325, 66.26175, &
+    	76.80285, 87.57695, 98.62325, 110.0962, 122.1067, 134.9086, 148.7466,  &
+    	164.0538, 181.3125, 201.263, 224.7773, 253.0681, 287.5508, 330.0078,   &
+    	382.3651, 446.7263, 524.9824, 618.7031, 728.6921, 854.9935, 996.7153,  &
+    	1152.376, 1319.997, 1497.562, 1683.057, 1874.788, 2071.252, 2271.323,  &
+    	2474.043, 2678.757, 2884.898, 3092.117, 3300.086, 3508.633, 3717.567,  &
+    	3926.813, 4136.251, 4345.864, 4555.566, 4765.369, 4975.209, 5185.111, 5395.023 /)
+
+
+  !Get mooring profiles
+  !#######################
+  !FNAME="S_RAMA_2004.nc"
+  call  get_profile_dim(ODAS_FNAME,N_PROF,N_LEVS)
+
+  print *,N_PROF,N_LEVS
+
+  !Get DEPTH
+  !---------
+  allocate(DEPTH(N_LEVS,N_PROF))
+  call check(nf90_open(ODAS_FNAME,NF90_NOWRITE,ncid))
+  call check(nf90_inq_varid(ncid,'DEPTH',varid))
+  call check(nf90_get_var(ncid,varid,DEPTH))
+  call check(nf90_close(ncid))
+
+  !Get VAR
+  !---------
+  allocate(VAR(N_LEVS,N_PROF))
+  call check(nf90_open(ODAS_FNAME,NF90_NOWRITE,ncid))
+  call check(nf90_inq_varid(ncid,VAR_NAME,varid))
+  call check(nf90_get_var(ncid,varid,VAR))
+  call check(nf90_close(ncid))
+
+  !Get QC_LEV
+  !---------
+  allocate(QC_LEV(N_LEVS,N_PROF))
+  call check(nf90_open(ODAS_FNAME,NF90_NOWRITE,ncid))
+  call check(nf90_inq_varid(ncid,'QC_LEV',varid))
+  call check(nf90_get_var(ncid,varid,QC_LEV))
+  call check(nf90_close(ncid))
+
+  !Get QC_PRF
+  !-------------
+  allocate(QC_FLAG(N_PROF))
+  call check(nf90_open(ODAS_FNAME,NF90_NOWRITE,ncid))
+  call check(nf90_inq_varid(ncid,'QC_PRF',varid))
+  call check(nf90_get_var(ncid,varid,QC_FLAG))
+  call check(nf90_close(ncid))
+
+  !Get NPTS
+  !-------------
+  allocate(NPTS(N_PROF))
+  call check(nf90_open(ODAS_FNAME,NF90_NOWRITE,ncid))
+  call check(nf90_inq_varid(ncid,'NPTS',varid))
+  call check(nf90_get_var(ncid,varid,NPTS))
+  call check(nf90_close(ncid))
+
+  !allocate( s_lev1d(N_LEVS), std_lev1d(N_LEVS) )
+
+  Nf=0
+  No=0
+
+  !Thin profiles that are higher res than the model
+  !================================================
+
+  open(unit=99,file="QC.out")
+  !print *, N_PROF
+  do index=1,N_PROF
+  !do index=1,2
+     iobs=1
+     obs=0.0
+     zobs=0.0
+     do ii=1,50 !Loop through mom's levels
+        cnt=0 
+        do jj=1,NPTS(index)
+           !print *, ii, jj, NPTS(index),DEPTH(jj,index), zb(ii+1), zb(ii)
+           
+           if ( (DEPTH(jj,index)<zb(ii+1)).and.(DEPTH(jj,index)>=zb(ii)).and.(QC_LEV(jj,index)==1.0) ) then 
+              cnt=cnt+1
+              obs(iobs)=obs(iobs)+VAR(jj,index)
+              zobs(iobs)=zobs(iobs)+DEPTH(jj,index)
+              !print *,  'bin it', cnt, DEPTH(jj,index), zb(ii), zb(ii+1)           
+           end if          
+        end do
+        ! zobs is depth
+        ! obs is variable
+        if (cnt>0) then
+           zobs(iobs) = zobs(iobs)/real(cnt)
+           obs(iobs)  = obs(iobs)/real(cnt)
+           !print *, iobs,cnt,zobs(iobs), obs(iobs)
+           iobs=iobs+1
+        end if      
+        
+     enddo ! 50 levels
+     
+     
+     new_npts=iobs-1
+     !print *,new_npts,NPTS(index)
+     
+     !print *,"VAR=",VAR(1:NPTS(index),index)
+     !print *,"Z=",DEPTH(1:NPTS(index),index)
+     !print *,"QC_LEV=",QC_LEV(1:NPTS(index),index)
+
+     QC_LEV(:,index)=-1.0
+     QC_LEV(1:new_npts,index) = 1.0
+
+     DEPTH(:,index)  = flag
+     DEPTH(1:new_npts,index)  = zobs(1:new_npts)
+     !print *, ''
+     !print *,'NewZ=',DEPTH(1:new_npts,index)
+
+     VAR(:,index)  = flag
+     VAR(1:new_npts,index)  = obs(1:new_npts)
+
+     write(99,*) "===================================="
+     write(99,*) NPTS(index)," Levels in profile ",index," thinned to ",new_npts," Levels"
+
+     NPTS(index)=new_npts
+     
+
+  end do
+
+  close(99)
+
+  print *,"DONE", maxval(NPTS)
+
+  call check(nf90_open(ODAS_FNAME,NF90_WRITE,ncid))
+  call check(nf90_inq_varid(ncid,'QC_LEV',varid))
+  call check(nf90_put_var(ncid,varid,QC_LEV))
+  call check(nf90_close(ncid))
+
+  call check(nf90_open(ODAS_FNAME,NF90_WRITE,ncid))
+  call check(nf90_inq_varid(ncid,'DEPTH',varid))
+  call check(nf90_put_var(ncid,varid,DEPTH))
+  call check(nf90_close(ncid))
+
+  call check(nf90_open(ODAS_FNAME,NF90_WRITE,ncid))
+  call check(nf90_inq_varid(ncid,VAR_NAME,varid))
+  call check(nf90_put_var(ncid,varid,VAR))
+  call check(nf90_close(ncid))
+
+  call check(nf90_open(ODAS_FNAME,NF90_WRITE,ncid))
+  call check(nf90_inq_varid(ncid,'NPTS',varid))
+  call check(nf90_put_var(ncid,varid,NPTS))
+  call check(nf90_close(ncid))
+
+contains
+
+ !-----------------------
+  subroutine check(status)
+    !-----------------------
+    integer, intent ( in) :: status
+
+    if(status /= nf90_noerr) then 
+       print *, trim(nf90_strerror(status))
+       stop "Stopped"
+    end if
+
+  end subroutine check
+
+  !-----------------------
+  subroutine get_profile_dim(FNAME,N_PROF,N_LEVS)
+    !-----------------------
+
+    use netcdf
+    implicit none
+    integer                                                     :: nDimensions
+    integer                                                     :: ncid
+    integer                                                     :: N_PROF
+    integer                                                     :: N_LEVS
+    character (len = 200), intent(inout)                        :: FNAME
+
+    FNAME=trim(FNAME)
+
+    !GET DIMENSIONS
+    call check(nf90_open(FNAME,NF90_NOWRITE,ncid))
+
+    call check( nf90_inq_dimid(ncid, 'N_PROF', nDimensions) )
+    call check( nf90_inquire_dimension(ncid, nDimensions, len=N_PROF) )
+    !print *,'N_PROF=',N_PROF
+
+    call check( nf90_inq_dimid(ncid, 'N_LEVS', nDimensions) )
+    call check( nf90_inquire_dimension(ncid, nDimensions, len=N_LEVS) )
+    !print *,'N_LEVS=',N_LEVS
+
+
+    call check(nf90_close(ncid))
+
+  end subroutine get_profile_dim
+
+  subroutine interp1d(x, y, xi, yi)
+
+    implicit none
+    real, dimension(33), intent(in)          :: x, y
+    real, dimension(40), intent(out)         :: yi
+    real, dimension(40), intent(in)          :: xi
+    real, dimension(33)                      :: test_loc
+    real                                     :: a, b
+    integer                                  :: i1, i2, index
+    integer, dimension(1)                    :: ii
+
+    do index=1,size(xi,1)
+       
+       test_loc = abs(xi(index) - x )
+       ii=minloc(test_loc)
+       i1=ii(1)
+       if ( xi(index)<x(i1) ) then
+          i2 = max(i1-1,1)
+       else
+          i2 = min(i1+1,size(x,1))
+       end if
+       a = abs(xi(index)-x(i1))
+       b = abs(xi(index)-x(i2))
+       a = a/(a+b)
+       !b = b/(a+b)
+
+       b = 1-a
+
+       !print *,a,b,a+b
+
+       !yi(index) = y(i1)!( a * y(i1) + b * y(i2) )
+       yi(index) =  b * y(i1) + a * y(i2) 
+
+    end do
+
+  end subroutine interp1d
+
+end program vertical_thin

@@ -1,0 +1,139 @@
+Script started on Tue 06 Apr 2021 01:05:34 PM EDT
+
+Inactive Modules:
+  1) mpi/impi/19.1.0.166
+
+discover34% moduel[K[Kle list
+
+Currently Loaded Modules:
+  1) git/2.30.2               5) other/tig/2.5.1        9) comp/gcc/6.5.0
+  2) cmake/3.19.3             6) ImageMagick/7.0.9-16  10) comp/intel/18.0.5.274
+  3) other/manage_externals   7) other/git-lfs/2.13.2  11) python/GEOSpyD/Min4.8.3_py3.8
+  4) other/mepo               8) GEOSenv               12) xxdiff/4.0.1
+
+Inactive Modules:
+  1) mpi/impi/19.1.0.166
+
+ 
+
+discover34% !f2
+f2: Event not found.
+discover34% f2py -c -m read_merra2_bcs read_bin.f90
+[39mrunning build[0m
+[39mrunning config_cc[0m
+[39munifing config_cc, config, build_clib, build_ext, build commands --compiler options[0m
+[39mrunning config_fc[0m
+[39munifing config_fc, config, build_clib, build_ext, build commands --fcompiler options[0m
+[39mrunning build_src[0m
+[39mbuild_src[0m
+[39mbuilding extension "read_merra2_bcs" sources[0m
+[39mf2py options: [][0m
+[39mf2py:> /gpfsm/dnb32/tdirs/login/discover34.20377.ehackert/tmpkp37dnv7/src.linux-x86_64-3.8/read_merra2_bcsmodule.c[0m
+[39mcreating /gpfsm/dnb32/tdirs/login/discover34.20377.ehackert/tmpkp37dnv7/src.linux-x86_64-3.8[0m
+Reading fortran codes...
+	Reading file 'read_bin.f90' (format:free)
+Post-processing...
+	Block: read_merra2_bcs
+			Block: read_bin_data
+Post-processing (stage 2)...
+Building modules...
+	Building module "read_merra2_bcs"...
+		Constructing wrapper function "read_bin_data"...
+		  nymd_out,nlon,nlat,lon,lat,bcs_field = read_bin_data(filename,nymd_in)
+	Wrote C/API module "read_merra2_bcs" to file "/gpfsm/dnb32/tdirs/login/discover34.20377.ehackert/tmpkp37dnv7/src.linux-x86_64-3.8/read_merra2_bcsmodule.c"
+[39m  adding '/gpfsm/dnb32/tdirs/login/discover34.20377.ehackert/tmpkp37dnv7/src.linux-x86_64-3.8/fortranobject.c' to sources.[0m
+[39m  adding '/gpfsm/dnb32/tdirs/login/discover34.20377.ehackert/tmpkp37dnv7/src.linux-x86_64-3.8' to include_dirs.[0m
+[39mcopying /usr/local/other/python/GEOSpyD/4.8.3_py3.8/2020-08-11/lib/python3.8/site-packages/numpy/f2py/src/fortranobject.c -> /gpfsm/dnb32/tdirs/login/discover34.20377.ehackert/tmpkp37dnv7/src.linux-x86_64-3.8[0m
+[39mcopying /usr/local/other/python/GEOSpyD/4.8.3_py3.8/2020-08-11/lib/python3.8/site-packages/numpy/f2py/src/fortranobject.h -> /gpfsm/dnb32/tdirs/login/discover34.20377.ehackert/tmpkp37dnv7/src.linux-x86_64-3.8[0m
+[39mbuild_src: building npy-pkg config files[0m
+[39mrunning build_ext[0m
+[39mcustomize UnixCCompiler[0m
+[39mC compiler: /usr/local/intel/2018/compilers_and_libraries_2018.5.274/linux/bin/intel64/icc -Wsign-compare -DNDEBUG -g -fwrapv -O3 -Wall -Wstrict-prototypes -fPIC
+[0m
+[39mcreating /gpfsm/dnb32/tdirs/login/discover34.20377.ehackert/tmp289ubqy9/gpfsm[0m
+[39mcreating /gpfsm/dnb32/tdirs/login/discover34.20377.ehackert/tmp289ubqy9/gpfsm/dnb32[0m
+[39mcreating /gpfsm/dnb32/tdirs/login/discover34.20377.ehackert/tmp289ubqy9/gpfsm/dnb32/tdirs[0m
+[39mcreating /gpfsm/dnb32/tdirs/login/discover34.20377.ehackert/tmp289ubqy9/gpfsm/dnb32/tdirs/login[0m
+[39mcreating /gpfsm/dnb32/tdirs/login/discover34.20377.ehackert/tmp289ubqy9/gpfsm/dnb32/tdirs/login/discover34.20377.ehackert[0m
+[39mcreating /gpfsm/dnb32/tdirs/login/discover34.20377.ehackert/tmp289ubqy9/gpfsm/dnb32/tdirs/login/discover34.20377.ehackert/tmp289ubqy9[0m
+[39mcompile options: '-MMD -MF /gpfsm/dnb32/tdirs/login/discover34.20377.ehackert/tmp289ubqy9/file.c.d -c'[0m
+[39micc: /gpfsm/dnb32/tdirs/login/discover34.20377.ehackert/tmp289ubqy9/file.c[0m
+[39mcustomize UnixCCompiler using build_ext[0m
+[39mget_default_fcompiler: matching types: '['gnu95', 'intel', 'lahey', 'pg', 'absoft', 'nag', 'vast', 'compaq', 'intele', 'intelem', 'gnu', 'g95', 'pathf95', 'nagfor']'[0m
+[39mcustomize Gnu95FCompiler[0m
+[39mFound executable /gpfsm/dulocal/sles12/intel/2018/compilers_and_libraries_2018.5.274/linux/bin/intel64/ifort[0m
+[39mFound executable /gpfsm/dulocal/sles12/other/gcc/6.5.0/bin/gfortran[0m
+[39mcustomize IntelFCompiler[0m
+[39mFound executable /gpfsm/dulocal/sles12/intel/2018/compilers_and_libraries_2018.5.274/linux/bin/intel64/ifort[0m
+[39mcustomize LaheyFCompiler[0m
+[31mCould not locate executable lf95[0m
+[39mcustomize PGroupFCompiler[0m
+[31mCould not locate executable pgfortran[0m
+[39mcustomize AbsoftFCompiler[0m
+[39mcustomize NAGFCompiler[0m
+[39mcustomize VastFCompiler[0m
+[39mcustomize CompaqFCompiler[0m
+[39mcustomize IntelItaniumFCompiler[0m
+[39mcustomize IntelEM64TFCompiler[0m
+[39mcustomize IntelEM64TFCompiler[0m
+[39mcustomize IntelEM64TFCompiler using build_ext[0m
+[39mbuilding 'read_merra2_bcs' extension[0m
+[39mcompiling C sources[0m
+[39mC compiler: /usr/local/intel/2018/compilers_and_libraries_2018.5.274/linux/bin/intel64/icc -Wsign-compare -DNDEBUG -g -fwrapv -O3 -Wall -Wstrict-prototypes -fPIC
+[0m
+[39mcreating /gpfsm/dnb32/tdirs/login/discover34.20377.ehackert/tmpkp37dnv7/gpfsm[0m
+[39mcreating /gpfsm/dnb32/tdirs/login/discover34.20377.ehackert/tmpkp37dnv7/gpfsm/dnb32[0m
+[39mcreating /gpfsm/dnb32/tdirs/login/discover34.20377.ehackert/tmpkp37dnv7/gpfsm/dnb32/tdirs[0m
+[39mcreating /gpfsm/dnb32/tdirs/login/discover34.20377.ehackert/tmpkp37dnv7/gpfsm/dnb32/tdirs/login[0m
+[39mcreating /gpfsm/dnb32/tdirs/login/discover34.20377.ehackert/tmpkp37dnv7/gpfsm/dnb32/tdirs/login/discover34.20377.ehackert[0m
+[39mcreating /gpfsm/dnb32/tdirs/login/discover34.20377.ehackert/tmpkp37dnv7/gpfsm/dnb32/tdirs/login/discover34.20377.ehackert/tmpkp37dnv7[0m
+[39mcreating /gpfsm/dnb32/tdirs/login/discover34.20377.ehackert/tmpkp37dnv7/gpfsm/dnb32/tdirs/login/discover34.20377.ehackert/tmpkp37dnv7/src.linux-x86_64-3.8[0m
+[39mcompile options: '-I/gpfsm/dnb32/tdirs/login/discover34.20377.ehackert/tmpkp37dnv7/src.linux-x86_64-3.8 -I/usr/local/other/python/GEOSpyD/4.8.3_py3.8/2020-08-11/lib/python3.8/site-packages/numpy/core/include -I/usr/local/other/python/GEOSpyD/4.8.3_py3.8/2020-08-11/include/python3.8 -c'[0m
+[39micc: /gpfsm/dnb32/tdirs/login/discover34.20377.ehackert/tmpkp37dnv7/src.linux-x86_64-3.8/read_merra2_bcsmodule.c[0m
+[39micc: /gpfsm/dnb32/tdirs/login/discover34.20377.ehackert/tmpkp37dnv7/src.linux-x86_64-3.8/fortranobject.c[0m
+In file included from /usr/local/other/python/GEOSpyD/4.8.3_py3.8/2020-08-11/lib/python3.8/site-packages/numpy/core/include/numpy/ndarrayobject.h(12),
+In file included from /usr/local/other/python/GEOSpyD/4.8.3_py3.8/2020-08-11/lib/python3.8/site-packages/numpy/core/include/numpy/ndarrayobject.h(12),
+                 from /usr/local/other/python/GEOSpyD/4.8.3_py3.8/2020-08-11/lib/python3.8/site-packages/numpy/core/include/numpy/arrayobject.h(4),
+                 from /usr/local/other/python/GEOSpyD/4.8.3_py3.8/2020-08-11/lib/python3.8/site-packages/numpy/core/include/numpy/arrayobject.h(4),
+                 from /gpfsm/dnb32/tdirs/login/discover34.20377.ehackert/tmpkp37dnv7/src.linux-x86_64-3.8/fortranobject.h(13),
+                 from /gpfsm/dnb32/tdirs/login/discover34.20377.ehackert/tmpkp37dnv7/src.linux-x86_64-3.8/fortranobject.h(13),
+                 from /gpfsm/dnb32/tdirs/login/discover34.20377.ehackert/tmpkp37dnv7/src.linux-x86_64-3.8/fortranobject.c(2):
+                 from /gpfsm/dnb32/tdirs/login/discover34.20377.ehackert/tmpkp37dnv7/src.linux-x86_64-3.8/read_merra2_bcsmodule.c(16):
+/usr/local/other/python/GEOSpyD/4.8.3_py3.8/2020-08-11/lib/python3.8/site-packages/numpy/core/include/numpy/ndarraytypes.h(84): warning #2650: attributes ignored here
+                      NPY_CHAR NPY_ATTR_DEPRECATE("Use NPY_STRING"),
+                               ^
+
+/usr/local/other/python/GEOSpyD/4.8.3_py3.8/2020-08-11/lib/python3.8/site-packages/numpy/core/include/numpy/ndarraytypes.h(84): warning #2650: attributes ignored here
+                      NPY_CHAR NPY_ATTR_DEPRECATE("Use NPY_STRING"),
+                               ^
+
+In file included from /usr/local/other/python/GEOSpyD/4.8.3_py3.8/2020-08-11/lib/python3.8/site-packages/numpy/core/include/numpy/ndarraytypes.h(1822),
+                 from /usr/local/other/python/GEOSpyD/4.8.3_py3.8/2020-08-11/lib/python3.8/site-packages/numpy/core/include/numpy/ndarrayobject.h(12),
+                 from /usr/local/other/python/GEOSpyD/4.8.3_py3.8/2020-08-11/lib/python3.8/site-packages/numpy/core/include/numpy/arrayobject.h(4),
+                 from /gpfsm/dnb32/tdirs/login/discover34.20377.ehackert/tmpkp37dnv7/src.linux-x86_64-3.8/fortranobject.h(13),
+                 from /gpfsm/dnb32/tdirs/login/discover34.20377.ehackert/tmpkp37dnv7/src.linux-x86_64-3.8/fortranobject.c(2):
+/usr/local/other/python/GEOSpyD/4.8.3_py3.8/2020-08-11/lib/python3.8/site-packages/numpy/core/include/numpy/npy_1_7_deprecated_api.h(17): warning #1224: #warning directive: "Using deprecated NumPy API, disable it with "          "#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION"
+  #warning "Using deprecated NumPy API, disable it with " \
+   ^
+
+In file included from /usr/local/other/python/GEOSpyD/4.8.3_py3.8/2020-08-11/lib/python3.8/site-packages/numpy/core/include/numpy/ndarraytypes.h(1822),
+                 from /usr/local/other/python/GEOSpyD/4.8.3_py3.8/2020-08-11/lib/python3.8/site-packages/numpy/core/include/numpy/ndarrayobject.h(12),
+                 from /usr/local/other/python/GEOSpyD/4.8.3_py3.8/2020-08-11/lib/python3.8/site-packages/numpy/core/include/numpy/arrayobject.h(4),
+                 from /gpfsm/dnb32/tdirs/login/discover34.20377.ehackert/tmpkp37dnv7/src.linux-x86_64-3.8/fortranobject.h(13),
+                 from /gpfsm/dnb32/tdirs/login/discover34.20377.ehackert/tmpkp37dnv7/src.linux-x86_64-3.8/read_merra2_bcsmodule.c(16):
+/usr/local/other/python/GEOSpyD/4.8.3_py3.8/2020-08-11/lib/python3.8/site-packages/numpy/core/include/numpy/npy_1_7_deprecated_api.h(17): warning #1224: #warning directive: "Using deprecated NumPy API, disable it with "          "#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION"
+  #warning "Using deprecated NumPy API, disable it with " \
+   ^
+
+[39mcompiling Fortran sources[0m
+[39mFortran f77 compiler: /usr/local/intel/2018/compilers_and_libraries_2018.5.274/linux/bin/intel64/ifort -FI -fPIC -fp-model strict -O1 -qopenmp
+Fortran f90 compiler: /usr/local/intel/2018/compilers_and_libraries_2018.5.274/linux/bin/intel64/ifort -FR -fPIC -fp-model strict -O1 -qopenmp
+Fortran fix compiler: /usr/local/intel/2018/compilers_and_libraries_2018.5.274/linux/bin/intel64/ifort -FI -fPIC -fp-model strict -O1 -qopenmp[0m
+[39mcompile options: '-I/gpfsm/dnb32/tdirs/login/discover34.20377.ehackert/tmpkp37dnv7/src.linux-x86_64-3.8 -I/usr/local/other/python/GEOSpyD/4.8.3_py3.8/2020-08-11/lib/python3.8/site-packages/numpy/core/include -I/usr/local/other/python/GEOSpyD/4.8.3_py3.8/2020-08-11/include/python3.8 -c'[0m
+[39mifort:f90: read_bin.f90[0m
+[39m/gpfsm/dulocal/sles12/intel/2018/compilers_and_libraries_2018.5.274/linux/bin/intel64/ifort -shared -shared -nofor_main /gpfsm/dnb32/tdirs/login/discover34.20377.ehackert/tmpkp37dnv7/gpfsm/dnb32/tdirs/login/discover34.20377.ehackert/tmpkp37dnv7/src.linux-x86_64-3.8/read_merra2_bcsmodule.o /gpfsm/dnb32/tdirs/login/discover34.20377.ehackert/tmpkp37dnv7/gpfsm/dnb32/tdirs/login/discover34.20377.ehackert/tmpkp37dnv7/src.linux-x86_64-3.8/fortranobject.o /gpfsm/dnb32/tdirs/login/discover34.20377.ehackert/tmpkp37dnv7/read_bin.o -o ./read_merra2_bcs.cpython-38-x86_64-linux-gnu.so[0m
+Removing build directory /gpfsm/dnb32/tdirs/login/discover34.20377.ehackert/tmpkp37dnv7
+discover34% exit
+exit
+
+Script done on Tue 06 Apr 2021 01:07:00 PM EDT

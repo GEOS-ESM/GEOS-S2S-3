@@ -1,0 +1,12 @@
+path:
+  assim: /discover/nobackup/lren1/pre_proc/NRT/SMOS/L2_SMOS_SSS_7.0
+  raw: /discover/nobackup/lren1/pre_proc/NRT/SMOS/RAW
+  run: /discover/nobackup/lren1/odas_pre_proc/SMOS
+ver: L32Q
+url:
+  nrt: ftp.ifremer.fr
+  dt: ftp.ifremer.fr
+login:
+  username: ext-catds-cpdc
+  password: catds2010
+ndayAGO: 5

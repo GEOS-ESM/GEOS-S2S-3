@@ -1,0 +1,69 @@
+#
+# Resource file for Radon 222 tracer
+#
+
+# SHOULD THE TRACER SOURCE BE ADDED FIRST, OR THE SINK APPLIED FIRST
+# ---------------------------
+  first_phase: sink
+
+# SOURCE - MODE:  constant  |  file2d  |  file3d  |  model_field  |  maintain_mixing_ratio
+# ---------------------------
+  src_mode: file2d
+  src_add: TRUE
+# --- Specify SRC_2D_Rn222 in TR_ExtData.rc
+# UNITS = kg/m2/sec
+# be sure to define mw
+
+# SOURCE - Horizontal coverage: all  |  lat_zone  |  latlon_box
+# ---------------------------
+  src_horiz: all
+
+# SOURCE - Vertical coverage:  all  |  surface  |  levels  |  pressures  |  troposphere  | stratosphere
+# ---------------------------
+  src_vert: surface
+
+# SOURCE - Constraints
+# ---------------------------
+  surface_constraint_count: 2
+
+# Region file is required if any constraints refer to regions; assumptions:
+#  field name = 'REGION_MASK'
+#  index 0 = water
+#  indices 1,2,...,32 = land
+# XXXions_filename: ExtData/g5chem/sfc/RADON.region_mask.x144_y91.2001.nc
+# regions_filename: ExtData/g5chem/sfc/RADON.region_mask.x540_y361.2001.nc
+  regions_ExtData_entry: TR_regionMask
+
+  surf_con1_mode: scale
+  surf_con1_regions: WATER
+  surf_con1_expr: '1.0 - FRACI'   # must have no spaces, or quotes around expr
+
+  surf_con2_mode: scale
+  surf_con2_regions: LAND
+  surf_con2_bool: TSOIL1 < 273.0  # must be FIELD OP SCALAR with space between terms
+  surf_con2_expr: 0.333
+
+
+# SINK - MODE:  constant  |  efolding  |  halflife  |  none
+# ---------------------------
+  snk_mode: efolding
+  snk_period: 5.5 days
+# Uncomment if running Lead-210 tracer
+# snk_decays_to: Pb210
+
+
+# SINK - Horizontal coverage:  all  |  lat_zone  |  latlon_box
+# ---------------------------
+  snk_horiz: all
+
+# SINK - Vertical coverage:  all  |  surface  |  levels  |  pressures  |  troposphere  | stratosphere
+# ---------------------------
+  snk_vert: all
+
+
+# DEPOSITION
+# ---------------------------
+  wet_removal: FALSE
+
+# NOTE: must provide mw for dry dep and wet dep, src=file2d, and radioactive decay converting one tracer to another
+  mw: 222

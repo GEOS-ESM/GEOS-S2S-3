@@ -1,0 +1,36 @@
+#!/bin/tcsh -f
+set BLS2S3FCST       = @BLFCST
+set BLLEAVEOUT       = @BLLEAVEOUT
+set BLRSYNC          = @BLRSYNC
+set BLBBSCP          = @BLBBSCP
+set FCSTBLD          = @DBUILD 
+set DFCST            = @DFCST
+set DARCH            = @DARCH
+set FCSTDATE         = @FCSTDATE
+set ENSM             = @ENSEMBLE_MEMBER
+set setupFNM         = @GCMSETUPFILE
+set FCSTQFEDCLIM     = @QFEDCLIM
+set END_DAT1         = "@END_DAT1"
+set END_DAT2         = "@END_DAT2"
+set fcstsegm         = @FCSTSEGM
+set AOEGCMRUN        = @AOEGCMRUN
+set AOEGCMPOST       = @AOEGCMPOST
+set AOEGCMARCH       = @AOEGCMARCH
+set MODELTAG         = @MODELTAG
+set RSTDATE          = @RSTDATE
+set RERUN            = @RERUN
+set OGCM_NX          = @OGCM_NX 
+set OGCM_NY          = @OGCM_NY
+set OGCM_NX_GEOSS2S3 = @OGCM_NX_GEOSS2S3
+set OGCM_NY_GEOSS2S3 = @OGCM_NY_GEOSS2S3
+set NCPUS            = @NCPUS
+set MODEL            = "@MODELNAME"
+set NUMC             = @NUMC
+set ASYNCNODE        = @ASYNCNODE
+set GCMEMIP          = @GCMEMIP
+set MODELPOST        = "@MODELNAMEPST"
+set NCPUSPOST        = @NCPUSPST
+setenv     RUN_T  "@WALLTIMEGCMRUN"  # Wallclock Time   for gcm_run.j
+setenv     POST_T "@WALLTIMEGCMPST"  # Wallclock Time   for gcm_post.j
+
+

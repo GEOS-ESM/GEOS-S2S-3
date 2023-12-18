@@ -1,0 +1,21 @@
+Experiment setup
+================
+
+run clone_exp.j
+
+    1 - enter exp name (name of dir where the exp will run)
+    2 - enter exp to clone
+    3 - path to sandbox: /your/path/to/GEOSodas/
+    4 - edit gcm_run.j: jobname, EXPID, ... 
+    5 - edit HISTORY.rc: EXPID, ... 
+    6 - Edit ocean_das_config: EXPID, ...
+
+OCEAN IAU STUFF
+===============
+Check in mom's namelist (input.nml), tracer iau should be "turned on":
+
+       &ocean_increment_tracer_nml
+        use_this_module = .true.
+        days_to_increment = 0
+        secs_to_increment = 64800
+

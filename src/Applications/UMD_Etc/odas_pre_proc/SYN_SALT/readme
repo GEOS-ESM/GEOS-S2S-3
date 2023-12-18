@@ -1,0 +1,13 @@
+Estimating salinity profiles from temperature profiles according to climatology
+
+2018 WOA climatology is used in this calculation and the processing is located at 
+/gpfsm/dnb05/projects/p23/lren1/LEVITUS
+
+Makefile: compile syn_salt_cdf.f90
+Makefile_xbt: comipe syn_salt_cdf_xbt.f90
+
+syn_salt_cdf.f90: generate salinity profiles accodingto temperature profiles for type of platforms
+syn_salt_cdf_xbt.f90: generate salinity profiles according to temperature profiles for XBT only
+
+
+

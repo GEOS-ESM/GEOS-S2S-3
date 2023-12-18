@@ -1,0 +1,29 @@
+# make syn_salt_cdf
+# make syn_salt_cdf_xbt
+
+#module delete comp/intel-11.0.083 
+#module delete lib/mkl-10.0.3.020
+#module load comp/intel-12.1.0.233
+
+basenetcdf      = /usr/local/other/SLES11.1/netcdf/3.6.3/intel-12.1.0.233/
+
+F90_COMPILE     = ifort
+F90FLAGS        =  -O3 -traceback -convert big_endian
+INC             = -I$(basenetcdf)/include/ -I../LIBRARY/
+LIB_PATH        = -L$(basenetcdf)lib
+LIBS            = -lnetcdf 
+
+#clean:
+#	rm *.o *.a *.mod
+
+syn_salt_cdf.o:syn_salt_cdf.f90
+	ifort $(F90FLAGS) $(INC) -c syn_salt_cdf.f90
+syn_salt_cdf:syn_salt_cdf.o
+	ifort $(LIB_PATH) -o syn_salt_cdf.exe syn_salt_cdf.o ../LIBRARY/libprofiles.a $(LIBS)
+
+syn_salt_cdf_xbt.o:syn_salt_cdf_xbt.f90
+	ifort $(F90FLAGS) $(INC) -c syn_salt_cdf_xbt.f90
+syn_salt_cdf_xbt:syn_salt_cdf_xbt.o
+	ifort $(LIB_PATH) -o syn_salt_cdf_xbt.exe syn_salt_cdf_xbt.o ../LIBRARY/libprofiles.a $(LIBS)
+
+
