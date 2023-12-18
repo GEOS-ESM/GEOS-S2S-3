@@ -23,4 +23,9 @@ r8i8/
 /Config
 /Linux/
 
-
+*.swp
+*.swo
+.DS_Store
+*#
+.#*
+**/CVS/
