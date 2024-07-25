@@ -262,9 +262,9 @@ if( $ARCH == 'Linux'  ) then
                               setenv MASDIR /u/$LOGNAME/GEOS5.0/$expid
                               setenv MASDIRPARENT /archive/u/$LOGNAME/GEOSS2S3/GEOS_fcst
                               setenv BATCHQ normal
-                              set scpvar = "mcp -a"
-                              set cpvar  = "mcp -a"
-                              set mytar  = "mtar"
+                              set scpvar = "scp"
+                              set cpvar  = "cp"
+                              set mytar  = "tar"
                               set batch_cmd  = "qsub"
     endif
     if( $HOST == 'discover' ) then

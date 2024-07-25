@@ -75,6 +75,7 @@ set srcdir = `pwd`
 #-------------
 setenv ddb    0
 setenv debug  ""
+setenv fast  ""
 setenv interactive 0
 setenv optflg ""
 setenv proc   ""
@@ -120,9 +121,19 @@ while ($#argv)
       endif
    endif
 
+   # compile with fast
+   #------------------
+   if (("$1" == "-fast")) then
+      if ("$optflg" == "") then
+         setenv debug "BOPT=fast"
+         setenv optflg ""
+      endif
+   endif
+
    # specify node type
    #------------------
    if ("$1" == "-rom")  set nodeTYPE = "Rome"
+   if ("$1" == "-mil")  set nodeTYPE = "Milan"
    if ("$1" == "-cas")  set nodeTYPE = "CascadeLake"
    if ("$1" == "-sky")  set nodeTYPE = "Skylake"
    if ("$1" == "-bro")  set nodeTYPE = "Broadwell"
@@ -220,7 +231,7 @@ set ntaskspernode = ''
 if ($SITE == NCCS) then
 
    set nT = `echo $nodeTYPE| tr "[A-Z]" "[a-z]" | cut -c1-3 `
-   if (($nT != has) && ($nT != sky) && ($nT != cas)) then
+   if (($nT != has) && ($nT != sky) && ($nT != cas) && ($nT != mil)) then
       echo "ERROR. Unknown node type at NCCS: $nodeTYPE"
       exit 1
    endif
@@ -228,6 +239,7 @@ if ($SITE == NCCS) then
    if ($nT == has) @ NCPUS_DFLT = 28
    if ($nT == sky) @ NCPUS_DFLT = 40
    if ($nT == cas) @ NCPUS_DFLT = 48
+   if ($nT == mil) @ NCPUS_DFLT = 126
 
    if ($nT == has) set proc = 'hasw'
    if ($nT == sky) set proc = 'sky'
@@ -239,6 +251,7 @@ if ($SITE == NCCS) then
       # this suppresses the warning.
       set ntaskspernode = '--ntasks-per-node=45'
    endif
+   if ($nT == mil) set proc = 'mil'
 
    if ("$queue" == "") then
       set queue = '--qos=debug'
@@ -255,11 +268,12 @@ endif
 if ( $SITE == NAS ) then
 
    set nT = `echo $nodeTYPE | cut -c1-3 | tr "[A-Z]" "[a-z]"`
-   if (($nT != has) && ($nT != bro) && ($nT != sky) && ($nT != cas) && ($nT != rom)) then
+   if (($nT != has) && ($nT != bro) && ($nT != sky) && ($nT != cas) && ($nT != rom) && ($nT != mil)) then
       echo "ERROR. Unknown node type at NAS: $nodeTYPE"
       exit 2
    endif
 
+   if ($nT == mil) set nT = 'mil_ait'
    if ($nT == rom) set nT = 'rom_ait'
    if ($nT == sky) set nT = 'sky_ele'
    if ($nT == cas) set nT = 'cas_ait'
@@ -270,6 +284,7 @@ if ( $SITE == NAS ) then
    if ($nT == sky_ele) @ NCPUS_DFLT = 40
    if ($nT == cas_ait) @ NCPUS_DFLT = 40
    if ($nT == rom_ait) @ NCPUS_DFLT = 128
+   if ($nT == mil_ait) @ NCPUS_DFLT = 128
 
    # TMPDIR needs to be reset
    #-------------------------
@@ -304,6 +319,7 @@ endif
 if ($ddb) then
    echo "sdflag = $sdflag"
    echo "debug = $debug"
+   echo "fast = $fast"
    if ($?nodeTYPE) then
       echo "nodeTYPE = $nodeTYPE"
    endif
@@ -671,6 +687,9 @@ endif
 if ("$debug" != "") then
    echo1 "debug: $debug"
 endif
+if ("$fast" != "") then
+   echo1 "fast: $fast"
+endif
 if ("$optflg" != "") then
    echo1 "optimization: $optflg"
 endif
@@ -749,6 +768,7 @@ where
 
 flagged options
    -debug (or -db)     compile with debug flags (BOPT=g)
+   -fast               compile with fast flags (BOPT=fast)
    -help (or -h)       echo usage information
    -hdf                compile with hdf libraries
    -i                  run interactively rather than queuing job
@@ -760,6 +780,7 @@ flagged options
    -walltime hh:mm:ss  time to use as batch walltime at job submittal
 
    -rom                 compile on Rome nodes (only at NAS)
+   -mil                 compile on Milan nodes
    -cas                 compile on Cascade Lake nodes
    -sky                 compile on Skylake nodes (default)
    -bro                 compile on Broadwell nodes (only at NAS)

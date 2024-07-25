@@ -4,12 +4,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import array
 import matplotlib.cm as cm
-from mpl_toolkits.basemap import Basemap
 import glob
 import struct
 import time
 import sys
-from mpl_toolkits.basemap import Basemap, shiftgrid, addcyclic
 from scipy import interpolate
 import getopt
 import string
@@ -18,9 +16,6 @@ import scipy.interpolate as interp
 import scipy.optimize as optm
 import subprocess
 from utils import get_state, write_state, write_mom_restart
-#sys.path.append('/usr/local/other/SLES11/mpi4py-1.3/lib/python/')
-#from mpi4py import MPI
-#Ne=int(sys.argv[1])
 
 class Ods:
     def __init__(self, fname):

@@ -67,15 +67,15 @@ from netCDF4 import Dataset
 import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib.cm as cm
-from mpl_toolkits.basemap import Basemap
+import cartopy
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
 import sys
 import datetime
-from scipy.io import netcdf
-import os.path
 import os
-import scipy
 import ocean_obs_utils
 from ocean_obs_utils import cs2_reader
+cartopy.config['pre_existing_data_dir'] = '/discover/nobackup/projects/gmao/SIteam/CartopyDownloads'
 
 #   test of 50 layers Argo data for 2012 only
 OBSDIR='/discover/nobackup/projects/gmao/ssd/g5odas/production/GEOS5odas-5.00/RC/OBS/'
@@ -148,11 +148,11 @@ except:
     print('Environement variables not set, reverting to default:')
 
 
-print(('NDAYS=',EXP_NDAYS))
-print(('T_prof_sigo=',T_prof_sigo))
-print(('S_prof_sigo=',S_prof_sigo))
-print(('ADT_sigo=',ADT_sigo))
-print(('SSS_sigo=',SSS_sigo))
+print('NDAYS=',EXP_NDAYS)
+print('T_prof_sigo=',T_prof_sigo)
+print('S_prof_sigo=',S_prof_sigo)
+print('ADT_sigo=',ADT_sigo)
+print('SSS_sigo=',SSS_sigo)
 
 # Obs id as defined in the UMD_oletkf
 obsid_dict = {
@@ -207,15 +207,16 @@ def da_window(yyyy, mm, dd, hh, NDAYS, OBSDATE, QCPRF):
 def readnc(fname, varname):
     ncfile=Dataset(fname)
     VAR=np.squeeze(ncfile.variables[varname][:])
-#   print 'in readnc ',VAR
+#   print('in readnc ',VAR)
     ncfile.close()
     #VAR[np.abs(VAR)>999.9]=0.0
     return VAR
 
 def standard_obs_reader(fname, vartype):
-    print(('IN standard_obs_reader',fname))
-    ncfile=netcdf.netcdf_file(fname)
-    N_LEVS    = ncfile.dimensions['N_LEVS']
+    print('IN standard_obs_reader',fname)
+    ncfile    = Dataset(fname)
+    ncfile.set_auto_mask(False)
+    N_LEVS    = len(ncfile.dimensions['N_LEVS'])
     N_LEVS    = min(N_LEVS, 50)                               # Assumes profiles have been superobed to 50 levels
     DEPTH     = ncfile.variables['DEPTH'][:]
     VAR       = ncfile.variables[vartype][:]
@@ -228,14 +229,15 @@ def standard_obs_reader(fname, vartype):
     INST_ID   = ncfile.variables['INST_ID'][:]
     ncfile.close()
 
-    print((np.shape(LON), np.shape(VAR)))
+    print(np.shape(LON), np.shape(VAR))
 
     return N_LEVS, DEPTH, VAR, QC_LEV, QC_PRF, LON, LAT, DATE_TIME, OBS_ERROR, INST_ID
 
 def l2_smossub_reader(fname, vartype,platform='SMOSSUB'):
     print('IN l2_smossub_reader')
-    ncfile=netcdf.netcdf_file(fname)
-    N_LEVS    = ncfile.dimensions['N_LEVS']
+    ncfile    = Dataset(fname)
+    ncfile.set_auto_mask(False)
+    N_LEVS    = len(ncfile.dimensions['N_LEVS'])
     N_LEVS    = min(N_LEVS, 50)                               # Assumes profiles have been superobed to 50 levels
     DEPTH     = ncfile.variables['DEPTH'][:]
     VAR       = ncfile.variables[vartype][:]
@@ -248,7 +250,7 @@ def l2_smossub_reader(fname, vartype,platform='SMOSSUB'):
     INST_ID   = ncfile.variables['INST_ID'][:]
     ncfile.close()
 
-    print((np.shape(LON), np.shape(VAR)))
+    print(np.shape(LON), np.shape(VAR))
 
     return N_LEVS, DEPTH, VAR, QC_LEV, QC_PRF, LON, LAT, DATE_TIME, OBS_ERROR, INST_ID
 
@@ -278,9 +280,9 @@ def M2_sst_reader(yyyy, mm, dd, hh, path2scratch, path2expdir, path2expid):
 #   ddm1 = str(int(dd)-1).zfill(2)
 #   fname3=path2scratch+'/'+path2expid+'.geosgcm_seaice.'+yyyy+mm+ddm1+'_1200z.nc4'
 #   fname3=path2scratch+'/'+path2expid+'.geosgcm_seaice2.'+yyyy+mm+dd+'_1200z.nc4'
-    print (fname)
-    print (fname2)
-    print (fname3)
+    print(fname)
+    print(fname2)
+    print(fname3)
     if (os.path.exists(fname)):
         ncf = Dataset(fname, 'r')
         sst = (np.squeeze(ncf.variables['sst'][:]))
@@ -289,28 +291,28 @@ def M2_sst_reader(yyyy, mm, dd, hh, path2scratch, path2expdir, path2expid):
         print('in M2_sst_reader past data read')
 
         if (os.path.exists(fname2)):
-               ncf = Dataset(fname2, 'r')
-               sic = (np.squeeze(ncf.variables['AICE'][:]))
-               ncf.close()
-               print('in M2_sst_reader past AICE data read')
-               print('length of sic',sic.shape)
+            ncf = Dataset(fname2, 'r')
+            sic = (np.squeeze(ncf.variables['AICE'][:]))
+            ncf.close()
+            print('in M2_sst_reader past AICE data read')
+            print('length of sic',sic.shape)
         else:
-               print('MISSING AICE FILE',fname2)
-               sys.exit(1)
+            print('MISSING AICE FILE',fname2)
+            sys.exit(1)
 
         if (os.path.exists(fname3)):
-               ncf = Dataset(fname3, 'r')
-               sicmod = (np.squeeze(ncf.variables['AICE'][:]))
-               ncf.close()
-               print('in M2_sst_reader past AICE model data read')
-               print('length of sicmod',sicmod.shape)
+            ncf = Dataset(fname3, 'r')
+            sicmod = (np.squeeze(ncf.variables['AICE'][:]))
+            ncf.close()
+            print('in M2_sst_reader past AICE model data read')
+            print('length of sicmod',sicmod.shape)
         else:
-               print('MISSING AICE MODEL FILE',fname3)
-               sys.exit(1)
+            print('MISSING AICE MODEL FILE',fname3)
+            sys.exit(1)
 
         #read mom's grid
         fname=path2scratch+'/grid_spec.nc'
-        print(('grid file:',fname))
+        print('grid file:',fname)
         ncf = Dataset(fname, 'r')
         xt = ncf.variables['x_T'][:]
         yt = ncf.variables['y_T'][:]
@@ -347,7 +349,7 @@ def M2_sst_reader(yyyy, mm, dd, hh, path2scratch, path2expdir, path2expid):
         xt=xt[I]
         yt=yt[I]
         sst=sst[I]
-        print ('length of sst is ',len(sst))
+        print('length of sst is ',len(sst))
 
         xt[xt<-180.0]=xt[xt<-180.0]+360.0
 
@@ -444,7 +446,7 @@ def l2_sst_reader(yyyy, mm, dd, hh, platform='NOAA16', NDAYS=0.125):
     prefix = prefix_dict[platform] #='0000-STAR-L2P_GHRSST-SSTskin-AVHRR16_G-ACSPO_V2.40-v02.0-fv01.0.nc'
 
     Nhrs=int(NDAYS*24*2.0)
-    print(('Nhrs:',Nhrs))
+    print('Nhrs:',Nhrs)
     list_of_dates = list(range(Nhrs))
     list_of_files = list(range(Nhrs))
     for n in range(Nhrs):
@@ -578,7 +580,7 @@ def oib_reader(yyyy, mm, dd, hh, platform='AIR-BORN', NDAYS=3.0):
     QC_PRF = 1.0*np.ones(np.shape(LON))
     INST_ID = 1.0*np.ones(np.shape(INST_ID))
 
-    print((np.shape(LON), np.shape(VAR)))
+    print(np.shape(LON), np.shape(VAR))
 
     return N_LEVS, DEPTH, VAR, QC_LEV, QC_PRF, LON, LAT, DATE_TIME, OBS_ERROR, INST_ID
 
@@ -600,7 +602,7 @@ class Obs:
               NDAYS (float): Used to define the size of the assimilation window centered at yyyymmddhh [yyyymmddhh-NDAYS, yyyymmddhh+NDAYS].
     """
 
-        print(('platform is', platform))
+        print('platform is', platform)
 
         if ( (platform == 'NOAA16') | (platform == 'METOPA') ):
             print('L2-SST')
@@ -608,21 +610,21 @@ class Obs:
                 N_LEVS, DEPTH, VAR, QC_LEV, QC_PRF, LON, LAT, DATE_TIME, OBS_ERROR = l2_sst_reader(yyyy, mm, dd, hh, platform=platform, NDAYS=EXP_NDAYS)
             except:
                 self.no_obs(descriptor = descriptor, platform = platform, color = color, size = markersize, present=False)
-                print(('Failed looking up ',self.descriptor))
+                print('Failed looking up ',self.descriptor)
                 return
         elif (platform == 'GMI'):
             #try:
             N_LEVS, DEPTH, VAR, QC_LEV, QC_PRF, LON, LAT, DATE_TIME, OBS_ERROR = l2_gmi_reader(yyyy, mm, dd, hh, NDAYS=EXP_NDAYS)
             #except:
             #    self.no_obs(descriptor = descriptor, platform = platform, color = color, size = markersize, present=False)
-            #    print 'Failed looking up ',self.descriptor
+            #    print('Failed looking up ',self.descriptor)
             #    return
         elif (platform == 'AIR-BORN'):
             try:
                 N_LEVS, DEPTH, VAR, QC_LEV, QC_PRF, LON, LAT, DATE_TIME, OBS_ERROR = oib_reader(yyyy, mm, dd, hh, NDAYS=EXP_NDAYS)
             except:
                 self.no_obs(descriptor = descriptor, platform = platform, color = color, size = markersize, present=False)
-                print(('Failed looking up ',self.descriptor))
+                print('Failed looking up ',self.descriptor)
                 return
         elif (platform == 'SMOSSUB'):
             try:
@@ -630,17 +632,17 @@ class Obs:
                 N_LEVS, DEPTH, VAR, QC_LEV, QC_PRF, LON, LAT, DATE_TIME, OBS_ERROR, INST_ID = l2_smossub_reader(fname, vartype, platform=platform) # Reads smos observation format
             except:
                 self.no_obs(descriptor = descriptor, platform = platform, color = color, size = markersize, present=False)
-                print(('Failed looking up ',self.descriptor))
+                print('Failed looking up ',self.descriptor)
                 return
         elif (platform == 'CS2-HICE'):
             try:
                 N_LEVS, DEPTH, VAR, QC_LEV, QC_PRF, LON, LAT, DATE_TIME, OBS_ERROR = cs2_reader(yyyy, mm, dd, hh, NDAYS=EXP_NDAYS)
             except:
                 self.no_obs(descriptor = descriptor, platform = platform, color = color, size = markersize, present=False)
-                print(('Failed looking up ',self.descriptor))
+                print('Failed looking up ',self.descriptor)
                 return
         elif (platform == 'M2-SST'):
-            print ('in M2-SST')
+            print('in M2-SST')
             N_LEVS, DEPTH, VAR, QC_LEV, QC_PRF, LON, LAT, DATE_TIME, OBS_ERROR, INST_ID = M2_sst_reader(yyyy, mm, dd, hh, path2scratch=SCRDIR, path2expdir=EXPDIR, path2expid=EXPID)
         else:
             if not(os.path.exists(fname)):
@@ -659,7 +661,7 @@ class Obs:
                 return
             N_LEVS, DEPTH, VAR, QC_LEV, QC_PRF, LON, LAT, DATE_TIME, OBS_ERROR, INST_ID = standard_obs_reader(fname, vartype) # Reads standard iodas observation format
 
-        print((':::::::::::::::::::',descriptor))
+        print(':::::::::::::::::::',descriptor)
         I=da_window(yyyy, mm, dd, hh, NDAYS, DATE_TIME, QC_PRF)
         if (descriptor=='AVHRR18 L2 SST'):
             print('L2 SST')
@@ -693,7 +695,7 @@ class Obs:
 
         # Compute sigo's for insitu profiles
         if ( (id_obs==obsid_dict['id_t_obs']) | (id_obs==obsid_dict['id_s_obs']) ): # Profiles
-#           print 'compute profile sigos ',np.shape(VAR),range(np.shape(VAR)[0]),range(N_LEVS-1)
+#           print('compute profile sigos ',np.shape(VAR),range(np.shape(VAR)[0]),range(N_LEVS-1))
             dTdZ=np.zeros(np.shape(VAR))
             for indexp in range(np.shape(VAR)[0]):
 #     first get the real depth of this profile
@@ -702,7 +704,7 @@ class Obs:
                     if(DEPTH[indexp,indexz]<=100000.):   #Assume obs depth < 100000m
                         nlevprof=nlevprof+1
 
-#                   print  'Real depth of profile ',nlevprof
+#                   print('Real depth of profile ',nlevprof)
                 for indexz in range(0,nlevprof-1):
                     dTdZ[indexp, indexz] = np.abs(( VAR[indexp, indexz] - VAR[indexp, indexz+1] )/( DEPTH[indexp, indexz] - DEPTH[indexp, indexz+1] ))
 
@@ -710,23 +712,23 @@ class Obs:
 
                 if (descriptor == 'CTD-S' or descriptor == 'CTD-T' ):
 #   now eliminate CTD under the ice
-#                       print 'SCRDIR IS', SCRDIR
+#                       print('SCRDIR IS', SCRDIR)
                     fname=SCRDIR+'/rawM2sic_'+yyyy+mm+dd+'.nc'
                     AICE = readnc(fname,'AICE')
                     AICE.x = readnc(fname,'lonout')
                     AICE.y = readnc(fname,'latout')
-#                       print AICE.y
-#                       print np.shape(AICE)
+#                       print(AICE.y)
+#                       print(np.shape(AICE))
 #                find the index of the obs
                     iax = np.shape(AICE.x)
                     iay = np.shape(AICE.y)
-#                       print iax,iay
+#                       print(iax,iay)
                     lonminstore=1000.
                     latminstore=1000.
                     for ilon in range(1440):
-#                        print AICE.x[ilon], LON[indexp]
+#                        print(AICE.x[ilon], LON[indexp])
                         lonmin = np.abs(AICE.x[ilon] - LON[indexp])
-                        # print 'lonmin',lonmin,lonminstore,AICE.x[ilon],LON[indexp]
+                        # print('lonmin',lonmin,lonminstore,AICE.x[ilon],LON[indexp]
                         if (lonmin < lonminstore):
                             ilon1 = ilon
                             lonminstore = lonmin
@@ -735,37 +737,37 @@ class Obs:
                         if (latmin < latminstore):
                             ilat1 = ilat
                             latminstore = latmin
-#                       print 'found',ilon1,ilat1,LON[indexp],LAT[indexp],indexp
+#                       print('found',ilon1,ilat1,LON[indexp],LAT[indexp],indexp
                     if (AICE[ilat1,ilon1]>0.1):   # it's ice
-#                            print 'eliminate ice CTD',ilon1,ilat1,LON[indexp],LAT[indexp],indexp,AICE[ilat1,ilon1]
-                        print(('eliminate ice CTD',LON[indexp],LAT[indexp],indexp,AICE[ilat1,ilon1]))
+#                            print('eliminate ice CTD',ilon1,ilat1,LON[indexp],LAT[indexp],indexp,AICE[ilat1,ilon1])
+                        print('eliminate ice CTD',LON[indexp],LAT[indexp],indexp,AICE[ilat1,ilon1])
 #                            for ilev in range(N_LEVS):
 #                                if(depth[ilev] < 60.):
 #                                   QC_LEV[indexp,ilev]=0
 #                                   dTdZ[indexp,ilev]=9999.
-#                                   print 'removing data at',depth[ilev],ilev,indexp
+#                                   print('removing data at',depth[ilev],ilev,indexp)
                         QC_LEV[indexp,0:N_LEVS]=0
                         dTdZ[indexp,0:N_LEVS]=9999.
 #   12/15/22 ERIC
                 if (descriptor == 'XBT-T'):
 #   now eliminate XBT under the ice
-#                       print 'SCRDIR IS', SCRDIR
+#                       print('SCRDIR IS', SCRDIR)
                     fname=SCRDIR+'/rawM2sic_'+yyyy+mm+dd+'.nc'
                     AICE = readnc(fname,'AICE')
                     AICE.x = readnc(fname,'lonout')
                     AICE.y = readnc(fname,'latout')
-#                       print AICE.y
-#                       print np.shape(AICE)
+#                       print(AICE.y)
+#                       print(np.shape(AICE))
 #                find the index of the obs
                     iax = np.shape(AICE.x)
                     iay = np.shape(AICE.y)
-#                       print iax,iay
+#                       print(iax,iay)
                     lonminstore=1000.
                     latminstore=1000.
                     for ilon in range(1440):
-#                        print AICE.x[ilon], LON[indexp]
+#                        print(AICE.x[ilon], LON[indexp])
                         lonmin = np.abs(AICE.x[ilon] - LON[indexp])
-                        # print 'lonmin',lonmin,lonminstore,AICE.x[ilon],LON[indexp]
+                        # print('lonmin',lonmin,lonminstore,AICE.x[ilon],LON[indexp])
                         if (lonmin < lonminstore):
                             ilon1 = ilon
                             lonminstore = lonmin
@@ -774,30 +776,30 @@ class Obs:
                         if (latmin < latminstore):
                             ilat1 = ilat
                             latminstore = latmin
-#                       print 'found',ilon1,ilat1,LON[indexp],LAT[indexp],indexp
+#                       print('found',ilon1,ilat1,LON[indexp],LAT[indexp],indexp)
                     if (AICE[ilat1,ilon1]>0.1):   # it's ice
-                        print(('eliminate ice XBT',LON[indexp],LAT[indexp],indexp,AICE[ilat1,ilon1]))
+                        print('eliminate ice XBT',LON[indexp],LAT[indexp],indexp,AICE[ilat1,ilon1])
                         QC_LEV[indexp,0:N_LEVS]=0
                         dTdZ[indexp,0:N_LEVS]=9999.
                 if (descriptor == 'Argo-S' or descriptor == 'Argo-T' ):
 #   now eliminate Argo under the ice
-#                       print 'SCRDIR IS', SCRDIR
+#                       print('SCRDIR IS', SCRDIR)
                     fname=SCRDIR+'/rawM2sic_'+yyyy+mm+dd+'.nc'
                     AICE = readnc(fname,'AICE')
                     AICE.x = readnc(fname,'lonout')
                     AICE.y = readnc(fname,'latout')
-#                       print AICE.y
-#                       print np.shape(AICE)
+#                       print(AICE.y)
+#                       print(np.shape(AICE))
 #                find the index of the obs
                     iax = np.shape(AICE.x)
                     iay = np.shape(AICE.y)
-#                       print iax,iay
+#                       print(iax,iay)
                     lonminstore=1000.
                     latminstore=1000.
                     for ilon in range(1440):
-#                        print AICE.x[ilon], LON[indexp]
+#                        print(AICE.x[ilon], LON[indexp])
                         lonmin = np.abs(AICE.x[ilon] - LON[indexp])
-                        # print 'lonmin',lonmin,lonminstore,AICE.x[ilon],LON[indexp]
+                        # print('lonmin',lonmin,lonminstore,AICE.x[ilon],LON[indexp])
                         if (lonmin < lonminstore):
                             ilon1 = ilon
                             lonminstore = lonmin
@@ -806,15 +808,15 @@ class Obs:
                         if (latmin < latminstore):
                             ilat1 = ilat
                             latminstore = latmin
-#                       print 'found',ilon1,ilat1,LON[indexp],LAT[indexp],indexp
+#                       print('found',ilon1,ilat1,LON[indexp],LAT[indexp],indexp)
                     if (AICE[ilat1,ilon1]>0.1):   # it's ice
-#                            print 'eliminate ice Argo',ilon1,ilat1,LON[indexp],LAT[indexp],indexp,AICE[ilat1,ilon1]
-                        print(('eliminate ice Argo',LON[indexp],LAT[indexp],indexp,AICE[ilat1,ilon1]))
+#                            print('eliminate ice Argo',ilon1,ilat1,LON[indexp],LAT[indexp],indexp,AICE[ilat1,ilon1])
+                        print('eliminate ice Argo',LON[indexp],LAT[indexp],indexp,AICE[ilat1,ilon1])
 #                            for ilev in range(N_LEVS):
 #                                if(depth[ilev] < 60.):
 #                                   QC_LEV[indexp,ilev]=0
 #                                   dTdZ[indexp,ilev]=9999.
-#                                   print 'removing data at',depth[ilev],ilev,indexp
+#                                   print('removing data at',depth[ilev],ilev,indexp)
                         QC_LEV[indexp,0:N_LEVS]=0
                         dTdZ[indexp,0:N_LEVS]=9999.
             dTdZ[dTdZ<1e-3]=1e-3
@@ -852,7 +854,7 @@ class Obs:
         sigo=np.squeeze(sigo.flatten()[I])#[I])
         instid=np.squeeze(instid.flatten()[I])#[I])
 
-#       print 'here',np.shape(sigo), np.shape(value)
+#       print('here',np.shape(sigo), np.shape(value))
         #raw_input('<>?')
 
 #   7/28/22 added to eliminate Tz reporting as Argo Sz 
@@ -895,7 +897,7 @@ class Obs:
             sigo[np.isnan(sigo)]=999.9
 
         if (id_obs==obsid_dict['id_sss_obs']):    #'SSS'
-#           print 'hi e', descriptor
+#           print('hi e', descriptor)
 
 #    double the SMOS error to see if that tames the increment some 2/1/19
 #           smosrampuperr=2.
@@ -922,7 +924,7 @@ class Obs:
                 oerr_min=0.1   # 0.1 psu
                 sigo[sigo<oerr_min]=oerr_min
                 sigo[np.isnan(sigo)]=999.9
-#              print 'here eric',sigo[0:30]
+#              print('here eric',sigo[0:30])
 
 #              Impose large sigos in the high latitudes from https://aquarius.umaine.edu/docs/aqsci2015_meissner_2.pdf page 17 error map (from v4.0 data) linear from 30-60 max=0.5
                 sigo_scale=np.zeros(np.shape(sigo))
@@ -997,8 +999,8 @@ class Obs:
             instid=instid[I]
             sigo_sigma=np.std(sigo)
             if (sigo_sigma < .05):
-                print ("BAD ADT SIGO FULL STOP ANALYSIS CYCLE")
-                print ('PARENT ID IS', os.getppid(), os.getpid())
+                print("BAD ADT SIGO FULL STOP ANALYSIS CYCLE")
+                print('PARENT ID IS', os.getppid(), os.getpid())
 #      create a file to tell parents that obs are bad
                 command='touch '+SCRDIR+'/BADOBS'
                 os.system(command)
@@ -1014,7 +1016,7 @@ class Obs:
             #D0=200.0 #e-folding scale
             D0=2000000.0 #e-folding scale
 
-            #print np.shape(value)
+            #print(np.shape(value))
             #raw_input('<>?')
 
             sigo=prof_sigo*np.ones(np.shape(value))*np.exp(-depth/D0)
@@ -1078,22 +1080,17 @@ class Obs:
                 self.value[self.value<tiny]=tiny
                 self.value[self.value>1.0-tiny]=1.0-tiny
                 self.value=np.log(self.value) - np.log(1 - self.value)
-            #print np.min(self.value[np.isfinite(self.value)].flatten())
-            #print np.max(self.value[np.isfinite(self.value)].flatten())
+            #print(np.min(self.value[np.isfinite(self.value)].flatten()))
+            #print(np.max(self.value[np.isfinite(self.value)].flatten()))
             #self.oerr= ... sigos need to be transormed as well
 
-            if transtyp=='invlogit':
+            elif transtyp=='invlogit':
                 self.value = np.exp(self.value) / (1 + np.exp(self.value))
 
     def plot(self, pngname):
-        '''
-
-        '''
         if self.present:
-            fig = plt.figure(num=1, figsize=(10,8), facecolor='w')
-            fig.add_subplot(111)
-            map = Basemap(projection='moll', llcrnrlat=-90, urcrnrlat=90,llcrnrlon=-180, urcrnrlon=180, resolution='c', lon_0=-80)
-            x, y = list(map(self.lon, self.lat))
+            x, y = self.lon, self.lat
+            fig = plt.figure(figsize=(10, 8))
             if ( (self.typ[0]==5351) | (self.typ[0]==5525) | (self.typ[0]==5522) ):
                 if (self.typ[0]==5351):
                     valmin=-1.5
@@ -1101,43 +1098,49 @@ class Obs:
                     errmax=0.25
                 if (self.typ[0]==5525):
                     print('plotting SST ....')
-                    print(('sst max:',np.min(self.lat)))
+                    print('sst max:',np.min(self.lat))
                     valmin=-2.0
                     valmax=31.0
                     errmax=1.0
                 if (self.typ[0]==5522):
                     print('plotting SSS ....')
-                    print(('sss max:',np.min(self.lat)))
+                    print('sss max:',np.min(self.lat))
                     valmin=30.0
                     valmax=38.0
                     if (self.descriptor=='SMAP_L2_SSS'):
                         efact=2.
                     if (self.descriptor=='Aquarius_L2_SSS'):
                         efact=0.5
+                    if (self.descriptor=='Aquarius_RIM_L2_SSS'):
+                        efact=0.5
+                    if (self.descriptor=='SMAP_RIM_L2_SSS'):
+                        efact=2.0
                     if (self.descriptor=='SMOS_L2_SSS'):
+                        efact=2.0*smosrampuperr
+                    if (self.descriptor=='SMOS_RC_L2_SSS'):
                         efact=2.0*smosrampuperr
                     if (self.descriptor=='SMOS_L3_SSS' or self.descriptor=='SMAP_L3_SSS' or self.descriptor=='Aquarius_L3_SSS'):
                         efact=0.5
-                    #errmax=0.5*xsigo_sss
                     errmax=efact*xsigo_sss
+                ax = plt.subplot(2,1,1, projection=ccrs.Mollweide(central_longitude=-80))   
+                ax.set_global()
+                ax.coastlines()    
+                ax.add_feature(cfeature.BORDERS, lw=.5)
+                ax.add_feature(cfeature.RIVERS)
+                c= ax.scatter(x, y, s=1, c=self.value,transform=ccrs.PlateCarree(),
+                                  cmap=cm.jet,vmin=valmin,vmax=valmax,edgecolor=None,lw=0)
+                fig.colorbar(c, shrink=0.5, ax = ax)
 
-                plt.subplot(211)
-                map.drawcoastlines()
-                map.drawcountries()
-                #map.fillcontinents(color='coral')
-                map.drawmapboundary()
-#               map.scatter(x, y, 1, c=self.value,cmap=cm.spectral,vmin=valmin,vmax=valmax,edgecolor=None,lw=0)
-                map.scatter(x, y, 1, c=self.value,cmap=cm.jet,vmin=valmin,vmax=valmax,edgecolor=None,lw=0)
-                plt.colorbar(shrink=0.5)
+                ax2 = plt.subplot(2,1,2, projection=ccrs.Mollweide(central_longitude=-80))
+                ax2.set_global()
+                ax2.coastlines()    
+                ax2.add_feature(cfeature.BORDERS, lw=.5)
+                ax2.add_feature(cfeature.RIVERS)
+                ax2.add_feature(cfeature.LAND, facecolor=("coral"))
+                c= ax2.scatter(x, y, s=1, c=self.oerr,transform=ccrs.PlateCarree(),
+                                  cmap=cm.jet,vmin=0,vmax=errmax,edgecolor=None,lw=0)
+                fig.colorbar(c, shrink=0.5, ax=ax2)
 
-                plt.subplot(212)
-                map.drawcoastlines()
-                map.drawcountries()
-                map.fillcontinents(color='coral')
-                map.drawmapboundary()
-#               map.scatter(x, y, 1, c=self.oerr,cmap=cm.spectral,vmin=0,vmax=errmax,edgecolor=None,lw=0)
-                map.scatter(x, y, 1, c=self.oerr,cmap=cm.jet,vmin=0,vmax=errmax,edgecolor=None,lw=0)
-                plt.colorbar(shrink=0.5)
             elif ( (self.typ[0]==6000) | (self.typ[0]==6001)):
                 valmin=0.
                 if (self.typ[0]==6000):
@@ -1145,50 +1148,48 @@ class Obs:
                 if (self.typ[0]==6001):
                     valmax=4.0
                 errmax=0.5
-                map = Basemap(projection='npstere',lon_0=0,boundinglat=55, resolution='c')
-                x, y = list(map(self.lon, self.lat))
-                plt.subplot(211)
-                map.drawcoastlines()
-                map.drawcountries()
-                map.fillcontinents(color='coral')
-                map.drawmapboundary()
-                if logit_transform:
-#                   map.scatter(x, y, 1, c=inv_logit(self.value),cmap=cm.spectral,vmin=valmin,vmax=valmax,edgecolor=None,lw=0)
-                    map.scatter(x, y, 1, c=inv_logit(self.value),cmap=cm.jet,vmin=valmin,vmax=valmax,edgecolor=None,lw=0)
-                else:
-#                   map.scatter(x, y, 1, c=self.value,cmap=cm.spectral,vmin=valmin,vmax=valmax,edgecolor=None,lw=0)
-                    map.scatter(x, y, 1, c=self.value,cmap=cm.jet,vmin=valmin,vmax=valmax,edgecolor=None,lw=0)
-                #map.scatter(x, y, 1, c=self.value,cmap=cm.spectral,vmin=valmin,vmax=valmax,edgecolor=None,lw=0)
-                #map.scatter(x, y, 10, c=self.value,cmap=cm.spectral,vmin=0.0,vmax=5.0,edgecolor=None,lw=0)
-                #map.scatter(x, y, 1, c=self.oerr,cmap=cm.spectral,vmin=0,vmax=0.01,edgecolor=None,lw=0)
-                plt.colorbar(shrink=0.5)
 
-                map = Basemap(projection='spstere',lon_0=0,boundinglat=-55, resolution='c')
-                x, y = list(map(self.lon, self.lat))
-                plt.subplot(212)
-                map.drawcoastlines()
-                map.drawcountries()
-                map.fillcontinents(color='coral')
-                map.drawmapboundary()
+                ax = plt.subplot(2,1,1, projection=ccrs.NorthPolarStereo())
+                ax.coastlines(resolution='110m') 
+                ax.set_extent([-180, 180, 55, 90], crs=ccrs.PlateCarree())
+                ax.add_feature(cfeature.BORDERS, lw=.5)
+                ax.add_feature(cfeature.RIVERS)
+                ax.add_feature(cfeature.LAND, facecolor=("coral"))
                 if logit_transform:
-#                   map.scatter(x, y, 1, c=inv_logit(self.value),cmap=cm.spectral,vmin=valmin,vmax=valmax,edgecolor=None,lw=0)
-                    map.scatter(x, y, 1, c=inv_logit(self.value),cmap=cm.jet,vmin=valmin,vmax=valmax,edgecolor=None,lw=0)
+                    c = ax.scatter(x, y, s=1, c=inv_logit(self.value), transform=ccrs.PlateCarree(),
+                                cmap=cm.jet,vmin=valmin,vmax=valmax,edgecolor=None,lw=0)
                 else:
-#                   map.scatter(x, y, 1, c=self.value,cmap=cm.spectral,vmin=valmin,vmax=valmax,edgecolor=None,lw=0)
-                    map.scatter(x, y, 1, c=self.value,cmap=cm.jet,vmin=valmin,vmax=valmax,edgecolor=None,lw=0)
-                #map.scatter(x, y, 1, c=self.value,cmap=cm.spectral,vmin=valmin,vmax=valmax,edgecolor=None,lw=0)
-                plt.colorbar(shrink=0.5)
+                    c = ax.scatter(x, y, 1, c=self.value, transform=ccrs.PlateCarree(),
+                                cmap=cm.jet,vmin=valmin,vmax=valmax,edgecolor=None,lw=0)
+
+                fig.colorbar(c, shrink=0.5, ax = ax)
+
+                ax2 = plt.subplot(2,1,2, projection=ccrs.SouthPolarStereo())
+                ax2.coastlines(resolution='110m') 
+                ax2.set_extent([-180, 180, -90, -55], crs=ccrs.PlateCarree())
+                ax2.add_feature(cfeature.BORDERS, lw=.5)
+                ax2.add_feature(cfeature.RIVERS)
+                ax2.add_feature(cfeature.LAND, facecolor=("coral"))
+                if logit_transform:
+                    c = ax2.scatter(x, y, 1, c=inv_logit(self.value), transform=ccrs.PlateCarree(),
+                                    cmap=cm.jet,vmin=valmin,vmax=valmax,edgecolor=None,lw=0)
+                else:
+                    c = ax2.scatter(x, y, 1, c=self.value, transform=ccrs.PlateCarree(),
+                                    cmap=cm.jet,vmin=valmin,vmax=valmax,edgecolor=None,lw=0)
+                fig.colorbar(c, shrink=0.5, ax = ax2)
 
             else:
-                map.drawcoastlines()
-                map.drawcountries()
-                map.fillcontinents(color='coral')
-                map.drawmapboundary()
-                map.plot(x, y, color=self.color, marker='.', markersize= self.size, linestyle='None',alpha=0.2)
+                ax = fig.add_subplot(111, projection=ccrs.Mollweide(central_longitude=-80))
+                ax.set_global()
+                ax.coastlines()    
+                ax.add_feature(cfeature.BORDERS, lw=.5)
+                ax.add_feature(cfeature.RIVERS)
+                ax.add_feature(cfeature.LAND, facecolor=("coral"))
+                ax.plot(x, y, color=self.color, transform=ccrs.PlateCarree(), marker='.', markersize= self.size, linestyle='None',alpha=0.2)
 
             titlestr=str(len(self.value))+' Obs'
-            plt.title(titlestr)
-            plt.savefig(self.descriptor+pngname)
+            ax.set_title(titlestr)
+            fig.savefig(self.descriptor+pngname)
             plt.clf()
 
 def update_list_of_obs(list_of_obs, obs):
@@ -1256,7 +1257,7 @@ def xbt(list_of_obs):
     return list_of_obs
 
 def xbt_synS(list_of_obs):
-    print((SYNOBSDIR+'/SYN_XBT_'))
+    print(SYNOBSDIR+'/SYN_XBT_')
     xbt_s   = Obs(yyyy, mm, dd, hh, fname=SYNOBSDIR+'/XBT/SYN_XBT_'+yyyy+'.nc', id_obs=obsid_dict['id_s_obs'], vartype='SALT', xsigo=xsigo_s, color='c', descriptor='XBT-SYN-S', NDAYS=EXP_NDAYS)
     update_list_of_obs(list_of_obs, xbt_s)
     return list_of_obs
@@ -1292,86 +1293,86 @@ def rama(list_of_obs):
 #===================
 def aq_L2_sss(list_of_obs):     #Aquarius V5.0
     fname=SatSSSOBSDIR+'L2_AQ_SSS_7.0/V5/'+'SSS_TRK_AQ_V5_'+yyyy+'.nc'
-    print(('fname is',fname))
+    print('fname is',fname)
 #   aq_sss  = Obs(yyyy, mm, dd, hh, fname=fname, id_obs=obsid_dict['id_sss_obs'], vartype='SSS',xsigo=xsigo_sss, descriptor='Aquarius_L3_SSS', color='y')
     aq_sss  = Obs(yyyy, mm, dd, hh, fname=fname, id_obs=obsid_dict['id_sss_obs'], vartype='SSS',xsigo=xsigo_sss, descriptor='Aquarius_L2_SSS', color='y')
     update_list_of_obs(list_of_obs, aq_sss)
-#   print 'list_of_obs is ',list_of_obs
+#   print('list_of_obs is ',list_of_obs)
     return list_of_obs
 
 def smap_L2_sss(list_of_obs):     #SMAP V4.0
     fname=SatSSSOBSDIR+'L2_SMAP_SSS_7.0/V4/'+'SSS_TRK_SMAP_V4_'+yyyy+'.nc'
-    print(('fname is',fname))
+    print('fname is',fname)
     smap_sss  = Obs(yyyy, mm, dd, hh, fname=fname, id_obs=obsid_dict['id_sss_obs'], vartype='SSS',xsigo=xsigo_sss, descriptor='SMAP_L2_SSS', color='y')
     update_list_of_obs(list_of_obs, smap_sss)
-#   print 'list_of_obs is ',list_of_obs
+#   print('list_of_obs is ',list_of_obs)
     return list_of_obs
 
 def smap_v4_1_L2_sss(list_of_obs):     #SMAP V4.1  currently only for 6/18-9/18
     fname=SatSSSOBSDIR+'L2_SMAP_SSS_7.0/V4.1/'+'SSS_TRK_SMAP_V4.1_'+yyyy+'.nc'
-    print(('fname is',fname))
+    print('fname is',fname)
     smap_sss  = Obs(yyyy, mm, dd, hh, fname=fname, id_obs=obsid_dict['id_sss_obs'], vartype='SSS',xsigo=xsigo_sss, descriptor='SMAP_L2_SSS', color='y')
     update_list_of_obs(list_of_obs, smap_sss)
-#   print 'list_of_obs is ',list_of_obs
+#   print('list_of_obs is ',list_of_obs)
     return list_of_obs
 
 def smap_v4_2_L2_sss(list_of_obs):     #SMAP V4.2  currently only for 2019
     fname=SatSSSOBSDIR+'L2_SMAP_SSS_7.0/V4.2/'+'SSS_TRK_SMAP_V4.2_'+yyyy+'.nc'
-    print(('fname is correct',fname))
+    print('fname is correct',fname)
     smap_sss  = Obs(yyyy, mm, dd, hh, fname=fname, id_obs=obsid_dict['id_sss_obs'], vartype='SSS',xsigo=xsigo_sss, descriptor='SMAP_L2_SSS', color='y')
     update_list_of_obs(list_of_obs, smap_sss)
-#   print 'list_of_obs is ',list_of_obs
+#   print('list_of_obs is ',list_of_obs)
     return list_of_obs
 
 def smap_v4_3_L2_sss(list_of_obs):     #SMAP V4.3
     fname=SatSSSOBSDIR+'L2_SMAP_SSS_7.0/V4.3/'+'SSS_TRK_SMAP_V4.3_'+yyyy+'.nc'
-    print(('fname is correct',fname))
+    print('fname is correct',fname)
     smap_sss  = Obs(yyyy, mm, dd, hh, fname=fname, id_obs=obsid_dict['id_sss_obs'], vartype='SSS',xsigo=xsigo_sss, descriptor='SMAP_L2_SSS', color='y')
     update_list_of_obs(list_of_obs, smap_sss)
-#   print 'list_of_obs is ',list_of_obs
+#   print('list_of_obs is ',list_of_obs)
     return list_of_obs
 
 def smap_v5_0_L2_sss(list_of_obs):     #SMAP V5.0
     fname=SatSSSOBSDIR+'L2_SMAP_SSS_7.0/V5.0/'+'SSS_TRK_SMAP_V5.0_'+yyyy+'.nc'
-    print(('fname is correct',fname))
+    print('fname is correct',fname)
     smap_sss  = Obs(yyyy, mm, dd, hh, fname=fname, id_obs=obsid_dict['id_sss_obs'], vartype='SSS',xsigo=xsigo_sss, descriptor='SMAP_L2_SSS', color='y')
     update_list_of_obs(list_of_obs, smap_sss)
-#   print 'list_of_obs is ',list_of_obs
+#   print('list_of_obs is ',list_of_obs)
     return list_of_obs
 
 def smos_L2_sss(list_of_obs):     #SMOS V3.0
     fname=SatSSSOBSDIR+'L2_SMOS_SSS_7.0/L32Q/'+'SSS_TRK_SMOS_L32Q_'+yyyy+'.nc'
-    print(('fname is',fname,hh))
+    print('fname is',fname,hh)
     smos_sss  = Obs(yyyy, mm, dd, hh, fname=fname, id_obs=obsid_dict['id_sss_obs'], vartype='SSS',xsigo=xsigo_sss, descriptor='SMOS_L2_SSS', color='y')
 #  only grab the 12z data
 #   if (hh=='12'):
 #     smos_sss  = Obs(yyyy, mm, dd, hh, fname=fname, id_obs=obsid_dict['id_sss_obs'], vartype='SSS',xsigo=xsigo_sss, descriptor='SMOS_L2_SSS', color='y')
 
     update_list_of_obs(list_of_obs, smos_sss)
-#   print 'list_of_obs is ',list_of_obs
+#   print('list_of_obs is ',list_of_obs)
     return list_of_obs
 
 def smossub_L2_sss(list_of_obs):     #SMOS V3.0
     fname=SatSSSOBSDIR+'L2_SMOS_SSS_7.0/L32Q/'+'SSS_TRK_SMOS_L32Q_'+yyyy+'.nc'
-    print(('fname is',fname,hh))
+    print('fname is',fname,hh)
     smos_sss  = Obs(yyyy, mm, dd, hh, fname=fname, id_obs=obsid_dict['id_sss_obs'], vartype='SSS',xsigo=xsigo_sss, descriptor='SMOS_L2_SSS', color='y',platform='SMOSSUB')
 #  only grab the 12z data
 #   if (hh=='12'):
 #     smos_sss  = Obs(yyyy, mm, dd, hh, fname=fname, id_obs=obsid_dict['id_sss_obs'], vartype='SSS',xsigo=xsigo_sss, descriptor='SMOS_L2_SSS', color='y')
 
     update_list_of_obs(list_of_obs, smos_sss)
-#   print 'list_of_obs is ',list_of_obs
+#   print('list_of_obs is ',list_of_obs)
     return list_of_obs
 
 def aq_L3_sss(list_of_obs):     #Aquarius V5.0
 #  ERIC AS IT NOW STANDS IT ONLY LIKES 12z
     fname=SatSSSOBSDIR+'L3_AQ_SSS_7.0/7DAYRUN/'+'SSS_GRD_AQ_'+yyyy+'.nc'
-    print(('fname is',fname))
+    print('fname is',fname)
     hh12=12  # pick up 12z all day
 #   aq_sss  = Obs(yyyy, mm, dd, hh, fname=fname, id_obs=obsid_dict['id_sss_obs'], vartype='SSS',xsigo=xsigo_sss, descriptor='Aquarius_L3_SSS', color='y')
     aq_sss  = Obs(yyyy, mm, dd, hh12, fname=fname, id_obs=obsid_dict['id_sss_obs'], vartype='SSS',xsigo=xsigo_sss, descriptor='Aquarius_L3_SSS', color='y')
     update_list_of_obs(list_of_obs, aq_sss)
-#   print 'list_of_obs is ',list_of_obs
+#   print('list_of_obs is ',list_of_obs)
     return list_of_obs
 
 #def smap_L3_sss(list_of_obs):     #SMAP V2.0
@@ -1380,21 +1381,21 @@ def aq_L3_sss(list_of_obs):     #Aquarius V5.0
 def smap_L3_sss(list_of_obs):     #SMAP V4.0
 #  ERIC AS IT NOW STANDS IT ONLY LIKES 12z
     fname=SatSSSOBSDIR+'L3_SMAP_SSS_7.0/8DAYRUN/'+'SSS_GRD_SMAP_V4_'+yyyy+'.nc'
-    print(('SMAP L3 fname is',fname))
+    print('SMAP L3 fname is',fname)
     hh12=12  # pick up 12z all day
     smap_sss  = Obs(yyyy, mm, dd, hh12, fname=fname, id_obs=obsid_dict['id_sss_obs'], vartype='SSS',xsigo=xsigo_sss, descriptor='SMAP_L3_SSS', color='y')
     update_list_of_obs(list_of_obs, smap_sss)
-#   print 'list_of_obs is ',list_of_obs
+#   print('list_of_obs is ',list_of_obs)
     return list_of_obs
 
 def smos_L3_sss(list_of_obs):     #SMOS V3.0
 #  ERIC AS IT NOW STANDS IT ONLY LIKES 12z
     fname=SatSSSOBSDIR+'L3_SMOS_SSS_7.0/'+'SSS_GRD_SMOS_'+yyyy+'.nc'
-    print(('SMOS fname is',fname))
+    print('SMOS fname is',fname)
     hh12=12  # pick up 12z all day
     smos_sss  = Obs(yyyy, mm, dd, hh12, fname=fname, id_obs=obsid_dict['id_sss_obs'], vartype='SSS',xsigo=xsigo_sss, descriptor='SMOS_L3_SSS', color='y')
     update_list_of_obs(list_of_obs, smos_sss)
-#   print 'list_of_obs is ',list_of_obs
+#   print('list_of_obs is ',list_of_obs)
     return list_of_obs
 
 # Altimeters
@@ -1559,7 +1560,7 @@ def gmi_L2_sst(list_of_obs):
     return list_of_obs
 
 def merra2_sst(list_of_obs):
-    print ('in merra2_sst')
+    print('in merra2_sst')
     m2sst = Obs(yyyy, mm, dd, hh, fname='', id_obs=obsid_dict['id_sst_obs'], vartype='TEMP',xsigo=1.0, descriptor='M2-SST', platform = 'M2-SST', NDAYS=EXP_NDAYS)
     update_list_of_obs(list_of_obs, m2sst)
     return list_of_obs
@@ -1746,7 +1747,7 @@ print('============== Extracting obs ============')
 if list_of_obs:
     cnt=0
     for obs in list_of_obs:
-        print((obs.descriptor))
+        print(obs.descriptor)
         pngname='obs-'+mm+'-'+dd+'-'+yyyy
         obs.plot(pngname)
         if (cnt==0):
@@ -1758,7 +1759,7 @@ if list_of_obs:
             oerr=obs.oerr
             instid=obs.instid
 
-            print((np.shape(oerr), np.shape(obs.oerr)))
+            print(np.shape(oerr), np.shape(obs.oerr))
         else:
             typ=np.concatenate( (typ, obs.typ) )
             lon=np.concatenate( (lon,obs.lon) )
@@ -1767,7 +1768,7 @@ if list_of_obs:
             value=np.concatenate( (value,obs.value) )
             instid=np.concatenate( (instid,obs.instid) )
 
-            print((np.shape(oerr), np.shape(obs.oerr)))
+            print(np.shape(oerr), np.shape(obs.oerr))
 
             oerr=np.concatenate( (oerr,obs.oerr) )
 
@@ -1775,14 +1776,14 @@ if list_of_obs:
 
 #***code to manually fix 180 data ***************************
     for i in range (0,len(lon)):
-       if lon[i]==180.:
-         lon[i]=-179.9999
-       if lon[i]==-180.:
-         lon[i]=-179.9999
+        if lon[i]==180.:
+            lon[i]=-179.9999
+        if lon[i]==-180.:
+            lon[i]=-179.9999
 #************************************************************
 
     nobs=len(typ)
-    print(('nobs=',nobs))
+    print('nobs=',nobs)
 #   with open('Nobs', 'wb') as fh:
     with open('Nobs', 'w') as fh:
         fh.write(str(nobs)+'\n')
@@ -1795,20 +1796,20 @@ if list_of_obs:
 #   minreq=[3073,5521]  #Tz, Sz
 #   minreq=[3073]  #Tz, Sz
     for i in range(len(minreq)):
-      if minreq[i] in typ:
-        print("Yes,found in List : ",minreq[i])
-      else:
-        if minreq[i] == 3073:
-           print("YOU ARE MISSING",minreq[i],"Argo T")
-           print ('PARENT ID IS', os.getppid(), os.getpid())
-        if minreq[i] == 5521:
-           print("YOU ARE MISSING",minreq[i],"Argo S")
-        if minreq[i] == 5351:
-           print("YOU ARE MISSING",minreq[i],"ADT")
+        if minreq[i] in typ:
+            print("Yes,found in List : ",minreq[i])
+        else:
+            if minreq[i] == 3073:
+               print("YOU ARE MISSING",minreq[i],"Argo T")
+               print ('PARENT ID IS', os.getppid(), os.getpid())
+            if minreq[i] == 5521:
+               print("YOU ARE MISSING",minreq[i],"Argo S")
+            if minreq[i] == 5351:
+               print("YOU ARE MISSING",minreq[i],"ADT")
 #   create a file to tell parents that obs are bad
-        command='touch '+SCRDIR+'/BADOBS'
-        os.system(command)
-        sys.exit(1)
+            command='touch '+SCRDIR+'/BADOBS'
+            os.system(command)
+            sys.exit(1)
 
     fnameout='gmao-obs-'+yyyy+mm+dd+'.nc'
     ncfile = Dataset(fnameout,'w')
@@ -1836,7 +1837,7 @@ if list_of_obs:
     tmp[:] = instid
 
     ncfile.close()
-    print(('Saved ',str(nobs),'obs in ',fnameout))
+    print('Saved ',str(nobs),'obs in ',fnameout)
 
 #   now replace with the proper gmao- file  DANGEROUS
 #    assumes you will be running in the same directory tree
@@ -1865,7 +1866,7 @@ if list_of_obs:
             print(command)
             os.system(command)
 #   DANGEROUS!!!!!!!!!!!!!!!!!
-            print(('***REPLACING OBS WITH',ODAS_DIR_OLD_OBS+lastnode2+'/'+lastnode+'/'+fnameout,'**********'))
+            print('***REPLACING OBS WITH',ODAS_DIR_OLD_OBS+lastnode2+'/'+lastnode+'/'+fnameout,'**********')
 #          command='cp '+ODAS_DIR_OLD_OBS+lastnode2+'/'+lastnode+'/'+fnameout+' '+fnameout  3/16/21 from Yehui
             command='cp -f '+ODAS_DIR_OLD_OBS+lastnode2+'/'+lastnode+'/'+fnameout+' '+fnameout
             print(command)
@@ -1879,12 +1880,12 @@ if list_of_obs:
             infile=fnameout
             outfile='tempout.nc'
             cmd = "ncdump -v instid "+infile
-#          print cmd
+#          print(cmd)
             returned_value = os.system(cmd)
-#          print 'return is',returned_value
+#          print('return is',returned_value)
             if (returned_value != 0):
                 cmd = "/discover/swdev/gmao_SIteam/Baselibs/latest-mpiuni-SLES12/Linux/bin/ncap2 -s 'instid[$nobs]=-999.' "+infile+' '+outfile
-#                  print cmd
+#                  print(cmd)
                 print('ADDING INST_ID TO NETCDF FILE')
                 os.system(cmd)
                 cmd = "mv "+outfile+' '+fnameout
@@ -1892,12 +1893,20 @@ if list_of_obs:
 #######################################
 
         else:
-            print(('SORRY', checkFile, 'DOES NOT EXIST'))
+            print('SORRY', checkFile, 'DOES NOT EXIST')
 else:
 #    with open('Nobs', 'wb') as fh:
     with open('Nobs', 'w') as fh:
         fh.write('0'+'\n')
 try:
+  #  print("!!!!!!!!!!!!!CDA_MODULE_LIST")
+  #  os.system("module list")
+  #  print("!!!!!!!!!!!!!CDA_PATH")
+  #  os.system("echo $PATH")
+  #  print("!!!!!!!!!!!!!CDA_LIBRATY")
+  #  os.system("echo $LD_LIBRARY_PATH")
+  #  print("!!!!!!!!!!!!!CDA_MPI")
+  #  os.system("which mpirun")
     command = './oceanobs_nc2bin.x -y '+yyyy+' -m '+mm+' -d '+dd+' -indir1 gmao-obs- -outdir .'
     print(command)
     os.system(command)

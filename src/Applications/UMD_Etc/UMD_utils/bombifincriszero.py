@@ -1,15 +1,9 @@
 #! /usr/bin/env python
 # importing the required module
 
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
 from netCDF4 import Dataset
 import numpy as np
-from mpl_toolkits.basemap import Basemap
-import matplotlib.cm as cm
 import sys
-import statistics
 import os
  
 SCRDIR = os.environ['SCRDIR']
@@ -25,12 +19,12 @@ if len(sys.argv) == 3:
 #   print('shape of temp is',np.shape(temp))
     temp_mean=np.mean(temp)
     if(temp_mean != 0.0):
-       print (temp_mean)
+        print (temp_mean)
     else:
-       print('BAD INCREMENT')
-       command = 'touch '+SCRDIR+'/BADINCR'
-       os.system(command)
-       sys.exit(1)
+        print('BAD INCREMENT')
+        command = 'touch '+SCRDIR+'/BADINCR'
+        os.system(command)
+        sys.exit(1)
 else:
     print(' ') 
     print('# * Args: ')

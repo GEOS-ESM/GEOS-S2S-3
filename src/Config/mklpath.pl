@@ -33,8 +33,9 @@ use strict;
     # ------------
     $mklroot = $ENV{"MKLROOT"};
     if ($mklroot) {
-        @tmp = split /-L/, `$mklroot/tools/mkl_link_tool -libs 2>/dev/null`;
+        @tmp = split /-L/, `$mklroot/bin/intel64/mkl_link_tool -libs 2>/dev/null`;
         @tmp = split / /, $tmp[1];
+        print "$tmp[0]";
         $mklpath = $tmp[0];
         print "$mklpath";
         exit;

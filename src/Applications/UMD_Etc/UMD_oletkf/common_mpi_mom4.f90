@@ -19,7 +19,7 @@ MODULE common_mpi_mom4
   IMPLICIT NONE
   PUBLIC
 
-  INTEGER,PARAMETER :: mpibufsize=3000 !600 !(this worked as 'safe' with 480 procs on Gaea) !200 !1000  !STEVE: this fixes the problem of bad output when using over 6 nodes default=1000,mom2(mpich2)=200
+  INTEGER,PARAMETER :: mpibufsize=1000 !600 !(this worked as 'safe' with 480 procs on Gaea) !200 !1000  !STEVE: this fixes the problem of bad output when using over 6 nodes default=1000,mom2(mpich2)=200
   INTEGER,SAVE :: nij1                  !STEVE: this is the number of gridpoints to run on this (myrank) processor
   INTEGER,SAVE :: nij1max               !STEVE: the largest number of gridpoints on any 1 processor
   INTEGER,ALLOCATABLE,SAVE :: nij1node(:)
@@ -131,8 +131,8 @@ SUBROUTINE scatter_grd_mpi(nrank,v3dg,v2dg,v3d,v2d)
     if (dodebug) then
       WRITE(6,*) "scatter_grd_mpi: calling scatter_grd_mpi_safe. mpibufsize, nij1max = ", mpibufsize, nij1max
     endif
-    !CALL scatter_grd_mpi_safe(nrank,v3dg,v2dg,v3d,v2d)
-    CALL scatter_grd_mpi_fast(nrank,v3dg,v2dg,v3d,v2d)
+    CALL scatter_grd_mpi_safe(nrank,v3dg,v2dg,v3d,v2d)
+    !CALL scatter_grd_mpi_fast(nrank,v3dg,v2dg,v3d,v2d)
   END IF
 
   RETURN
@@ -154,6 +154,7 @@ SUBROUTINE scatter_grd_mpi_safe(nrank,v3dg,v2dg,v3d,v2d)
   INTEGER :: iter,niter
 
   ALLOCATE(tmp(nij1max,nprocs),bufs(mpibufsize,nprocs),bufr(mpibufsize))
+  tmp = 0.0; bufs = 0.0; bufr = 0.0
 
   ns = mpibufsize
   nr = ns
@@ -202,14 +203,14 @@ SUBROUTINE scatter_grd_mpi_safe(nrank,v3dg,v2dg,v3d,v2d)
       DO j=1,mpibufsize
         i=i+1
         IF(i > nij1) EXIT
-        print *,'bufr:',j,'/',mpibufsize,bufr(j)
+        !print *,'bufr:',j,'/',mpibufsize,bufr(j)
         
-        !if (n.le.4) then
-        v2d(i,n) = 0.0!REAL(bufr(j),r_size)
-        !else
-        !   v2d(i,n) = REAL(bufr(j),r_size)
-        !end if
-        !v2d(i,n) = bufr(j)
+        !!if (n.le.4) then
+        !v2d(i,n) = 0.0!REAL(bufr(j),r_size)
+        !!else
+        !!   v2d(i,n) = REAL(bufr(j),r_size)
+        !!end if
+        v2d(i,n) = REAL(bufr(j),r_size)
 
       END DO
     END DO

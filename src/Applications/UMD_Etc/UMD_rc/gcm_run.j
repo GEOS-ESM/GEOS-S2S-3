@@ -39,7 +39,7 @@ setenv RUN_CMD         "mpirun -np "
 setenv GCMVER           Icarus-3_3_p2
 
 source $GEOSBIN/g5_modules
-module load python/GEOSpyD/Min4.8.3_py3.8
+#module load python/GEOSpyD/Min4.8.3_py3.8
 setenv LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:${BASEDIR}/${ARCH}/lib
 
 #   Yehui's solution to hardware change 11/12/21

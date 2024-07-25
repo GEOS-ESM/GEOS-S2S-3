@@ -130,20 +130,22 @@ SUBROUTINE set_common_mom4
     element(nv3d+iv2d_eta) = 'eta '      !(OCEAN)
   endif
   if (DO_SFCFLUX) then
-    element(nv3d+iv2d_taux) = 'TAUX'   !(OCEAN)
-    element(nv3d+iv2d_tauy) = 'TAUY'   !(OCEAN)
-    element(nv3d+iv2d_tflx) = 'TFLX'  !(OCEAN)
-    element(nv3d+iv2d_qflx) = 'QFLX'  !(OCEAN)
-    element(nv3d+iv2d_u10) = 'U10 '     !(OCEAN)
-    element(nv3d+iv2d_v10) = 'V10 '     !(OCEAN)
-    element(nv3d+iv2d_t2m) = 'T2M '     !(OCEAN)
-    element(nv3d+iv2d_q2m) = 'Q2M '     !(OCEAN)
-    element(nv3d+iv2d_pres) = 'PRES'   !(OCEAN)
-    element(nv3d+iv2d_prate) = 'PRAT' !(OCEAN)
-    element(nv3d+iv2d_dlw) = 'DLW '     !(OCEAN)
-    element(nv3d+iv2d_dsw) = 'DSW '     !(OCEAN)
-    element(nv3d+iv2d_nlw) = 'NLWV'  !(OCEAN)
-    element(nv3d+iv2d_nsw) = 'NSWV'  !(OCEAN)
+  !CDA_COMMENT_START
+  !  element(nv3d+iv2d_taux) = 'TAUX'   !(OCEAN)
+  !  element(nv3d+iv2d_tauy) = 'TAUY'   !(OCEAN)
+  !  element(nv3d+iv2d_tflx) = 'TFLX'  !(OCEAN)
+  !  element(nv3d+iv2d_qflx) = 'QFLX'  !(OCEAN)
+  !  element(nv3d+iv2d_u10) = 'U10 '     !(OCEAN)
+  !  element(nv3d+iv2d_v10) = 'V10 '     !(OCEAN)
+  !  element(nv3d+iv2d_t2m) = 'T2M '     !(OCEAN)
+  !  element(nv3d+iv2d_q2m) = 'Q2M '     !(OCEAN)
+  !  element(nv3d+iv2d_pres) = 'PRES'   !(OCEAN)
+  !  element(nv3d+iv2d_prate) = 'PRAT' !(OCEAN)
+  !  element(nv3d+iv2d_dlw) = 'DLW '     !(OCEAN)
+  !  element(nv3d+iv2d_dsw) = 'DSW '     !(OCEAN)
+  !  element(nv3d+iv2d_nlw) = 'NLWV'  !(OCEAN)
+  !  element(nv3d+iv2d_nsw) = 'NSWV'  !(OCEAN)
+  !CDA_COMMENT_END
   endif
   if (DO_DRIFTERS) then
     element(nv3d+nv2d+iv4d_x) = 'X   '             !(OCEAN) (DRIFTERS)

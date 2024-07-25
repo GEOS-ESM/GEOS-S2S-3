@@ -41,6 +41,8 @@ PROGRAM letkf
   USE params_letkf
   USE params_model
   USE params_obs
+  USE MemUtilsMod
+
 ! USE letkf_drifters_tools !LUYU: add the drifters tool
 
   IMPLICIT NONE
@@ -179,7 +181,9 @@ PROGRAM letkf
   !-----------------------------------------------------------------------------
   ! Observations
   !-----------------------------------------------------------------------------
+  call MemReport(MPI_COMM_WORLD,"before set_letkf_obs")
   CALL set_letkf_obs(obs_status)
+  call MemReport(MPI_COMM_WORLD,"After set_letkf_obs")
  
   !STEVE: calls read_grd, then read_ens_mpi calls read_grd4 below. This may be an inefficiency
   !STEVE: Perhaps call once here then output v3d and v2d for use as gues3d and gues2d below.
@@ -198,9 +202,11 @@ PROGRAM letkf
   !-----------------------------------------------------------------------------
   ! Read forecast ensemble
   !-----------------------------------------------------------------------------
+  call MemReport(MPI_COMM_WORLD,"before MPI_BARRIER")
   CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
-  !WRITE(guesf(3:4),'(I2.2)') nbslot
-  WRITE(guesf(11:12),'(I2.2)') nbslot
+  call MemReport(MPI_COMM_WORLD,"after MPI_BARRIER")
+  !WRITE(guesf(3:4),'(I2.2)') nbslot 
+  !WRITE(guesf(11:12),'(I2.2)') nbslot  ! CDA:nbslot not used in the prefix. bkg/001
   WRITE(6,*) "From letkf.f90, calling read_ens_mpi..."
   print *,'guesf:',guesf
   CALL read_ens_mpi(guesf,nbv,gues3d,gues2d)
@@ -307,12 +313,6 @@ PROGRAM letkf
   endif
   rtimer00=rtimer
 
-  !----------------------------------------------------------------------------
-  ! Finalize the MPI
-  !----------------------------------------------------------------------------
-  CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
-  !CALL finalize_mpi
-
   !-----------------------------------------------------------------------------
   ! Check timer for total runtime
   !-----------------------------------------------------------------------------
@@ -323,5 +323,12 @@ PROGRAM letkf
     OPEN(6,FILE=stdoutf,POSITION='APPEND',STATUS = 'OLD')
   endif
   rtimer00=rtimer
+
+
+  !----------------------------------------------------------------------------
+  ! Finalize the MPI
+  !----------------------------------------------------------------------------
+  CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
+  CALL finalize_mpi
 
 END PROGRAM letkf

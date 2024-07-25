@@ -3,25 +3,10 @@
 #module load other/comp/gcc-4.9.2-sp3 other/mpi/mvapich2-2.1/gcc-4.9.2-sp3 lib/mkl-15.0.2.164 other/SIVO-PyD/spd_1.24.0_gcc-4.9.2-sp3_mkl-15.0.2.164_mvapich2-2.1
 
 from netCDF4 import Dataset
-import matplotlib.pyplot as plt
 import numpy as np
-import array
-import matplotlib.cm as cm
-from mpl_toolkits.basemap import Basemap
 import glob
-import struct
-import time
 import sys
-from mpl_toolkits.basemap import Basemap, shiftgrid, addcyclic
-from scipy import interpolate
-import getopt
-import string
-from datetime import date
-import scipy.interpolate as interp
-import scipy.optimize as optm
-import subprocess
 import utils
-import scipy.stats as scstats
 #sys.path.append('/usr/local/other/SLES11/mpi4py-1.3/lib/python/')
 from mpi4py import MPI
 #Ne=int(sys.argv[1])

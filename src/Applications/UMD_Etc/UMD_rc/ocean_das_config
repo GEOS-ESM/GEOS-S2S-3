@@ -1,9 +1,9 @@
 #!/bin/csh -v
 
 ######################### USER INPUT #######################################################
-setenv  EXPID   GiOCEAN_e1
-setenv  EXPDIR  /discover/nobackup/projects/gmao/merra2-ocean/GiOCEAN_e1
-setenv  GEOSDIR /discover/nobackup/projects/gmao/merra2-ocean/yuri-s2s3-unstable-SLES12/GEOSodas
+#setenv  EXPID   GiOCEAN_e1
+#setenv  EXPDIR  /discover/nobackup/projects/gmao/merra2-ocean/GiOCEAN_e1
+#setenv  GEOSDIR /discover/nobackup/projects/gmao/merra2-ocean/yuri-s2s3-unstable-SLES12/GEOSodas
 
 setenv ODAS_group           g0609
 setenv ODAS_qos             gmaofcst
@@ -82,7 +82,7 @@ setenv    SCRDIR           $EXPDIR/scratch
 setenv    ODAS_BIN         $GEOSDIR/Linux/bin
 setenv    UMD_LETKFRC      $EXPDIR/ocean_das/UMD_Etc/UMD_rc/
 setenv    UMD_LETKFUTILS   $EXPDIR/ocean_das/UMD_Etc/UMD_utils/
-setenv    UMD_LETKFSCRIPTS $EXPDIR/ocean_das/UMD_Etc/UMD_scripts/
+setenv    UMD_LETKFSCRIPTS $EXPDIR/ocean_das/UMD_Etc/scripts/
 setenv    UMD_LETKFSRC     $EXPDIR/ocean_das/UMD_Etc/UMD_oletkf/
 setenv    UMD_LETKFPLOT    $UMD_LETKFUTILS/plot/
 setenv    UMD_LETKFSCRDIR  $EXPDIR/ocean_das    # work dir for the ocean das

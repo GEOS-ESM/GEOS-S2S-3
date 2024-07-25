@@ -6,6 +6,7 @@
 
 #@BATCH_TIME@RUN_T
 #@RUN_P
+#@RUN_P2
 #@BATCH_JOBNAME@RUN_N
 #@RUN_Q
 #@BATCH_GROUP
@@ -304,13 +305,13 @@ cat << _EOF_ > $FILE
 #/bin/ln -s /discover/nobackup/projects/gmao/share/gmao_ops/fvInput/merra_land/precip_CPCUexcludeAfrica-CMAP_corrected_MERRA/GEOSdas-2_1_4 ExtData/PCP
 
 >>>COUPLED_DUAL<<<# 1981-2014
->>>COUPLED_DUAL<<</bin/ln -s /discover/nobackup/projects/gmao/share/gmao_ops/fvInput/merra_land/precip_CPCUexcludeAfrica-CMAP_corrected_MERRA/GEOSdas-2_1_4 ExtData/PCP
+>>>COUPLED_DUAL<<<#/bin/ln -s /discover/nobackup/projects/gmao/share/gmao_ops/fvInput/merra_land/precip_CPCUexcludeAfrica-CMAP_corrected_MERRA/GEOSdas-2_1_4 ExtData/PCP
 
 >>>COUPLED_DUAL<<<#2015
->>>COUPLED_DUAL<<<#/bin/ln -s /gpfsm/dnb52/projects/p10/gmao_ops/fvInput/merra_land/precip_CPCUexcludeAfrica-CMAP_corrected_MERRA/GEOSdas-2_1_4 ExtData/PCP
+>>>COUPLED_DUAL<<<#/bin/ln -s /discover/nobackup/projects/gmao/share/gmao_ops/fvInput/merra_land/precip_CPCUexcludeAfrica-CMAP_corrected_MERRA/GEOSdas-2_1_4 ExtData/PCP
 
 >>>COUPLED_DUAL<<<# 2017
->>>COUPLED_DUAL<<<#/bin/ln -s /gpfsm/dnb52/projects/p10/gmao_ops/fvInput/merra_land/precip_CPCUexcludeAfrica-CMAP_corrected_MERRA/GEOSadas-5_12_4 ExtData/PCP
+>>>COUPLED_DUAL<<</bin/ln -s /discover/nobackup/projects/gmao/share/gmao_ops/fvInput/merra_land/precip_CPCUexcludeAfrica-CMAP_corrected_MERRA/GEOSadas-5_12_4 ExtData/PCP
 
 >>>COUPLED_DUAL<<<# Fortuna from Qing
 >>>COUPLED_DUAL<<<#/discover/nobackup/qliu/merra_land/precip_corr_SSD_near-present/f516_fp/diag/Y2017/
@@ -328,11 +329,13 @@ cat << _EOF_ > $FILE
 
 # CMIP-5 Ozone Data (228-Years)
 # -----------------------------
-#bin/ln -sf $BCSDIR/Shared/pchem.species.CMIP-5.1870-2097.z_91x72.nc4 species.data
+/bin/ln -sf $BCSDIR/Shared/pchem.species.CMIP-5.1870-2097.z_91x72.nc4 species.data
 
 # MERRA-2 Ozone Data (39-Years)
 # -----------------------------
-/bin/ln -sf $BCSDIR/Shared/pchem.species.CMIP-5.MERRA2OX.197902-201706.z_91x72.nc4 species.data
+#/bin/ln -sf $BCSDIR/Shared/pchem.species.CMIP-5.MERRA2OX.197902-201706.z_91x72.nc4 species.data
+
+/bin/ln -sf /discover/nobackup/projects/gmao/SIteam/CEDS-Tile-Files/bin/*bin .
 
 /bin/ln -sf $BCSDIR/Shared/*bin .
 /bin/ln -sf $BCSDIR/Shared/*c2l*.nc4 .
@@ -399,6 +402,8 @@ set rst_file_names = `cat AGCM.rc | grep "RESTART_FILE"    | grep -v VEGDYN | gr
 set chk_files      = `cat AGCM.rc | grep "CHECKPOINT_FILE" | grep -v "#" | cut -d ":" -f1 | cut -d "_" -f1-2`
 set chk_file_names = `cat AGCM.rc | grep "CHECKPOINT_FILE" | grep -v "#" | cut -d ":" -f2`
 
+set monthly_chk_names = `cat $EXPDIR/HISTORY.rc | grep -v '^[\t ]*#' | sed -n 's/\([^\t ]\+\).monthly:[\t ]*1.*/\1/p' | sed 's/$/_rst/' `
+
 # Remove possible bootstrap parameters (+/-)
 # ------------------------------------------
 set dummy = `echo $rst_file_names`
@@ -418,7 +423,7 @@ if( $GCMEMIP == TRUE ) then
       if(-e $EXPDIR/restarts/$RSTDATE/$rst ) @CPEXEC $EXPDIR/restarts/$RSTDATE/$rst . &
     end
 else
-    foreach rst ( $rst_file_names )
+    foreach rst ( $rst_file_names $monthly_chk_names )
       if(-e $EXPDIR/$rst ) @CPEXEC $EXPDIR/$rst . &
     end
 >>>withODAS<<<      /bin/cp -f $EXPDIR/*_glo_*_rst . &
@@ -492,6 +497,30 @@ if( $GCMEMIP == TRUE ) then
     @CPEXEC -f  $EXPDIR/restarts/$RSTDATE/CAP.rc .
 else
     @CPEXEC -f $HOMDIR/CAP.rc .
+
+    ######################################################################
+#   Use 6-day JOB_SGMT (02/25-03/02) for leap year
+######################################################################
+set nymdc2 = `cat cap_restart | cut -c1-11`
+set nyears  = `echo $nymdc2 | cut -c1-4`
+set nmonths = `echo $nymdc2 | cut -c5-6`
+set ndays   = `echo $nymdc2 | cut -c7-8`
+
+if( $nmonths == 02 & \
+    $ndays   == 25 ) then
+    @ yr = 1 * $nyears
+    @ yr1 =($yr - 1) / 4
+    @ yr2 = $yr / 4
+
+if( $yr2 > $yr1 ) then
+
+    echo "Year: " $yr
+    /bin/cp -f  $HOMDIR/CAP.rc_6dy CAP.rc
+
+endif
+endif
+######################################################################
+
 endif
 
 ./strip CAP.rc
@@ -573,7 +602,7 @@ endif
 # ----------------------------------------------
 if( ${EMISSIONS} == MERRA2 | \
     ${EMISSIONS} == MERRA2-DD ) then
-    set MERRA2_Transition_Date = 90000401
+    set MERRA2_Transition_Date = 20000401
 
     if( $nymdc < ${MERRA2_Transition_Date} ) then
          set MERRA2_EMISSIONS_DIRECTORY = $GEOSDIR/$ARCH/etc/$EMISSIONS/19600101-20000331
@@ -607,22 +636,19 @@ endif
 #-------------------------------------
 set startYear = `cat cap_restart | cut -c1-4`
 
-if( $startYear >= 1980 && $startYear <= 1991 ) then
-    set sYear  = 1980
-    set MERRA2type = d5124_m2_jan79
-    set data_Transition_Date = 19920101
-else if( $startYear >= 1992 && $startYear <= 2000 ) then
-    set sYear  = 1992
-    set MERRA2type = d5124_m2_jan91
-    set data_Transition_Date = 20010101
-else if( $startYear >= 2001 && $startYear <= 2010 ) then
-    set sYear  = 2001
-    set MERRA2type = d5124_m2_jan00
-    set data_Transition_Date = 20110101
-else if( $startYear >= 2011                       ) then
-    set sYear  = 2011
-    set MERRA2type = d5124_m2_jan10
-    set data_Transition_Date = 20210101
+if( $startYear >= 1998 && $startYear <= 2007 ) then
+    set sYear  = 1998
+#   set MERRA2type = d5294_geosit_jan98
+    set MERRA2type = d5294_geositocn_may01
+    set data_Transition_Date = 20080101
+else if( $startYear >= 2008 && $startYear <= 2017 ) then
+    set sYear  = 2008
+    set MERRA2type = d5294_geosit_jan08
+    set data_Transition_Date = 20180101
+else if( $startYear >= 2018                       ) then
+    set sYear  = 2018
+    set MERRA2type = d5294_geosit_jan18
+    set data_Transition_Date = 20280101
 endif
 
 # Edit the GAAS_GridComp.rc file
@@ -853,7 +879,7 @@ end
 $GEOSUTIL/post/gcmpost.script -source $EXPDIR -movefiles
 
 >>>withODAS<<<#  new plotting of OMF/OMA stats from ERIC 3/19/21
->>>withODAS<<<$EXPDIR/oda_plots.csh $EXPDIR $nyears $nmonths $ndays $nhours $year $month $day $hour
+>>>withODAS<<<$GEOSUTIL/plots/oda_plots.csh $EXPDIR $nyears $nmonths $ndays $nhours $year $month $day $hour $GEOSUTIL/plots
  
 if( $FSEGMENT != 00000000 ) then
      set REPLAY_BEG_DATE = `grep BEG_REPDATE: $HOMDIR/CAP.rc | cut -d':' -f2`

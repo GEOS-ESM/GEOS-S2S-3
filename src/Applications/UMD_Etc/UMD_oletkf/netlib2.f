@@ -1184,6 +1184,8 @@ c
       e(1) = 0.0d0
       return
       end
+
+#IFNDEF USE_MKL_ODAS
       subroutine daxpy(n,da,dx,incx,dy,incy)
 c
 c     constant times a vector plus a vector.
@@ -1926,3 +1928,5 @@ c
 *     End of XERBLA
 *
       END
+
+#ENDIF

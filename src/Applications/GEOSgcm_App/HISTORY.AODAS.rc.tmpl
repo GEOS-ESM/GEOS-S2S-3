@@ -7,7 +7,7 @@ COLLECTIONS: 'iau_inst_6hr_glo_L720x361_v72'
              'atm_inst_6hr_glo_L720x361_p49'
              'sfc_tavg_3hr_glo_L720x361_sfc'
              'sfc_tavg_1hr_glo_L720x361_sfc'
-	     'mjo_tavg_1dy_glo_L720x361_slv',
+             'mjo_tavg_1dy_glo_L720x361_slv'
              'rad_tavg_1mo_glo_L720x361_p49'
              'mst_tavg_1mo_glo_L720x361_p49'
              'trb_tavg_1mo_glo_L720x361_p49'
@@ -42,6 +42,9 @@ COLLECTIONS: 'iau_inst_6hr_glo_L720x361_v72'
              'ias_tavg_1dy_glo_T1440x1080_slv'
              'sst_tavg_1dy_glo_L720x361_slv'
              'glc_tavg_1mo_glo_L720x361_slv'
+             'aci_tavg_1dy_glo_L360x181_p27'
+             'aci_tavg_1dy_glo_L720x361_sfc'
+             'mod_inst_6hr_glo_L720x361_sfc'
              'ice_inst_6hr_glo_T1440x1080_slv'
              ::
 
@@ -271,15 +274,15 @@ COLLECTIONS: 'iau_inst_6hr_glo_L720x361_v72'
 
   mjo_tavg_1dy_glo_L720x361_slv.template:  '%y4%m2%d2_%h2%n2z.nc4', 
   mjo_tavg_1dy_glo_L720x361_slv.archive:   '%c', 
-  mjo_tavg_1dy_glo_L720x361_slv.format:    'CFIOasync', 
+  mjo_tavg_1dy_glo_L720x361_slv.format:    'CFIO', 
   mjo_tavg_1dy_glo_L720x361_slv.mode:      'time-averaged', 
   mjo_tavg_1dy_glo_L720x361_slv.frequency:  240000, 
-  mjo_tavg_1dy_glo_L720x361_slv.ref_time:   210000, 
+  mjo_tavg_1dy_glo_L720x361_slv.ref_time:   000000, 
   mjo_tavg_1dy_glo_L720x361_slv.resolution: @HIST_IM @HIST_JM,
   mjo_tavg_1dy_glo_L720x361_slv.fields:  'OLR'       ,  'IRRAD'        , 
                           'U200'      ,  'DYN'    , 
                           'U850'      ,  'DYN'    , 
-                          ‘TPREC’     ,  ‘MOIST’  , 
+                          'TPREC'     ,  'MOIST'  , 
                           :: 
 
   rad_tavg_1mo_glo_L720x361_p49.template:  '%y4%m2%d2_%h2%n2z.nc4',
@@ -1241,6 +1244,74 @@ COLLECTIONS: 'iau_inst_6hr_glo_L720x361_v72'
                                 'SNICEALB'   , 'LANDICE'  ,
                                 'MELTWTR'    , 'LANDICE'  ,
                                 ::
+
+  aci_tavg_1dy_glo_L360x181_p27.template:  '%y4%m2%d2_%h2%n2z.nc4',
+  aci_tavg_1dy_glo_L360x181_p27.archive:   '%c/Y%y4',
+  aci_tavg_1dy_glo_L360x181_p27.format:    'CFIO',
+  aci_tavg_1dy_glo_L360x181_p27.mode:      'time-averaged', 
+  aci_tavg_1dy_glo_L360x181_p27.frequency:  240000,
+  aci_tavg_1dy_glo_L360x181_p27.resolution: 360 181,
+  aci_tavg_1dy_glo_L360x181_p27.vscale:     100.0,
+  aci_tavg_1dy_glo_L360x181_p27.vunit:     'hPa',
+  aci_tavg_1dy_glo_L360x181_p27.vvars:     'log(PLE)' , 'DYN' ,
+  aci_tavg_1dy_glo_L360x181_p27.levels:     1000 975 950 925 900 875 850 825 800 775 750 725 700 650 600 550 500 450 400 350 300 250 200 150 100  50 10,
+  aci_tavg_1dy_glo_L360x181_p27.fields: 'PHIS'    , 'AGCM'   ,
+                          'CNV_MFD'     , 'MOIST' , 'CNVMFD' ,
+                          'CNV_FICE'    , 'MOIST' ,
+                          'WSUB'        , 'MOIST' ,
+                          'CCN04'       , 'MOIST' ,
+                          'SCF_ALL'     , 'MOIST' ,
+                          'CDNC_NUC'    , 'MOIST' ,
+                          'INC_NUC'     , 'MOIST' ,
+                          'NCPL_VOL'    , 'MOIST' ,
+                          'NCPI_VOL'    , 'MOIST' ,
+                          'NHET_NUC'    , 'MOIST' ,
+                          'NHET_IMM'    , 'MOIST' ,     
+                          ::  
+
+  aci_tavg_1dy_glo_L720x361_sfc.template:  '%y4%m2%d2_%h2%n2z.nc4',
+  aci_tavg_1dy_glo_L720x361_sfc.archive:   '%c/Y%y4',
+  aci_tavg_1dy_glo_L720x361_sfc.format:    'CFIO',
+  aci_tavg_1dy_glo_L720x361_sfc.mode:      'time-averaged',
+  aci_tavg_1dy_glo_L720x361_sfc.frequency:  240000,
+  aci_tavg_1dy_glo_L720x361_sfc.resolution: @HIST_IM @HIST_JM,
+  aci_tavg_1dy_glo_L720x361_sfc.fields: 'PHIS'     , 'AGCM'  ,
+                           'CLDREFFI_TOP', 'MOIST' ,
+                           'CLDREFFL_TOP', 'MOIST' ,
+                           'NCPL_TOP'    , 'MOIST' ,
+                           'NCPI_TOP'    , 'MOIST' ,
+                           'NCPL_CLDBASE', 'MOIST' ,
+                           'LTS'         , 'MOIST' ,
+                           ::
+
+  mod_inst_6hr_glo_L720x361_sfc.template:  '%y4%m2%d2_%h2%n2z.nc4',
+  mod_inst_6hr_glo_L720x361_sfc.archive:   '%c/Y%y4',
+  mod_inst_6hr_glo_L720x361_sfc.format:    'CFIO',
+  mod_inst_6hr_glo_L720x361_sfc.mode:      'instantaneous',
+  mod_inst_6hr_glo_L720x361_sfc.frequency:  060000,
+  mod_inst_6hr_glo_L720x361_sfc.ref_time:   000000,
+  mod_inst_6hr_glo_L720x361_sfc.resolution: @HIST_IM @HIST_JM,
+  mod_inst_6hr_glo_L720x361_sfc.fields:    'TCLISCCP'       , 'SATSIM'    ,
+                          'MDSCLDFRCTTL'      , 'SATSIM'    ,
+                          'MDSCLDFRCWTR'      , 'SATSIM'    ,
+                          'MDSCLDFRCICE'      , 'SATSIM'    ,
+                          'MDSCLDFRCHI'       , 'SATSIM'    ,
+                          'MDSCLDFRCMID'      , 'SATSIM'    ,
+                          'MDSCLDFRCLO'       , 'SATSIM'    ,
+                          'MDSOPTHCKTTL'      , 'SATSIM'    ,
+                          'MDSOPTHCKWTR'      , 'SATSIM'    ,
+                          'MDSOPTHCKICE'      , 'SATSIM'    ,
+                          'MDSOPTHCKTTLLG'    , 'SATSIM'    ,
+                          'MDSOPTHCKWTRLG'    , 'SATSIM'    ,
+                          'MDSOPTHCKICELG'    , 'SATSIM'    ,
+                          'MDSCLDSZWTR'       , 'SATSIM'    ,
+                          'MDSCLDSZICE'       , 'SATSIM'    ,
+                          'MDSCLDTOPPS'       , 'SATSIM'    ,
+                          'MDSWTRPATH'        , 'SATSIM'    ,
+                          'MDSICEPATH'        , 'SATSIM'    ,
+                          'CLDTMP'            , 'SOLAR'     , 'SWCLDTMP'  ,
+                          'CLDPRS'            , 'SOLAR'     , 'SWCLDPRS'  ,
+                          ::
 
   ice_inst_6hr_glo_T1440x1080_slv.template:  '%y4%m2%d2_%h2%n2z.nc4',
   ice_inst_6hr_glo_T1440x1080_slv.archive:   '%c/Y%y4',

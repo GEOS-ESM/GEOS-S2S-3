@@ -1,4 +1,4 @@
-#!/bin/csh 
+#!/bin/csh -f
 
 # ocean_das - run Ocean Static LETKF 
 #
@@ -8,16 +8,16 @@
 limit stacksize unlimited
 
 source ../ocean_das_config
-module purge
-set MODS = `$GEOSDIR/Linux/bin/g5_modules modules`
-module load $MODS
+#module purge
+#set MODS = `$GEOSDIR/Linux/bin/g5_modules modules`
+#module load $MODS
 #module load python/GEOSpyD/Ana2019.10_py3.7
-module load python/GEOSpyD/Min4.8.3_py3.8
-set BASEDIR = `$GEOSDIR/Linux/bin/g5_modules basedir`
+#module load python/GEOSpyD/Min4.8.3_py3.8
+#set BASEDIR = `$GEOSDIR/Linux/bin/g5_modules basedir`
 
 #module use -a /discover/swdev/gmao_SIteam/modulefiles-SLES12
 #module load mpi/impi-prov/19.1.0.166
-module swap mpi/impi mpi/impi/2021.2.0
+#module swap mpi/impi mpi/impi/2021.2.0
 
 #######################################################################
 #               Set Analysis Date Time

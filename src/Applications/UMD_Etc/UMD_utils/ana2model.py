@@ -1,9 +1,6 @@
 #! /usr/bin/env python
-import glob
 from netCDF4 import Dataset
 import numpy as np
-import matplotlib.pyplot as plt
-import os.path
 import sys
 import os
 import f90nml
@@ -86,7 +83,7 @@ ODAS_Nz = os.environ['ODAS_Nz']
 ODAS_GRID_TYPE = os.environ['ODAS_GRID_TYPE']
 UMD_LETKFUTILS = os.environ['UMD_LETKFUTILS']
 
-print((ODAS_Nx,ODAS_Ny, ODAS_Nz))
+print(ODAS_Nx,ODAS_Ny, ODAS_Nz)
 
 
 # Command line arguments:
@@ -98,7 +95,7 @@ incr_fname = sys.argv[4]
 bkg_fname = sys.argv[5]
 ana_fname = sys.argv[6] #Output only
  
-print((MODEL_Nx,MODEL_Ny, MODEL_Nz))
+print(MODEL_Nx,MODEL_Ny, MODEL_Nz)
 
 try:
     seaice_ana = sys.argv[7] 

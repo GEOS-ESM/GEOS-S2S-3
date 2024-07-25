@@ -42,7 +42,8 @@ LIB  = lib$(THIS).a
             reff_calculator.xx ext_calculator.xx
      SCRP = extinction_calculator.csh
      PY_MODS = mieobs.py
-     PY_EXTS = MieObs_.$(F2PYEXT) 
+     #PY_EXTS = MieObs_.$(F2PYEXT) 
+     PY_EXTS = 
      PY_SCRP = ext_calculator.py reff.py
      SRCS = Chem_RegistryMod.F90 Chem_ArrayMod.F90 \
             Chem_BundleMod.F90 Chem_Mod.F90 Chem_InitMod.F90 \

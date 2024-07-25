@@ -209,6 +209,7 @@ SUBROUTINE das_letkf(gues3d,gues2d,anal3d,anal2d)
     if (DO_NO_VERT_LOC .and. ilev > 1) CYCLE
           
     do ij=1,nij1 !STEVE: go through every possible coordinate of the grid in list form...
+      if (mod(ij,nij1/10) ==0) WRITE(6,*) "ij, nij1, %=", ij, nij1, ij*100./nij1 
       if (dodebug) WRITE(6,*) "ij = ", ij
 
       !STEVE: debug

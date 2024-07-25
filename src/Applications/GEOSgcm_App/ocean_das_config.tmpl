@@ -30,7 +30,7 @@ setenv ODAS_do_aice         True              # True:
 setenv ODAS_do_aice_nudging False             # True:  USE FALSE WHEN DUAL OCEAN IS RUNNING
 setenv ODAS_do_hice         False             # True: 
 setenv ODAS_dt_restore_sst  24                # Restoring time scale for the sst nudging
-setenv ODAS_dt_restore_sss 1440               # 30day*24hr/day=7200Restoring time scale for the sss nudging
+setenv ODAS_dt_restore_sss 1440               # 60day*24hr/day=1440 Restoring time scale for the sss nudging
 setenv ODAS_loc_max         400.0             # Max horizontal localizationlength scale [km]
 setenv ODAS_loc_min         200.0             # Min horizontal localizationlength scale [km]
 setenv ODAS_loc_max_cice    200.0             # Max horizontal localizationlength scale [km]
@@ -68,7 +68,7 @@ setenv ODAS_DIR_OLD_OBS     "/gpfsm/dnb42/projects/p17/ehackert/geos5/exp/eh020/
 setenv ODAS_OUTPUT_OMA      True                # output OMA observers in oda_run.j
 
 #List of observation platforms
-setenv ODAS_OBS_TYPE_1 "Argo CTD XBT TAO PIRATA RAMA Jason-1 Jason-2 Jason-3 Saral Sentinel-3a ERS-1 ERS-2 TOPEX GEOSAT-2 Envisat HY-2A CryoSat-2 NASA-TEAM-2 SMOS AQUARIUS SMAPV5.0"
+setenv ODAS_OBS_TYPE_1 "Argo M2-SST XBT-SYN-S CTD XBT TAO PIRATA RAMA Jason-1 Jason-2 Jason-3 Saral Sentinel-3a ERS-1 ERS-2 TOPEX GEOSAT-2 Envisat HY-2A CryoSat-2 TOPEX-N Envisat-N Jason-1-N Jason-1G Jason-2-N CryoSat-2-N NASA-TEAM-2 SMOS AQUARIUS SMAPV5.0"
 setenv HICE_DATADIR      /discover/nobackup/bzhao/ObservationData/CRYOSAT2/o1440x1080
 setenv HICE_HASMASK      True
 ######################### END USER INPUT ####################################################
@@ -82,7 +82,7 @@ setenv    SCRDIR           $EXPDIR/scratch
 setenv    ODAS_BIN         $GEOSDIR/Linux/bin
 setenv    UMD_LETKFRC      $EXPDIR/ocean_das/UMD_Etc/UMD_rc/
 setenv    UMD_LETKFUTILS   $EXPDIR/ocean_das/UMD_Etc/UMD_utils/
-setenv    UMD_LETKFSCRIPTS $EXPDIR/ocean_das/UMD_Etc/UMD_scripts/
+setenv    UMD_LETKFSCRIPTS $EXPDIR/ocean_das/UMD_Etc/scripts/
 setenv    UMD_LETKFSRC     $EXPDIR/ocean_das/UMD_Etc/UMD_oletkf/
 setenv    UMD_LETKFPLOT    $UMD_LETKFUTILS/plot/
 setenv    UMD_LETKFSCRDIR  $EXPDIR/ocean_das    # work dir for the ocean das
@@ -107,4 +107,12 @@ chmod +x ${UMD_LETKFUTILS}/dynamic_height.py
 chmod +x ${UMD_LETKFUTILS}/rst2hist.py
 
 setenv RUN_CMD         "mpirun -np "
+
+setenv DO_BIAS_CORR False
+setenv DO_INCR_BOX  False
+setenv WESTLON -70
+setenv EASTLON -20
+setenv SOUTHLAT 45
+setenv NORTHLAT 65
+setenv BOXSCALE  0
 

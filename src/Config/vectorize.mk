@@ -19,7 +19,7 @@
         FOPT := $(FOPT3) -xCORE-AVX2 -fma -qopt-report0 -ftz -align all -fno-alias -align array32byte
      else
         # For vectorizing on Haswell and higher processors with AVX2 instructions Works with AMD
-        FOPT := $(FOPT3) -march=core-avx2 -fma -qopt-report0 -ftz -align all -fno-alias -align array32byte
+        FOPT := $(FOPT3) -march=core-avx2 -fma -qopt-report0 -ftz -align all -fno-alias -align array32byte 
      endif
 
      # For vectorizing on Skylake and higher processors with CORE-AVX512 instructions
@@ -34,7 +34,7 @@
 
      # For lower precision, but (usually) better performance from AVX instructions, enable this
      # Allows for MPI layout regression in testing
-     FPE := -fpe3 -fp-model consistent -g -assume noold_maxminloc
+     FPE := -fpe3 -fp-model fast -fp-model source -fp-model consistent -g -assume noold_maxminloc -diag-disable 10121
 
      # For lower precision, but better performance from AVX instructions, enable this
      #FPE := -fpe3 -fp-model fast=2 -no-prec-div -g -assume noold_maxminloc

@@ -76,7 +76,10 @@ if (($node =~ discover*) || ($node =~ borg*)  || \
 
    set site = "NCCS"
 
-else if (($node =~ pfe*) || ($node =~ tfe*) || \
+   # NCCS now has both SLES15 and SLES12 machines
+   set OS_VERSION=`grep VERSION_ID /etc/os-release | cut -d= -f2 | cut -d. -f1 | sed 's/"//g'`
+
+else if (($node =~ pfe*) || ($node =~ afe*) || \
          ($node =~ r[0-9]*i[0-9]*n[0-9]*) || \
          ($node =~ r[0-9]*c[0-9]*t[0-9]*n[0-9]*)) then
 
@@ -133,19 +136,29 @@ if ( $site == NCCS ) then
 
    set mod1 = GEOSenv
 
-   set mod2 = comp/gcc/6.5.0
-   set mod3 = comp/intel/18.0.5.274
+   if ( $OS_VERSION == 12 ) then
 
-   # For IMPI 2018
-#  set basedir = /discover/swdev/mathomp4/Baselibs/ESMA-Baselibs-4.0.11-SLES12/x86_64-unknown-linux-gnu/ifort_18.0.5.274-intelmpi_19.1.0.166
-   #set basedir = /discover/swdev/mathomp4/Baselibs/ESMA-Baselibs-4.0.11-SLES12/x86_64-unknown-linux-gnu/ifort_18.0.5.274-intelmpi_19.1.0.166-nco_2020Apr09_snapshot
-   #set mod4 = mpi/impi/19.1.0.166
+      set mod2 = comp/gcc/6.5.0
+      set mod3 = comp/intel/18.0.5.274
 
-   # For IMPI 2021.2
-   set basedir = /discover/swdev/mathomp4/Baselibs/ESMA-Baselibs-4.0.11-SLES12/x86_64-unknown-linux-gnu/ifort_18.0.5.274-intelmpi_2021.2.0-nco_2020Apr09_snapshot
-   set mod4 = mpi/impi/2021.2.0
+      # For IMPI 2021.2
+      set basedir = /discover/swdev/mathomp4/Baselibs/ESMA-Baselibs-4.0.11-SLES12/x86_64-unknown-linux-gnu/ifort_18.0.5.274-intelmpi_2021.2.0-nco_2020Apr09_snapshot
+      set mod4 = mpi/impi/2021.2.0
 
-   set mod5 = python/GEOSpyD/Ana2019.10_py2.7
+      set mod5 = python/GEOSpyD/Min23.5.2-0_py3.11
+
+   else
+
+      set mod2 = comp/gcc/12.3.0
+      set mod3 = comp/intel/2021.6.0
+
+      # For IMPI 2021.13
+      set basedir = /discover/swdev/mathomp4/Baselibs/ESMA-Baselibs-4.0.11-SLES12/x86_64-unknown-linux-gnu/ifort_2021.6.0-intelmpi_2021.13.0-SLES15
+      set mod4 = mpi/impi/2021.13
+
+      set mod5 = python/GEOSpyD/Min23.5.2-0_py3.11
+   
+   endif
 
    set momdir = /home/yvikhlia/nobackup/mom5
 
@@ -159,15 +172,16 @@ if ( $site == NCCS ) then
 #=======#
 else if ( $site == NAS ) then
 
-   set basedir = /nobackup/gmao_SIteam/Baselibs/ESMA-Baselibs-4.0.11/x86_64-unknown-linux-gnu/ifort_2018.3.222-mpt_2.25-gcc_7.5.0-TOSS3
-   set mod1 = gcc/7.5
-   set mod2 = comp-intel/2018.3.222
-   set mod3 = mpi-hpe/mpt.2.25
-   set mod4 = math-mkl/2018.3.222
-   set mod5 = python3/3.8.8
+   # Due to Intel 2018's age, it does not compile ESMF on TOSS4. Intel 2020 seems to
+   set basedir = /nobackup/gmao_SIteam/Baselibs/ESMA-Baselibs-4.0.11/x86_64-unknown-linux-gnu/ifort_2020.4.304-mpt_2.28_25Apr23_rhel87-gcc_8.4.0-TOSS4
+   set mod1 = gcc/8.4
+   set mod2 = comp-intel/2020.4.304
+   set mod3 = mpi-hpe/mpt
+   set mod4 = math-mkl/2020.4.304
+   set mod5 = python/GEOSpyD/Min23.5.2-0_py3.11
 
-   set mod6 = git/2.17.1
-   set mod7 = cmake/3.11.2
+   set mod6 = git/2.40.1
+   set mod7 = cmake/3.28.3
 
    set momdir = /nobackup/gmao_SIteam/ModelData/mom5
 
@@ -377,7 +391,11 @@ if (-e $modinit) then
 
    if ($usemodules) then
       if ($site == NCCS) then
-         module use -a /discover/swdev/gmao_SIteam/modulefiles-SLES12
+         if ( $OS_VERSION == 12 ) then
+            module use -a /discover/swdev/gmao_SIteam/modulefiles-SLES12
+         else
+            module use -a /discover/swdev/gmao_SIteam/modulefiles-SLES15
+         endif
       endif
 
       if ($site == NAS) then

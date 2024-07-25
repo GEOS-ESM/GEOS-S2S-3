@@ -51,7 +51,8 @@ TARGETS = esma_install esma_clean esma_doc \
           install clean doc
 
 PY_MODS = gfio.py
-PY_EXTS = GFIO_.$(F2PYEXT)
+#PY_EXTS = GFIO_.$(F2PYEXT)
+PY_EXTS = 
 
 # GPU With CUDA Fortran, one of the compiler options interferes
 # with f2py. This turns off the GPU options if on.

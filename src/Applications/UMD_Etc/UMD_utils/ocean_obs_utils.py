@@ -1,18 +1,8 @@
-import matplotlib
-matplotlib.use('agg')
 from netCDF4 import Dataset
-import matplotlib.pyplot as plt
+from scipy import interpolate
 import numpy as np
-import matplotlib.cm as cm
-from mpl_toolkits.basemap import Basemap
-import sys
-import datetime
-from scipy.io import netcdf
-import os.path
-import os
-import scipy
-import ocean_obs_utils
-
+#import ocean_obs_utils
+import scipy.stats as scstats
 
 def haversine_np(lon1, lat1, lon2, lat2):
     """
@@ -149,7 +139,6 @@ def cs2_reader(yyyy, mm, dd, hh, platform='CS2-HICE', NDAYS=3.0):
         return N_LEVS, DEPTH, VAR, QC_LEV, QC_PRF, LON, LAT, DATE_TIME, OBS_ERROR
 
     ncfile = Dataset(fname,'r')
-    #ncfile=netcdf.netcdf_file(fname)
     VAR       = ncfile.variables['sea_ice_thickness'][:]
     LON       = ncfile.variables['lon'][:]
     LAT       = ncfile.variables['lat'][:]

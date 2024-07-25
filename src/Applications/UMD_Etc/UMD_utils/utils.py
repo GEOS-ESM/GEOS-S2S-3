@@ -2,26 +2,10 @@
 from netCDF4 import Dataset
 import matplotlib.pyplot as plt
 import numpy as np
-import array
 import matplotlib.cm as cm
-from mpl_toolkits.basemap import Basemap
-import glob
-import struct
-import time
-import sys
-from mpl_toolkits.basemap import Basemap, shiftgrid, addcyclic
-from scipy import interpolate
-import getopt
-import string
-from datetime import date
-import scipy.interpolate as interp
-import scipy.optimize as optm
-import subprocess
-#sys.path.append('/gpfsm/dnb42/projects/p17/gvernier/SAND_BOXES/GODAE/sea_water/')
-#import eos
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
 import seawater as sw
-import matplotlib.cm as cm
-from mpl_toolkits.axes_grid1 import AxesGrid
 
 def get_state(fname):
     print('fname=',fname)
@@ -268,8 +252,6 @@ def steric(Tb, Sb, dT, dS, deta, eta):
     #grid.cbar_axes[5].colorbar(ch)
     plt.title('SSH - Thermosteric [m]')
 
-
-    '''
     plt.subplot(235)
     incr_t=np.flipud(dthermosteric)
     incr_t[incr_t==0.0]=np.nan
@@ -290,7 +272,7 @@ def steric(Tb, Sb, dT, dS, deta, eta):
     #plt.imshow(np.flipud(deta-dsteric),vmin=vmin,vmax=vmax)
     plt.title('SSH - Steric height [m]')
     plt.colorbar()
-    '''
+
     plt.show()
     '''
 
@@ -354,16 +336,14 @@ def dynamic_height_1d(Tb, Sb, dT, dS):
 
     return dh, dh_thermo, dh_halo
 
-#def plt2d(lon,lat,stuff, minval=-.1, maxval=.1, colmap=cm.spectral):
 def plt2d(lon,lat,stuff, minval=-.1, maxval=.1, colmap=cm.jet):
-
+    plt.figure()
+    ax = plt.axes(projection=ccrs.Mollweide(central_longitude=-80))
+    ax.set_global()
+    ax.coastlines()    
     levels = np.arange(minval, maxval+(maxval-minval)/25, (maxval-minval)/25)
-    map = Basemap(projection='mill', llcrnrlon=20, llcrnrlat=-80, urcrnrlon=380, urcrnrlat=90, resolution='l')
-    map.drawcoastlines()
-    map.drawcountries()
-    map.fillcontinents(color='coral')
-    map.drawmapboundary()
-    for shift in [0, 360]:
-        x, y =list(map(lon+shift,lat))
-        ch=map.contourf(x,y,stuff, levels, origin='lower', extend='both',cmap=colmap)
+    ax.add_feature(cfeature.BORDERS, lw=.5)
+    ax.add_feature(cfeature.RIVERS)
+    ax.add_feature(cfeature.LAND, facecolor=("coral"))
+    ch = ax.contourf(lon, lat, stuff, transform=ccrs.PlateCarree(),levels=levels,extend='both',cmap=colmap)
     return ch

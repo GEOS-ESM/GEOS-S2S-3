@@ -30,7 +30,8 @@ THIS := $(shell basename `pwd`)
 #                  --------------------
 
 PY_MODS = gads.py mam7-lut.py 
-PY_EXTS = optics_.$(F2PYEXT)
+#PY_EXTS = optics_.$(F2PYEXT)
+PY_EXTS = 
 
 
 BINS = 

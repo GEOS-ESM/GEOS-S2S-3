@@ -10,17 +10,15 @@ Guillaume Dec 2016
 
 import sys
 
-import  pylab                as      pylab
 import  numpy                as      np
 import  matplotlib.pyplot    as      plt
-import matplotlib.cm         as      cm
-from mpl_toolkits.basemap    import  Basemap
+import  matplotlib.cm        as      cm
+import  cartopy.crs          as      ccrs
+import  cartopy.feature      as      cfeature
 
 from    netCDF4              import Dataset
-from    datetime             import datetime, timedelta, date
-from    mpl_toolkits.basemap import Basemap
-
-from scipy import interpolate
+from    datetime             import datetime
+from    scipy import         interpolate
 import  os
 from    read_merra2_bcs      import read_bin_data       # read a binary file, uses f2py, see file for compile instructions... change as you please!
 #-----------------------------------------------------------------
@@ -159,20 +157,17 @@ def apply_mask(field_):
 
 #def plt2d(lon,lat,stuff, minval=-.1, maxval=.1, colmap=cm.spectral):
 def plt2d(lon,lat,stuff, minval=-.1, maxval=.1, colmap=cm.jet):
-
-
+    plt.figure()
+    ax = plt.axes(projection=ccrs.Mollweide(central_longitude=-80))
+    ax.set_global()
+    ax.coastlines()
     levels = np.arange(minval, maxval+(maxval-minval)/25, (maxval-minval)/25)
-    map = Basemap(projection='mill', llcrnrlon=20, llcrnrlat=-80, urcrnrlon=380, urcrnrlat=90, resolution='l')
-    map.drawcoastlines()
-    map.drawcountries()
-    map.fillcontinents(color='coral')
-    map.drawmapboundary()
-    for shift in [0, 360]:
-        x, y =list(map(lon+shift,lat))
-        #x, y =map(lon,lat)
-        ch=map.contourf(x,y,stuff, levels, origin='lower', extend='both',cmap=colmap)
-
+    ax.add_feature(cfeature.BORDERS, lw=.5)
+    ax.add_feature(cfeature.RIVERS)
+    ax.add_feature(cfeature.LAND, facecolor=("coral"))
+    ch = ax.contourf(lon, lat, stuff, transform=ccrs.PlateCarree(),levels=levels,extend='both',cmap=colmap)
     return ch
+
 ##-----------------------------------------------------------------
 
 def write2file(lon,lat,sst_, mask_, fname):
@@ -477,10 +472,10 @@ def get_sst_sic_sss(yy_, mm_, dd_):
     #print lon
     #print lat
 
-    if ( date_ofSST-np.int(proc_date.strftime('%Y%m%d'))):
+    if ( date_ofSST-int(proc_date.strftime('%Y%m%d'))):
         sys.exit('date error in reading SST; Input and Output dates do not match')
 
-    if ( date_ofSIC-np.int(proc_date.strftime('%Y%m%d'))):
+    if ( date_ofSIC-int(proc_date.strftime('%Y%m%d'))):
         sys.exit('date error in reading SIC; Input and Output dates do not match')
     #----------------------------------------------------------------------------
 

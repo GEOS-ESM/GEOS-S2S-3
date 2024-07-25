@@ -7,7 +7,6 @@
 # 20Oct2004  da Silva  Standardization
 #
 
-ESMADIR := /gpfsm/dnb42/projects/p17/ehackert/geos5/sandbox_version3_SLES12/GEOSodas
 # Make sure ESMADIR is defined
 # ----------------------------
 ifndef ESMADIR
@@ -137,6 +136,7 @@ ocean_iau.x: $(LIB) ocean_iau.o
 
 read_merra2_bcs.so: read_bin.f90
 	f2py -c -m read_merra2_bcs read_bin.f90
+	cp read_merra2_bcs.*.so read_merra2_bcs.so
 
 # Hack to prevent remaking dep files during cleaning
 # --------------------------------------------------

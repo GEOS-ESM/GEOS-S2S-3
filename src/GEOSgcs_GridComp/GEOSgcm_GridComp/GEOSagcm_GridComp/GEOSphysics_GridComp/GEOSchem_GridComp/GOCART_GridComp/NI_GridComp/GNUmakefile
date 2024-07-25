@@ -31,13 +31,14 @@ NAME := $(patsubst %_GridComp,%,$(THIS))
 RCDIR = .
 
 esma_install install: $(ACGS) $(LIB_THIS) 
-	$(MKDIR) $(ESMALIB) $(ESMAETC) $(ESMAETC)/CMIP $(ESMAETC)/MERRA2 $(ESMAETC)/NR $(ESMAETC)/PIESA $(INC_CHEM) $(ESMABIN)
+	$(MKDIR) $(ESMALIB) $(ESMAETC) $(ESMAETC)/CMIP $(ESMAETC)/MERRA2 $(ESMAETC)/NR $(ESMAETC)/NRFCST $(ESMAETC)/PIESA $(INC_CHEM) $(ESMABIN)
 	$(CP) -p         *.rc                      $(ESMAETC)
 	$(CP) -p    CMIP/*.rc                      $(ESMAETC)/CMIP
 	$(CP) -p  MERRA2/*.rc                      $(ESMAETC)/MERRA2
 	$(CP) -pr MERRA2/19600101-20000331         $(ESMAETC)/MERRA2
 	$(CP) -pr MERRA2/20000401-present          $(ESMAETC)/MERRA2
 	$(CP) -p      NR/*.rc                      $(ESMAETC)/NR
+	$(CP) -p      NRfcst/*.rc                  $(ESMAETC)/NRFCST
 	$(CP) -p   PIESA/*.rc                      $(ESMAETC)/PIESA
 	$(CP) -p  *.h *.mod   $(INC_CHEM)
 

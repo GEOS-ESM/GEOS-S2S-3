@@ -9,7 +9,7 @@
 #include <sys/resource.h>
 #include <sys/syscall.h>
 
-static pid_t gettid(void)
+static pid_t mpp_gettid(void)
 {
   return syscall(__NR_gettid);
 }
@@ -23,8 +23,8 @@ int get_cpu_affinity(void)
   cpu_set_t coremask;		/* core affinity mask */
 
   CPU_ZERO(&coremask);
-  if (sched_getaffinity(gettid(),sizeof(cpu_set_t),&coremask) != 0) {
-    fprintf(stderr,"Unable to get thread %d affinity. %s\n",gettid(),strerror(errno));
+  if (sched_getaffinity(mpp_gettid(),sizeof(cpu_set_t),&coremask) != 0) {
+    fprintf(stderr,"Unable to get thread %d affinity. %s\n",mpp_gettid(),strerror(errno));
   }
 
   int cpu;
@@ -56,8 +56,8 @@ void set_cpu_affinity( int cpu )
 
   CPU_ZERO(&coremask);
   CPU_SET(cpu,&coremask);
-  if (sched_setaffinity(gettid(),sizeof(cpu_set_t),&coremask) != 0) {
-    fprintf(stderr,"Unable to set thread %d affinity. %s\n",gettid(),strerror(errno));
+  if (sched_setaffinity(mpp_gettid(),sizeof(cpu_set_t),&coremask) != 0) {
+    fprintf(stderr,"Unable to set thread %d affinity. %s\n",mpp_gettid(),strerror(errno));
   }
 }
 

@@ -4,7 +4,7 @@ PrimaryExports%%
 #  Name        | Units | Clim  | Method |     Time Template    | Factor | Factor |     File    | Template |
 # -------------|-------|-------|--------|----------------------|--------|--------|-------------|----------|
 # Biomass burning -- QFED-v2.x
-SU_BIOMASS NA  N Y %y4-%m2-%d2t12:00:00 none none biomass ExtData/PIESA/sfc/QFED/v2.5r1/0.1/Y%y4/M%m2/qfed2.emis_so2.005.%y4%m2%d2.nc4
+SU_BIOMASS NA  N Y %y4-%m2-%d2t12:00:00 none none biomass ExtData/chemistry/QFED/v2.6r1/sfc/0.1/Y%y4/M%m2/qfed2.emis_so2.061.%y4%m2%d2.nc4
 
 # Anthropogenic (BF & FF) emissions -- allowed to input as two layers
 SU_ANTHROL1 NA  N Y %y4-%m2-%d2t12:00:00 none none sanl1 ExtData/MERRA2/sfc/edgar-v42.emis_so2.non_energy.x1152_y721.19700703T12z_20200703T00z.nc4

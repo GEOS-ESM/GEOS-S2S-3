@@ -420,8 +420,8 @@ if( $OGCM == TRUE ) then
     endif
 
     set OGCM_GRIDSPEC = tripolar_${OGCM_IM}x${OGCM_JM}.ascii
-    set OGCM_NX = 36
-    set OGCM_NY = 10
+    set OGCM_NX = 40
+    set OGCM_NY = 36
     @   OGCM_NPROCS = $OGCM_NX * $OGCM_NY
 
 else
@@ -735,8 +735,8 @@ if( $AGCM_IM ==  "c180" ) then
      set AGCM_IM  = 180
      set AGCM_JM  = `expr $AGCM_IM \* 6`
      if( $OGCM == TRUE ) then
-          set  NX = $OGCM_NY
-          set  NY = $OGCM_NX
+          set  NX = 20
+          set  NY = 72
      set OCEAN_DT = $DT
      else
           set  NX = 6
@@ -1043,9 +1043,9 @@ AODAS:
          endif
 
 	set OGCM_NX = 40
-	set OGCM_NY = 30
+	set OGCM_NY = 36
 	set NX = 20
-	set NY = 60
+	set NY = 72
 	@   OGCM_NPROCS = $OGCM_NX * $OGCM_NY
 
          set RESTART_REC = ""
@@ -1095,8 +1095,14 @@ else
     set LSM_CHOICE = 2
 endif
 
+
 # Check for Runoff Routing Model
 # ------------------------------
+if( $OGCM == TRUE ) then
+    set RUNRRM = TRUE
+    set RUN_ROUTE = 1
+    goto GOCART
+endif
 RRM:
 echo "Do you wish to run ${C1} the Runoff Routing Model${CN}? (Default: ${C2}NO${CN} or ${C2}FALSE${CN})"
 set   RUNRRM  = $<
@@ -1161,15 +1167,15 @@ set HIST_GOCART     = ""
 # --------------
 EMISSIONS:
      set   EMISSIONS = ''
-     echo "Enter the GOCART ${C1}Emission Files${CN} to use: ${C2}MERRA2${CN} (Default), ${C2}PIESA${CN}, ${C2}CMIP${CN}, ${C2}NR${CN}, ${C2}MERRA2-DD${CN} or ${C2}OPS${CN}:"
+     echo "Enter the GOCART ${C1}Emission Files${CN} to use: ${C2}MERRA2${CN} (Default), ${C2}PIESA${CN}, ${C2}CMIP${CN}, ${C2}NR${CN}, ${C2}NRFCST${CN}, ${C2}MERRA2-DD${CN} or ${C2}OPS${CN}:"
      set   EMISSIONS = $<
      if( .$EMISSIONS == . ) then
      set   EMISSIONS = MERRA2
      else
      set   EMISSIONS = `echo   $EMISSIONS | tr "[:lower:]" "[:upper:]"`
-     if(  $EMISSIONS != CMIP & $EMISSIONS != MERRA2 & $EMISSIONS != NR &  $EMISSIONS != MERRA2-DD & $EMISSIONS != PIESA & $EMISSIONS != OPS ) then
+     if(  $EMISSIONS != CMIP & $EMISSIONS != MERRA2 & $EMISSIONS != NR &  $EMISSIONS != NRFCST & $EMISSIONS != MERRA2-DD & $EMISSIONS != PIESA & $EMISSIONS != OPS ) then
      echo
-     echo "${C1}Emission Files${CN} must be equal to:  ${C2}CMIP${CN}, ${C2}MERRA2${CN}, ${C2}NR${CN}, ${C2}MERRA2-DD${CN}, ${C2}PIESA${CN}, or ${C2}OPS${CN}!"
+     echo "${C1}Emission Files${CN} must be equal to:  ${C2}CMIP${CN}, ${C2}MERRA2${CN}, ${C2}NR${CN}, ${C2}NRFCST${CN}, ${C2}MERRA2-DD${CN}, ${C2}PIESA${CN}, or ${C2}OPS${CN}!"
      goto EMISSIONS
      else
      echo
@@ -1279,8 +1285,8 @@ if( $SITE == 'NAS' ) then
               setenv CHMDIR     /nobackup/gmao_SIteam/ModelData/fvInput_nc3            # locations of Aerosol Chemistry BCs
               setenv WRKDIR     /nobackup/$LOGNAME                                     # user work directory
               setenv COUPLEDIR  /nobackup/gmao_SIteam/ModelData/coupled/Forcings       # Coupled Ocean/Atmos Forcing
-              setenv CPEXEC    'mcp -a'                                                # Copy utility for large copies
-              setenv TAREXEC    mtar                                                   # Tar utility for large archives
+              setenv CPEXEC     cp                                                     # Copy utility for large copies
+              setenv TAREXEC    tar                                                    # Tar utility for large archives
 	      set  G5LIBDIR=/nobackup/gmao_SIteam/Utilities/ocean-scripting/python/g5lib
 else if( $SITE == 'NCCS' ) then
               setenv BATCH_CMD "sbatch"                                                # SLURM Batch command
@@ -1290,16 +1296,17 @@ else if( $SITE == 'NCCS' ) then
               setenv BATCH_OUTPUTNAME "SBATCH --output="                               # SLURM Syntax for job output name
               setenv BATCH_JOINOUTERR "DELETE"                                         # SLURM joins out and err by default
               setenv     RUN_FT "06:00:00"                                             # Wallclock Time   for gcm_forecast.j
-              setenv     RUN_T  "12:00:00"                                             # Wallclock Time   for gcm_run.j
+              setenv     RUN_T  "8:00:00"                                             # Wallclock Time   for gcm_run.j
               setenv    POST_T  "8:00:00"                                              # Wallclock Time   for gcm_post.j
               setenv    PLOT_T  "12:00:00"                                             # Wallclock Time   for gcm_plot.j
               setenv ARCHIVE_T  "2:00:00"                                              # Wallclock Time   for gcm_archive.j
               if( $GPU == "TRUE" ) then
                  setenv  RUN_Q  "SBATCH --constraint=k40"                              # batch queue name for gcm_run.j
               else
-                 setenv  RUN_Q  "SBATCH --constraint=hasw"                             # batch queue name for gcm_run.j
+                 setenv  RUN_Q  'SBATCH --constraint=[sky|cas]'                        # batch queue name for gcm_run.j
               endif
               setenv    RUN_P   "SBATCH --ntasks=${NPES}"                              # PE Configuration for gcm_run.j
+              setenv    RUN_P2  "SBATCH --nodes=40 --ntasks-per-node=36"               # PE Configuration for gcm_run.j
               setenv    RUN_FP  "SBATCH --ntasks=\&NPES"                               # PE Configuration for gcm_forecast.j
               setenv    POST_Q  'SBATCH --constraint="[sky|cas]"'                      # batch queue name for gcm_post.j
               setenv    PLOT_Q  'SBATCH --constraint="[sky|cas]"'                      # batch queue name for gcm_plot.j
@@ -1316,9 +1323,9 @@ else if( $SITE == 'NCCS' ) then
               else
                    setenv SSTDIR     $SHARE/dao_ops/fvInput/g5gcm/bcs/realtime/@SSTNAME/${OGCM_IM}x${OGCM_JM} # location of SST Boundary Conditions
               endif
-              setenv CHMDIR     $SHARE/dao_ops/fvInput_nc3                             # locations of Aerosol Chemistry BCs
+              setenv CHMDIR     $SHARE/gmao_ops/fvInput_4dvar                          # locations of Aerosol Chemistry BCs
               setenv WRKDIR     /discover/nobackup/$LOGNAME                            # user work directory
-              setenv COUPLEDIR  /discover/nobackup/yvikhlia/coupled/Forcings           # Coupled Ocean/Atmos Forcing
+              setenv COUPLEDIR  /home/yvikhlia/nobackup/coupled/Forcings               # Coupled Ocean/Atmos Forcing
               setenv CPEXEC     /bin/cp                                                # Copy utility for large copies
               setenv TAREXEC    tar                                                    # Tar utility for large archives
 	      set G5LIBDIR=/home/yvikhlia/python/g5lib
@@ -1326,12 +1333,13 @@ else
 # These are defaults for the desktop
               setenv BATCH_GROUP "SBATCH -A "                                          # PBS Syntax for GROUP
               setenv     RUN_FT "06:00:00"                                             # Wallclock Time   for gcm_forecast.j
-              setenv     RUN_T  "12:00:00"                                             # Wallclock Time   for gcm_run.j
+              setenv     RUN_T  "8:00:00"                                             # Wallclock Time   for gcm_run.j
               setenv    POST_T  "8:00:00"                                              # Wallclock Time   for gcm_post.j
               setenv    PLOT_T  "12:00:00"                                             # Wallclock Time   for gcm_plot.j
               setenv ARCHIVE_T  "1:00:00"                                              # Wallclock Time   for gcm_archive.j
               setenv  RUN_Q     NULL                                                   # batch queue name for gcm_run.j
               setenv  RUN_P     NULL                                                   # PE Configuration for gcm_run.j
+              setenv  RUN_P2    NULL                                                   # PE Configuration for gcm_run.j
               setenv  RUN_FP    NULL                                                   # PE Configuration for gcm_forecast.j
               setenv    POST_Q  NULL                                                   # batch queue name for gcm_post.j
               setenv    PLOT_Q  NULL                                                   # batch queue name for gcm_plot.j
@@ -1707,7 +1715,22 @@ if( $MPI == openmpi ) then
 # file system
 
 cat > $HOMDIR/SETENV.commands << EOF
-   setenv OMPI_MCA_shmem_mmap_enable_nfs_warning 0
+# Turn off warning about TMPDIR on NFS
+setenv OMPI_MCA_shmem_mmap_enable_nfs_warning 0
+# pre-connect MPI procs on mpi_init
+setenv OMPI_MCA_mpi_preconnect_all 1
+setenv OMPI_MCA_coll_tuned_bcast_algorithm 7
+setenv OMPI_MCA_coll_tuned_scatter_algorithm 2
+setenv OMPI_MCA_coll_tuned_reduce_scatter_algorithm 3
+setenv OMPI_MCA_coll_tuned_allreduce_algorithm 3
+setenv OMPI_MCA_coll_tuned_allgather_algorithm 4
+setenv OMPI_MCA_coll_tuned_allgatherv_algorithm 3
+setenv OMPI_MCA_coll_tuned_gather_algorithm 1
+setenv OMPI_MCA_coll_tuned_barrier_algorithm 0
+# required for a tuned flag to be effective
+setenv OMPI_MCA_coll_tuned_use_dynamic_rules 1
+# disable file locks
+setenv OMPI_MCA_sharedfp "^lockedfile,individual"
 EOF
 
 # The below settings seem to be recommended for hybrid
@@ -1749,14 +1772,14 @@ cat > $HOMDIR/SETENV.commands << EOF
    setenv MPI_XPMEM_ENABLED no
    setenv SUPPRESS_XPMEM_TRIM_THRESH 1
    setenv MPI_NUM_MEMORY_REGIONS 0
-   
+
    #setenv MPI_DISPLAY_SETTINGS 1
    #setenv MPI_VERBOSE 1
-   
+
    setenv MPI_COMM_MAX  1024
    setenv MPI_GROUP_MAX 1024
    setenv MPI_BUFS_PER_PROC 256
-   
+
    setenv MPI_IB_TIMEOUT 23
 
    # For some reason, PMI_RANK is randomly set and interferes
@@ -1768,8 +1791,41 @@ EOF
 else if( $MPI == intelmpi ) then
 
 cat > $HOMDIR/SETENV.commands << EOF
-setenv I_MPI_DAPL_UD enable
+# This flag prints out the Intel MPI state. Uncomment if needed
+#setenv I_MPI_DEBUG 9
 EOF
+
+if ( $SITE == 'NCCS' ) then
+
+cat > $HOMDIR/SETENV.commands << EOF
+setenv I_MPI_SHM_HEAP_VSIZE 512
+setenv PSM2_MEMORY large
+
+setenv I_MPI_EXTRA_FILESYSTEM 1
+setenv I_MPI_EXTRA_FILESYSTEM_FORCE gpfs
+
+# We set some variables only on SLES15 at NCCS
+set OS_VERSION=\`grep VERSION_ID /etc/os-release | cut -d= -f2 | cut -d. -f1 | sed 's/"//g'\`
+
+if ( \$OS_VERSION == 15 ) then
+setenv I_MPI_FALLBACK 0
+setenv I_MPI_FABRICS ofi
+setenv I_MPI_OFI_PROVIDER psm3
+setenv I_MPI_ADJUST_SCATTER 2
+setenv I_MPI_ADJUST_SCATTERV 2
+setenv I_MPI_ADJUST_GATHER 2
+setenv I_MPI_ADJUST_GATHERV 3
+setenv I_MPI_ADJUST_ALLGATHER 3
+setenv I_MPI_ADJUST_ALLGATHERV 3
+setenv I_MPI_ADJUST_ALLREDUCE 12
+setenv I_MPI_ADJUST_REDUCE 10
+setenv I_MPI_ADJUST_BCAST 11
+setenv I_MPI_ADJUST_REDUCE_SCATTER 4
+setenv I_MPI_ADJUST_BARRIER 9
+endif
+EOF
+
+endif # if NCCS
 
 endif # if mpi
 
@@ -1872,19 +1928,17 @@ if( $OGCM == TRUE ) then
 	set MOMDIR = ${OGCM_IM}x${OGCM_JM}_odas
     endif
 
-    /bin/cp ../../GEOSgcs_GridComp/GEOSgcm_GridComp/GEOSogcm_GridComp/GEOSocean_GridComp/GuestOcean_GridComp/MOM_GEOS5PlugMod/mom/data/geos5/${MOMDIR}/INPUT/input.nml $tmpDIR
-    /bin/cp ../../GEOSgcs_GridComp/GEOSgcm_GridComp/GEOSogcm_GridComp/GEOSocean_GridComp/GuestOcean_GridComp/MOM_GEOS5PlugMod/mom/data/geos5/${MOMDIR}/INPUT/*table $tmpDIR
     /bin/cp ${G5LIBDIR}/plotocn.j $tmpDIR
     /bin/cp ${G5LIBDIR}/confocn.py $tmpDIR/__init__.py
 
-set FILES = "$FILES      \
-             input.nml   \
-             diag_table  \
-             field_table \
-	     plotocn.j \
-	     __init__.py"
+    set FILES = "$FILES           \
+                 input.nml.tmpl   \
+                 diag_table.tmpl  \
+                 field_table.tmpl \
+	         plotocn.j        \
+                 __init__.py"
 
-set FILES = `echo $FILES`
+    set FILES = `echo $FILES`
 endif
 
 if($CUBED == "TRUE") then
@@ -1929,6 +1983,7 @@ s?@RUN_N?$RUN_N?g
 s?@RUN_FN?$RUN_FN?g
 s?@RUN_FT?$RUN_FT?g
 s?@RUN_T?$RUN_T?g
+s?@RUN_P2?$RUN_P2?g
 s?@RUN_P?$RUN_P?g
 s?@RUN_FP?$RUN_FP?g
 s?@RUN_Q?$RUN_Q?g
@@ -2022,8 +2077,8 @@ s?>>>REGULAR_REPLAY_ECMWF<<<?#DELETE?g
 s?ana4replay.eta.%y4%m2%d2_%h2z.nc4?/discover/nobackup/projects/gmao/share/gmao_ops/verification/MERRA2_MEANS/ana/Y%y4/M%m2/MERRA-2.ana.eta.%y4%m2%d2_%h2z.nc4?g
 
 s?@OX_RELAXTIME?259200.?g
-#s?@PCHEM_CLIM_YEARS?228?g
-s?@PCHEM_CLIM_YEARS?39?g
+s?@PCHEM_CLIM_YEARS?228?g
+#s?@PCHEM_CLIM_YEARS?39?g
 
 s?@RATS_PROVIDER?$RATS_PROVIDER?g
 s?@AERO_PROVIDER?$AERO_PROVIDER?g
@@ -2163,7 +2218,7 @@ end
     set FILES = "AGCM.rc.tmpl gcm_run.j gcm_stats.j gcm_forecast.tmpl gcm_forecast.setup HISTORY.rc.tmpl gcm_convert.j gcm_regress.j gcm_post.j gcm_emip.setup gcm_plot.tmpl"
 
 if( $OGCM == TRUE ) then
-    set FILES = "$FILES input.nml"
+    set FILES = "$FILES input.nml.tmpl diag_table.tmpl field_table.tmpl"
 endif
 
 foreach FILE ($FILES)
@@ -2223,8 +2278,14 @@ if( $OGCM == TRUE ) if(! -e $EXPDIR/RESTART ) mkdir -p $EXPDIR/RESTART
 /bin/mv $HOMDIR/AGCM.rc.tmpl           $HOMDIR/AGCM.rc
 /bin/mv $HOMDIR/HISTORY.rc.tmpl        $HOMDIR/HISTORY.rc
 
-if( $OGCM == TRUE ) /bin/mv $HOMDIR/plotocn.j       $EXPDIR/plot
-
+if( $OGCM == TRUE ) then
+    /bin/mv $HOMDIR/plotocn.j          $EXPDIR/plot
+    /bin/mv $HOMDIR/diag_table.tmpl    $HOMDIR/diag_table
+    /bin/mv $HOMDIR/field_table.tmpl   $HOMDIR/field_table
+    /bin/mv $HOMDIR/input.nml.tmpl     $HOMDIR/input.nml
+    chmod +x $HOMDIR/diag_table
+    chmod +x $HOMDIR/field_table
+endif
 #######################################################################
 #       Modify RC Directory for LM and GOCART.data/GOCART Options     
 #######################################################################
@@ -2337,7 +2398,7 @@ endif
 if( $AODAS == TRUE ) then
    /bin/mkdir -p $EXPDIR/ocean_das
    /bin/cp -r ${GEOSSRC}/Applications/UMD_Etc $EXPDIR/ocean_das
-   /bin/ln -s $EXPDIR/ocean_das/UMD_Etc/scripts $EXPDIR/ocean_das/UMD_Etc/UMD_scripts
+#   /bin/ln -s $EXPDIR/ocean_das/UMD_Etc/scripts $EXPDIR/ocean_das/UMD_Etc/UMD_scripts
 endif
 
 

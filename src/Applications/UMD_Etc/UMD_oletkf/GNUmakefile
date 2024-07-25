@@ -62,20 +62,20 @@ esma_help help:
 #                  User Defined Targets
 #                  --------------------
 
-SRCS := common.f90 common_mpi.f90 common_mtx.f90 mod_sfmt.f90 params_letkf.f90 params_model.f90 params_obs.f90 vars_model.f90 vars_obs.f90 common_letkf.f90 common_mom4.f90 common_mpi_mom4.f90 common_obs_mom4.f90 letkf_obs.f90 letkf_local.f90 letkf_tools.f90 gsw_pot_to_insitu.f90 netlib2.f
+SRCS := common.f90 common_mpi.f90 common_mtx.f90 mod_sfmt.f90 params_letkf.f90 params_model.f90 params_obs.f90 vars_model.f90 vars_obs.f90 common_letkf.f90 common_mom4.f90 common_mpi_mom4.f90 common_obs_mom4.f90 letkf_obs.f90 letkf_local.f90 letkf_tools.f90 gsw_pot_to_insitu.f90 netlib2.f MemUtils.F90
 OBJS := $(addsuffix .o, $(basename $(SRCS)))
 
 ALL_SRCS = $(SRCS) $(BIN_SRCS)
 DEPS := $(addsuffix .d, $(basename $(ALL_SRCS)))
 
-FOPT = $(FOPT3) -traceback
+FOPT = $(FOPT3) -traceback 
 #FOPT = $(FOPTG) -traceback
 FREAL = $(FREAL4)
 
 
 
-MOD_DIRS = . $(INC_NETCDF) 
-USER_FDEFS = $(D)_LAPACK_ $(D)gmao_intf $(D)HAVE_ESMF
+MOD_DIRS = . $(INC_NETCDF)
+USER_FDEFS = $(D)_LAPACK_ $(D)gmao_intf $(D)HAVE_ESMF $(D)USE_MKL_ODAS
 USER_FFLAGS = $(BIG_ENDIAN) $(BYTERECLEN)
 USER_FMODS  = $(foreach dir,$(MOD_DIRS),$(M)$(dir)) 
 USER_FINC   = $(foreach dir,$(MOD_DIRS),$(M)$(dir)) 
@@ -86,7 +86,7 @@ $(LIB) lib : $(DEPS) $(OBJS)
 	$(RM) $(LIB)
 	$(AR) $(AR_FLAGS) $(LIB) $(OBJS)
 
-oceanda.x:  $(LIB) letkf.o
+oceanda.x:  $(LIB) letkf.o 
 	$(LD) $(LDFLAGS) -o $@ letkf.o $(LIB) \
               $(LIB_NETCDF) \
               $(LIB_MPI) $(LIB_SYS) $(LIB_SCI)

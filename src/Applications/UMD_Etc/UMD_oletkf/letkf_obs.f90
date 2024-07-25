@@ -41,6 +41,8 @@ MODULE letkf_obs
   USE common_letkf
   USE params_obs
   USE vars_obs
+  USE MemUtilsMod  ! CDA_DEBUG
+
   !(DRIFTERS)
 ! USE letkf_drifters
 
@@ -58,7 +60,11 @@ MODULE letkf_obs
                                      ! Solution was to populate a SST model field (v2d) with surface temp data from the model (v3d(:,:,1))
   INTEGER :: cnt_obs_u, cnt_obs_v, cnt_obs_t, cnt_obs_s, cnt_obs_x, cnt_obs_y, cnt_obs_z, cnt_obs_ssh, cnt_obs_eta, cnt_obs_sst, cnt_obs_sss
   integer :: cnt_obs_aice, cnt_obs_hice
-  INTEGER, DIMENSION(nv3d+nv2d), SAVE :: cnt_obs = 0
+  !CDA_START
+  !orignal line !INTEGER, DIMENSION(nv3d+nv2d), SAVE :: cnt_obs = 0
+  INTEGER, DIMENSION(10), SAVE :: cnt_obs = 0 !temp fix by CDA
+  !CDA_END
+
   !STEVE: for debugging observation culling:
   INTEGER :: cnt_yout=0, cnt_xout=0, cnt_zout=0, cnt_triout=0
   INTEGER :: cnt_rigtnlon=0, cnt_nearland=0
@@ -103,7 +109,7 @@ CONTAINS
     REAL(r_size),ALLOCATABLE :: tmp2id(:)   !(DRIFTERS)
     REAL(r_size),ALLOCATABLE :: tmp2time(:) !(DRIFTERS)
     INTEGER :: nobslots(nslots)
-    INTEGER :: n,i,j,ierr,islot,nn,l,im
+    INTEGER :: n,i,j,ierr,islot,nn,l,im, ii
     INTEGER :: nj(0:nlat-1)
     INTEGER :: njs(1:nlat-1)
     CHARACTER(12) :: obsfile='obsTTNNN.dat'
@@ -121,6 +127,8 @@ CONTAINS
     real(r_size) :: offset, cnt_adt   ! ALTIMETER OFFSET
 
     type(ObsStatus), intent(in) :: obs_status
+
+    call MemReport(MPI_COMM_WORLD,"into main in set_letkf_obs") ! CDA_DEBUG
 
     WRITE(6,'(A)') 'Hello from set_letkf_obs'
 
@@ -141,10 +149,14 @@ CONTAINS
           CALL get_nobs(obsfile,obs2nrec,nobslots(islot))
        enddo
     endif
+    call MemReport(MPI_COMM_WORLD,"line 148 in set_letkf_obs") ! CDA_DEBUG
 
     CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
+    call MemReport(MPI_COMM_WORLD,"line 151 in set_letkf_obs") ! CDA_DEBUG
     CALL MPI_BCAST(nobslots,nslots,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
+    call MemReport(MPI_COMM_WORLD,"line 153 in set_letkf_obs") ! CDA_DEBUG
     CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
+    call MemReport(MPI_COMM_WORLD,"line 155 in set_letkf_obs") ! CDA_DEBUG
 
     nobs = SUM(nobslots)
     WRITE(6,'(I10,A)') nobs,' TOTAL OBSERVATIONS INPUT'
@@ -174,6 +186,7 @@ CONTAINS
     tmpqc0 = 0
     tmphdxf = 0.0d0
     tmperr = 0.0d0
+    call MemReport(MPI_COMM_WORLD,"line 185 in set_letkf_obs") ! CDA_DEBUG
 
     !-----------------------------------------------------------------------------
     ! LOOP of timeslots
@@ -198,6 +211,7 @@ CONTAINS
        enddo
        nn = nn + nobslots(islot)
     enddo timeslots0
+    call MemReport(MPI_COMM_WORLD,"line 210 in set_letkf_obs") ! CDA_DEBUG
 
 
     WRITE(6,*) "Commencing collecting obs on all procs..."
@@ -219,6 +233,7 @@ CONTAINS
     CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
     CALL MPI_BCAST( tmpinstid, nobs, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD,ierr)
     CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
+    call MemReport(MPI_COMM_WORLD,"line 232 in set_letkf_obs") ! CDA_DEBUG
 
     !STEVE: compile the tmphdxf array on all procs
     ALLOCATE(wk2d(nobs,nbv))
@@ -238,6 +253,7 @@ CONTAINS
     CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
     DEALLOCATE(iwk2d)
     WRITE(6,*) "Finished collecting obs on all procs."
+    call MemReport(MPI_COMM_WORLD,"line 252 in set_letkf_obs") ! CDA_DEBUG
 !!$
 !!$    WRITE(6,*) "STEVE: DEBUGGING..."
 !!$    WRITE(6,'(I10,A,I3.3)') nobs,' OBSERVATIONS, MYRANK = ',myrank
@@ -370,6 +386,7 @@ CONTAINS
 
     enddo
     DEALLOCATE(tmpqc0)
+    call MemReport(MPI_COMM_WORLD,"line 385 in set_letkf_obs") ! CDA_DEBUG
 
     ! Remove offset when assimilating altimetry
     if (cnt_adt>0.0) then
@@ -413,7 +430,9 @@ CONTAINS
     cnt_obs(nv3d+iv2d_aice) = cnt_obs_aice
     cnt_obs(nv3d+iv2d_hice) = cnt_obs_hice
 
+    call MemReport(MPI_COMM_WORLD,"line 429 in set_letkf_obs") ! CDA_DEBUG
     CALL monit_dep(nobs,tmpelm,tmpdep,tmpqc)
+    call MemReport(MPI_COMM_WORLD,"line 431 in set_letkf_obs") ! CDA_DEBUG
 
     !STEVE: maybe use this if there are enough observations...
     !
@@ -478,21 +497,10 @@ CONTAINS
     enddo
     nobs = nn
     WRITE(6,'(I10,A,I3.3)') nobs,' OBSERVATIONS TO BE ASSIMILATED IN MYRANK ',myrank
+    call MemReport(MPI_COMM_WORLD,"line 496 in set_letkf_obs") ! CDA_DEBUG
+    if (myrank==0) call system("cat /proc/meminfo") ! CDA_DEBUG
 
-    !
-    ! SORT
-    !
-    ALLOCATE( tmp2elm(nobs) )
-    ALLOCATE( tmp2lon(nobs) )
-    ALLOCATE( tmp2lat(nobs) )
-    ALLOCATE( tmp2lev(nobs) )
-    ALLOCATE( tmp2dat(nobs) )
-    ALLOCATE( tmp2err(nobs) )
-    ALLOCATE( tmp2dep(nobs) )
-    ALLOCATE( tmp2instid(nobs) )
-    ALLOCATE( tmp2hdxf(nobs,nbv) )
-    ALLOCATE( tmp2id(nobs) )    !(DRIFTERS)
-    ALLOCATE( tmp2time(nobs) )  !(DRIFTERS)
+
     ALLOCATE( obselm(nobs) )
     ALLOCATE( obslon(nobs) )
     ALLOCATE( obslat(nobs) )
@@ -506,122 +514,202 @@ CONTAINS
     ALLOCATE( obstime(nobs) )  !(DRIFTERS)
 
     ALLOCATE(nobsgrd(nlon,nlat)) !STEVE: added 07/09/15, changed nobsgrd to ALLOCATABLE
-    nobsgrd = 0
-    nj = 0
-    ! Count the number of observations within each latitude range
-    do j=1,nlat-1
-       do n=1,nobs
-          if (tmplat(n) < lat(j) .OR. lat(j+1) <= tmplat(n)) CYCLE
-          nj(j) = nj(j) + 1
-       enddo
+
+    call MemReport(MPI_COMM_WORLD,"line 523 in set_letkf_obs") ! CDA_DEBUG
+    if (myrank==0) call system("cat /proc/meminfo") !CDA_DEBUG
+
+    !
+    ! ONLY SORT OBS IN THE ROOT PROCESS
+    !
+    if (myrank==0) then
+
+        ALLOCATE( tmp2elm(nobs) )
+        ALLOCATE( tmp2lon(nobs) )
+        ALLOCATE( tmp2lat(nobs) )
+        ALLOCATE( tmp2lev(nobs) )
+        ALLOCATE( tmp2dat(nobs) )
+        ALLOCATE( tmp2err(nobs) )
+        ALLOCATE( tmp2dep(nobs) )
+        ALLOCATE( tmp2instid(nobs) )
+        !ALLOCATE( tmp2hdxf(nobs,nbv) )
+        ALLOCATE( tmp2hdxf(nbv,nobs) )
+        ALLOCATE( tmp2id(nobs) )    !(DRIFTERS)
+        ALLOCATE( tmp2time(nobs) )  !(DRIFTERS)
+
+        call MemReport(MPI_COMM_WORLD,"line 526 in set_letkf_obs") ! CDA_DEBUG
+        nobsgrd = 0
+        nj = 0
+        ! Count the number of observations within each latitude range
+        do j=1,nlat-1
+           do n=1,nobs
+              if (tmplat(n) < lat(j) .OR. lat(j+1) <= tmplat(n)) CYCLE
+              nj(j) = nj(j) + 1
+           enddo
+        enddo
+        call MemReport(MPI_COMM_WORLD,"line 536 in set_letkf_obs")
+        ! Record cumulative sum of observations up to this latitude
+        ! Creates the basis for an indexing of observations from lat to lat
+        do j=1,nlat-1
+           njs(j) = SUM(nj(0:j-1))
+        enddo
+
+        call MemReport(MPI_COMM_WORLD,"line 565 in set_letkf_obs_before") ! CDA_DEBUG
+
+        ! Rearrange observations by latitude
+        do j=1,nlat-1
+           nn = 0
+           do n=1,nobs
+              if (tmplat(n) < lat(j) .OR. lat(j+1) <= tmplat(n)) CYCLE
+              !     if (tmplon(n) >= lon(nlon)-EPSILON(1.0d0)) CYCLE   !STEVE: I added this to align with the same condition in the code above
+              !       Otherwise, sometimes nn /= nj(j)
+              nn = nn + 1
+              !WRITE(6,*) "nn, njs(j)+nn, n, nobs=", nn, njs(j)+nn, n, nobs ! CDA: tmp
+              tmp2elm(njs(j)+nn) = tmpelm(n)
+              tmp2lon(njs(j)+nn) = tmplon(n)
+              tmp2lat(njs(j)+nn) = tmplat(n)
+              tmp2lev(njs(j)+nn) = tmplev(n)
+              tmp2dat(njs(j)+nn) = tmpdat(n)
+              tmp2err(njs(j)+nn) = tmperr(n)
+              tmp2instid(njs(j)+nn) = tmpinstid(n)
+              !      tmp2k(njs(j)+nn) = tmpk(n)
+              tmp2dep(njs(j)+nn) = tmpdep(n)
+              !tmp2hdxf(njs(j)+nn,:) = tmphdxf(n,:)
+              do ii = 1, nbv
+                 tmp2hdxf(ii,njs(j)+nn) = tmphdxf(n,ii)
+              enddo
+              tmp2id(njs(j)+nn) = tmpid(n)     !(DRIFTERS)
+              tmp2time(njs(j)+nn) = tmptime(n) !(DRIFTERS)
+           enddo
+        enddo
+        call MemReport(MPI_COMM_WORLD,"line 565 in set_letkf_obs") ! CDA_DEBUG
+        if (myrank==0) call system("cat /proc/meminfo") ! CDA_DEBUG
+
+        ! For each latitude, identify the number of obs per longitude.
+        ! Then, rearrange observations by longitude within each latitude step
+        do j=1,nlat-1
+           if (nj(j) == 0) then
+              nobsgrd(:,j) = njs(j)
+              CYCLE
+           endif
+           nn = 0
+           WRITE(6,*) "DEBUG_lat: j, nlat=", j, nlat
+           do i=1,nlon
+              do n=njs(j)+1,njs(j)+nj(j)
+
+                 ! Find the correct longitude bin for this observation...
+                 if (i < nlon) then
+                    if (tmp2lon(n) < lon(i) .OR. lon(i+1) <= tmp2lon(n)) CYCLE
+                 else
+                    ! STEVE: this is causing nn /= nj(j), the error thrown below.
+                    !        We need these points that are skipped, otherwise there are
+                    !        blank entries in the obselm etc. arrays, and this will
+                    !        lead to problems during the main letkf algorithm.
+                    !        Another solution may be to cut out all the empty entries
+                    !        by changing the obsxxx indicies.
+                    !
+                    if (tmp2lon(n) < lon(nlon)) CYCLE
+
+                    !STEVE: debugging
+                    if (.false.) then
+                       WRITE(6,*) "n, nn, njs(j), nj(j) = ", n, nn, njs(j), nj(j)
+                       WRITE(6,*) "KEEPING, i == nlon == ", i, nlon
+                       WRITE(6,*) "tmp2lon(n) = ", tmp2lon(n)
+                       WRITE(6,*) "lon(nlon) = ", lon(nlon)
+                       !WRITE(6,*) "either tmp2lon(n) >= lon(nlon) .OR. 360.0d0 > tmp2lon(n)"
+                       WRITE(6,*) "tmp2lon(n) >= lon(nlon)"
+                       WRITE(6,*) "========================================================"
+                    ENDIF
+                 endif
+                 nn = nn + 1
+                 obselm(njs(j)+nn) = tmp2elm(n)
+                 obslon(njs(j)+nn) = tmp2lon(n)
+                 obslat(njs(j)+nn) = tmp2lat(n)
+                 obslev(njs(j)+nn) = tmp2lev(n)
+                 obsdat(njs(j)+nn) = tmp2dat(n)
+                 obserr(njs(j)+nn) = tmp2err(n)
+                 obsdep(njs(j)+nn) = tmp2dep(n)
+                 obsinstid(njs(j)+nn) = tmp2instid(n)
+                 do ii = 1, nbv
+                    obshdxf(njs(j)+nn,ii) = tmp2hdxf(ii,n)
+                 enddo
+                 obsid(njs(j)+nn) = tmp2id(n)     !(DRIFTERS)
+                 obstime(njs(j)+nn) = tmp2time(n) !(DRIFTERS)
+              enddo
+
+              ! This now contains the accumulated count of obs up to this lat, up to this lon
+              nobsgrd(i,j) = njs(j) + nn
+           enddo
+
+           if (nn /= nj(j)) then
+              WRITE(6,'(A,2I)') 'OBS DATA SORT ERROR: ',nn,nj(j)
+              WRITE(6,'(F6.2,A,F6.2)') lat(j),'<= LAT <',lat(j+1)
+              WRITE(6,'(F6.2,A,F6.2)') MINVAL(tmp2lat(njs(j)+1:njs(j)+nj(j))),'<= OBSLAT <',MAXVAL(tmp2lat(njs(j)+1:njs(j)+nj(j)))
+              WRITE(6,*) "j = ", j
+              WRITE(6,*) "njs(j) = ", njs(j)
+              WRITE(6,*) "nj(j) = ", nj(j)
+              !STEVE: this is bad, something is wrong
+              WRITE(6,*) "STEVE: this error will cause matrix eigenvalue < 0 error."
+              STOP 3
+           endif
+
+        enddo
+        call MemReport(MPI_COMM_WORLD,"line 633 in set_letkf_obs") ! CDA_DEBUG
+
+        DEALLOCATE( tmp2elm )
+        DEALLOCATE( tmp2lon )
+        DEALLOCATE( tmp2lat )
+        DEALLOCATE( tmp2lev )
+        DEALLOCATE( tmp2dat )
+        DEALLOCATE( tmp2err )
+        DEALLOCATE( tmp2instid )
+        DEALLOCATE( tmp2dep )
+        DEALLOCATE( tmp2hdxf )
+        DEALLOCATE( tmp2id )    !(DRIFTERS)
+        DEALLOCATE( tmp2time )  !(DRIFTERS)
+
+    end if ![myrank==0]
+
+
+    !
+    !  broadcast sorted obs array to all processes
+    !
+    WRITE(6,*) "boradcast sorted obs array to all procs..."
+    !STEVE: broadcast the 1d arrays from root onto all procs
+    CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
+    WRITE(6,*) "Calling MPI_BCAST's..."
+    CALL MPI_BCAST( obselm, nobs, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD,ierr)
+    CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
+    CALL MPI_BCAST( obslon, nobs, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD,ierr)
+    CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
+    CALL MPI_BCAST( obslat, nobs, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD,ierr)
+    CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
+    CALL MPI_BCAST( obslev, nobs, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD,ierr)
+    CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
+    CALL MPI_BCAST( obsdat, nobs, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD,ierr)
+    CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
+    CALL MPI_BCAST( obserr, nobs, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD,ierr)
+    CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
+    CALL MPI_BCAST( obsinstid, nobs, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD,ierr)
+    CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
+    CALL MPI_BCAST( obsdep, nobs, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD,ierr)
+    CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
+    CALL MPI_BCAST( obsid, nobs, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD,ierr)
+    CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
+    CALL MPI_BCAST( obstime, nobs, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD,ierr)
+    do ii =1, nbv
+        CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
+        WRITE(6,*) "Calling BSCAT OBS MEM=",ii
+        CALL MPI_BCAST(obshdxf(:,ii), nobs, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD,ierr)
     enddo
-    ! Record cumulative sum of observations up to this latitude
-    ! Creates the basis for an indexing of observations from lat to lat
-    do j=1,nlat-1
-       njs(j) = SUM(nj(0:j-1))
-    enddo
 
-    ! Rearrange observations by latitude
-    do j=1,nlat-1
-       nn = 0
-       do n=1,nobs
-          if (tmplat(n) < lat(j) .OR. lat(j+1) <= tmplat(n)) CYCLE
-          !     if (tmplon(n) >= lon(nlon)-EPSILON(1.0d0)) CYCLE   !STEVE: I added this to align with the same condition in the code above
-          !       Otherwise, sometimes nn /= nj(j)
-          nn = nn + 1
-          tmp2elm(njs(j)+nn) = tmpelm(n)
-          tmp2lon(njs(j)+nn) = tmplon(n)
-          tmp2lat(njs(j)+nn) = tmplat(n)
-          tmp2lev(njs(j)+nn) = tmplev(n)
-          tmp2dat(njs(j)+nn) = tmpdat(n)
-          tmp2err(njs(j)+nn) = tmperr(n)
-          tmp2instid(njs(j)+nn) = tmpinstid(n)
-          !      tmp2k(njs(j)+nn) = tmpk(n)
-          tmp2dep(njs(j)+nn) = tmpdep(n)
-          tmp2hdxf(njs(j)+nn,:) = tmphdxf(n,:)
-          tmp2id(njs(j)+nn) = tmpid(n)     !(DRIFTERS)
-          tmp2time(njs(j)+nn) = tmptime(n) !(DRIFTERS)
-       enddo
-    enddo
+    CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
+    CALL MPI_BCAST( nobsgrd, nlon*nlat, MPI_INTEGER, 0, MPI_COMM_WORLD,ierr)
+    CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
 
-    ! For each latitude, identify the number of obs per longitude.
-    ! Then, rearrange observations by longitude within each latitude step
-    do j=1,nlat-1
-       if (nj(j) == 0) then
-          nobsgrd(:,j) = njs(j)
-          CYCLE
-       endif
-       nn = 0
-       do i=1,nlon
-          do n=njs(j)+1,njs(j)+nj(j)
+    WRITE(6,*) "sum(nobsgrd)=",sum(nobsgrd)
+    WRITE(6,*) "sum(obshdxf)=",sum(obshdxf)
 
-             ! Find the correct longitude bin for this observation...
-             if (i < nlon) then
-                if (tmp2lon(n) < lon(i) .OR. lon(i+1) <= tmp2lon(n)) CYCLE
-             else
-                ! STEVE: this is causing nn /= nj(j), the error thrown below.
-                !        We need these points that are skipped, otherwise there are
-                !        blank entries in the obselm etc. arrays, and this will
-                !        lead to problems during the main letkf algorithm.
-                !        Another solution may be to cut out all the empty entries
-                !        by changing the obsxxx indicies.
-                !
-                if (tmp2lon(n) < lon(nlon)) CYCLE
 
-                !STEVE: debugging
-                if (.false.) then
-                   WRITE(6,*) "n, nn, njs(j), nj(j) = ", n, nn, njs(j), nj(j)
-                   WRITE(6,*) "KEEPING, i == nlon == ", i, nlon
-                   WRITE(6,*) "tmp2lon(n) = ", tmp2lon(n)
-                   WRITE(6,*) "lon(nlon) = ", lon(nlon)
-                   !WRITE(6,*) "either tmp2lon(n) >= lon(nlon) .OR. 360.0d0 > tmp2lon(n)"
-                   WRITE(6,*) "tmp2lon(n) >= lon(nlon)"
-                   WRITE(6,*) "========================================================"
-                ENDIF
-             endif
-             nn = nn + 1
-             obselm(njs(j)+nn) = tmp2elm(n)
-             obslon(njs(j)+nn) = tmp2lon(n)
-             obslat(njs(j)+nn) = tmp2lat(n)
-             obslev(njs(j)+nn) = tmp2lev(n)
-             obsdat(njs(j)+nn) = tmp2dat(n)
-             obserr(njs(j)+nn) = tmp2err(n)
-             obsdep(njs(j)+nn) = tmp2dep(n)
-             obsinstid(njs(j)+nn) = tmp2instid(n)
-             obshdxf(njs(j)+nn,:) = tmp2hdxf(n,:)
-             obsid(njs(j)+nn) = tmp2id(n)     !(DRIFTERS)
-             obstime(njs(j)+nn) = tmp2time(n) !(DRIFTERS)
-          enddo
-
-          ! This now contains the accumulated count of obs up to this lat, up to this lon
-          nobsgrd(i,j) = njs(j) + nn
-       enddo
-
-       if (nn /= nj(j)) then
-          WRITE(6,'(A,2I)') 'OBS DATA SORT ERROR: ',nn,nj(j)
-          WRITE(6,'(F6.2,A,F6.2)') lat(j),'<= LAT <',lat(j+1)
-          WRITE(6,'(F6.2,A,F6.2)') MINVAL(tmp2lat(njs(j)+1:njs(j)+nj(j))),'<= OBSLAT <',MAXVAL(tmp2lat(njs(j)+1:njs(j)+nj(j)))
-          WRITE(6,*) "j = ", j
-          WRITE(6,*) "njs(j) = ", njs(j)
-          WRITE(6,*) "nj(j) = ", nj(j)
-          !STEVE: this is bad, something is wrong
-          WRITE(6,*) "STEVE: this error will cause matrix eigenvalue < 0 error."
-          STOP 3
-       endif
-
-    enddo
-
-    DEALLOCATE( tmp2elm )
-    DEALLOCATE( tmp2lon )
-    DEALLOCATE( tmp2lat )
-    DEALLOCATE( tmp2lev )
-    DEALLOCATE( tmp2dat )
-    DEALLOCATE( tmp2err )
-    DEALLOCATE( tmp2instid )
-    DEALLOCATE( tmp2dep )
-    DEALLOCATE( tmp2hdxf )
-    DEALLOCATE( tmp2id )    !(DRIFTERS)
-    DEALLOCATE( tmp2time )  !(DRIFTERS)
     DEALLOCATE( tmpelm )
     DEALLOCATE( tmplon )
     DEALLOCATE( tmplat )

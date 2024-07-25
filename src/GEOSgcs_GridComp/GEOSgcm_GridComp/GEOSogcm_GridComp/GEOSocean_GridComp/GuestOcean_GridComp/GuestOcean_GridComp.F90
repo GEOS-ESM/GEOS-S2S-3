@@ -1,4 +1,4 @@
-!$Id: GuestOcean_GridComp.F90,v 1.53.6.2.2.22.2.15.2.5.4.1.4.1.2.2 2023/11/21 18:22:02 yvikhlia Exp $
+!$Id: GuestOcean_GridComp.F90,v 1.53.6.2.2.22.2.15.2.5.4.1.4.1.2.4 2024/04/05 18:22:47 yvikhlia Exp $
   
 #include "MAPL_Generic.h"
 
@@ -504,7 +504,25 @@ contains
           VLOCATION          = MAPL_VLocationNone,                  &
           RC=STATUS  )
      VERIFY_(STATUS)
+     
+     call MAPL_AddExportSpec(GC,                               &
+          SHORT_NAME         = 'FRESH',                              &
+          LONG_NAME          = 'fresh_water_flux_due_to_ice_dynamics',&
+          UNITS              = 'kg m-2 s-1',                        &
+          DIMS               = MAPL_DimsHorzOnly,                   &
+          VLOCATION          = MAPL_VLocationNone,                  &
+          RC=STATUS  )
+     VERIFY_(STATUS)
 
+     call MAPL_AddExportSpec(GC,                               &
+          SHORT_NAME         = 'WATERFLUX',                              &
+          LONG_NAME          = 'total_fresh_water_flux_into_ocean',&
+          UNITS              = 'kg m-2 s-1',                        &
+          DIMS               = MAPL_DimsHorzOnly,                   &
+          VLOCATION          = MAPL_VLocationNone,                  &
+          RC=STATUS  )
+     VERIFY_(STATUS)
+     
 ! The following export shows how much salt do we add due to restoring surface 
 ! salinity to SSS_MIN
      call MAPL_AddExportSpec(GC,                            &
@@ -898,6 +916,8 @@ contains
     real, pointer :: QFLUXe(:,:)
     real, pointer :: RAINe(:,:)
     real, pointer :: SNOWe(:,:)
+    real, pointer :: FRESHe(:,:)
+    real, pointer :: WATERFLUXe(:,:)
     real, pointer :: SFLXe(:,:)
     real, pointer :: SRESTORE(:,:)
 
@@ -1126,6 +1146,8 @@ contains
        call MAPL_GetPointer(EXPORT, QFLUXe, 'QFLUX'  , RC=STATUS); VERIFY_(STATUS)
        call MAPL_GetPointer(EXPORT, RAINe, 'RAIN'  , RC=STATUS); VERIFY_(STATUS)
        call MAPL_GetPointer(EXPORT, SNOWe, 'SNOW'  , RC=STATUS); VERIFY_(STATUS)
+       call MAPL_GetPointer(EXPORT, FRESHe,     'FRESH'  , RC=STATUS); VERIFY_(STATUS)
+       call MAPL_GetPointer(EXPORT, WATERFLUXe, 'WATERFLUX', RC=STATUS); VERIFY_(STATUS)
        call MAPL_GetPointer(EXPORT, SFLXe, 'SFLX'  , RC=STATUS); VERIFY_(STATUS)
        call MAPL_GetPointer(EXPORT, SRESTORE, 'SRESTORE'  , alloc=.true., RC=STATUS); VERIFY_(STATUS)
 
@@ -1200,6 +1222,8 @@ contains
           if (associated(RAINe)) RAINe = RAIN
           if (associated(SNOWe)) SNOWe = SNOW
           if (associated(SFLXe)) SFLXe = SFLX
+          if (associated(FRESHe)) FRESHe = FRESH
+          if (associated(WATERFLUXe)) WATERFLUXe = RAIN + SNOW - QFLUX + DISCHARGE
        end if !DO_DATASEA
     
 ! Loop the ocean model
@@ -1247,10 +1271,10 @@ contains
              call MAPL_GetPointer(GIM(OCNd), FI , 'FRACICE'  , RC=STATUS)
              VERIFY_(STATUS)
              
-             call MAPL_GetResource(STATE,TAU_SST, Label="TAU_SST:", default=864000.0 ,RC=STATUS)
+             call MAPL_GetResource(STATE,TAU_SST, Label="TAU_SST:", default=432000.0 ,RC=STATUS)
              VERIFY_(status)
 
-             call MAPL_GetResource(STATE,TAU_SST_UNDER_ICE, Label="TAU_SST_UNDER_ICE:", default=86400.0 ,RC=STATUS)
+             call MAPL_GetResource(STATE,TAU_SST_UNDER_ICE, Label="TAU_SST_UNDER_ICE:", default=432000.0 ,RC=STATUS)
              VERIFY_(status)
 
              ! we should have valid pointers to TW and TWd by now

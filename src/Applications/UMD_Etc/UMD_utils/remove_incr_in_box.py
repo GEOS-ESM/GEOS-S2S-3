@@ -1,9 +1,7 @@
 #! /usr/bin/env python
 
 from netCDF4 import Dataset
-import datetime
 import sys
-import os.path
 import os
 
 
@@ -36,52 +34,52 @@ latlon_file=SCRDIR+'/'+EXPID+'.ocn_inst_6hr_glo_T1440x1080_z50.'+yyyy+mm+dd+'_12
 file_latlon = Dataset(latlon_file)  #  an example with the lat lons I need
 #  do add file_input2 to file_input for temperature
 if ( fname == 'temp_increment.nc'):
- temp  = file_input.variables['temp'][:,:,:,:]
+    temp  = file_input.variables['temp'][:,:,:,:]
 if ( fname == 'salt_increment.nc'):
- temp  = file_input.variables['salt'][:,:,:,:]
+    temp  = file_input.variables['salt'][:,:,:,:]
 xaxis = file_latlon.variables['lons'][0,:]    #[lat,lon]
 yaxis = file_latlon.variables['lats'][:,0]    #[lat,lon]
 
 #  find your box
 lonmin=9999.
 for i in range (0,1439):
- a = abs(float(xleft)-xaxis[i])
- if(a < lonmin):
-   lonmin=a
-   istart=i
+    a = abs(float(xleft)-xaxis[i])
+    if(a < lonmin):
+        lonmin=a
+        istart=i
 lonmin=9999.
 for i in range (0,1439):
- a = abs(float(xright)-xaxis[i])
- if(a < lonmin):
-   lonmin=a
-   iend=i
+    a = abs(float(xright)-xaxis[i])
+    if(a < lonmin):
+        lonmin=a
+        iend=i
 latmin=9999.
 for j in range (0,1079):
- a = abs(float(ybot)-yaxis[j])
- if(a < latmin):
-   latmin=a
-   jstart=j
+    a = abs(float(ybot)-yaxis[j])
+    if(a < latmin):
+        latmin=a
+        jstart=j
 latmin=9999.
 for j in range (0,1079):
- a = abs(float(ytop)-yaxis[j])
- if(a < latmin):
-   latmin=a
-   jend=j
+    a = abs(float(ytop)-yaxis[j])
+    if(a < latmin):
+        latmin=a
+        jend=j
 
 print (istart, iend, jstart, jend)
 
 boxscal=float(bscale)
 for i in range (istart,iend):
- for j in range (jstart,jend):
+    for j in range (jstart,jend):
 #  temp[:,:,j,i] = 0.
-   temp[:,:,j,i] = temp[:,:,j,i]*boxscal
+       temp[:,:,j,i] = temp[:,:,j,i]*boxscal
 
 print (temp.shape)
 
 #print (xaxis)
 #print (yaxis)
 if (fname == 'temp_increment.nc'):
- file_input['temp'][:,:,:,:] = temp[:,:,:,:]
+    file_input['temp'][:,:,:,:] = temp[:,:,:,:]
 if (fname == 'salt_increment.nc'):
- file_input['salt'][:,:,:,:] = temp[:,:,:,:]
+    file_input['salt'][:,:,:,:] = temp[:,:,:,:]
 file_input.close()

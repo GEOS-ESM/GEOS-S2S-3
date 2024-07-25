@@ -3,7 +3,7 @@ PrimaryExports%%
 #  Import      |       |       | Regrid |        Refresh       | OffSet | Scale  | Variable On |   File   |
 #  Name        | Units | Clim  | Method |     Time Template    | Factor | Factor |     File    | Template |
 # -------------|-------|-------|--------|----------------------|--------|--------|-------------|----------|
-CO_BIOMASS NA  N Y %y4-%m2-%d2t12:00:00 none 1.11 biomass ExtData/PIESA/sfc/QFED/v2.4r6/Y%y4/M%m2/qfed2.emis_co.005.%y4%m2%d2.nc4
+CO_BIOMASS NA  N Y %y4-%m2-%d2t12:00:00 none 1.11 biomass ExtData/chemistry/QFED/v2.6r1/sfc/0.1/Y%y4/M%m2/qfed2.emis_co.061.%y4%m2%d2.nc4
 CO_OH NA  N Y %y4-%m2-%d2t12:00:00 none none oh ExtData/MERRA2/L72/gmi_ctm_hindcast.oxidants.x144_y91_z72_t14.%y4.nc4
 CO_CH4 NA  N Y %y4-%m2-%d2t12:00:00 none none ch4 ExtData/MERRA2/L72/gmi_ctm_hindcast.oxidants.x144_y91_z72_t14.%y4.nc4
 CO_BF NA  Y Y %y4-%m2-%d2t12:00:00 none 1.19 emcobf /dev/null

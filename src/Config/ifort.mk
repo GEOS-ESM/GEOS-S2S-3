@@ -19,7 +19,7 @@
      IFORT_MINOR := $(word 2,$(IFORT_VER))
 
      FPIC := -fPIC
-     EXTENDED_SOURCE := -extend_source
+     EXTENDED_SOURCE := -extend-source
      FREE_SOURCE := -free
      FIXED_SOURCE := -fixed
      OMPFLAG  := -qopenmp
@@ -39,7 +39,7 @@
         endif
      else
      ifeq ("$(BOPT)","fast")
-        -include $(ESMACFG)/vectorize.mk
+        include $(ESMACFG)/vectorize.mk
      else
         FOPT = $(FOPT3) -qopt-report0 -ftz -align all -fno-alias
 

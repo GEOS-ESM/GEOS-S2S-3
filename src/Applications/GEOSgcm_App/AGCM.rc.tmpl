@@ -253,7 +253,7 @@ RECORD_FINAL:  >>>RECFINL<<<
 ##############################################################################################
 
 #REPLAY_FILE: /gpfsm/dnb02/projects/p53/merra2/scratch/d5124_m2_jan79/ana/Y%y4/M%m2/d5124_m2_jan79.bkg.eta.%y4%m2%d2_%h2z.nc4
->>>COUPLED_DUAL<<<REPLAY_FILE: /discover/nobackup/projects/gmao/merra2/data/ana/MERRA2_all/Y%y4/M%m2/MERRA2.bkg.eta.%y4%m2%d2_%h2z.nc4
+>>>COUPLED_DUAL<<<REPLAY_FILE: /home/dao_ops/d5294_geosit_jan18/run/.../archive/ana/Y%y4/M%m2/d5294_geosit_jan18.bkg.eta.%y4%m2%d2_%h200z.nc4
 >>>COUPLED_DUAL<<<REPLAY_FILE_FREQUENCY: 21600
 >>>COUPLED_DUAL<<<REPLAY_FILE_REFERENCE_TIME: 030000
 
@@ -327,7 +327,7 @@ RECORD_FINAL:  >>>RECFINL<<<
 # -----------------------------
 #PRECIP_FILE: ExtData/PCP/@PRECIP_FILE
 #
->>>COUPLED_DUAL<<< PRECIP_FILE: ExtData/PCP/d5_merra/Y%y4/M%m2/d5_merra.tavg1_2d_lfo_Nx_corr.%y4%m2%d2_%h230z.nc
+>>>COUPLED_DUAL<<< PRECIP_FILE: ExtData/PCP/d5124_rpit_jan12/Y%y4/M%m2/d5124_rpit_jan12.tavg1_2d_lfo_Nx_corr.%y4%m2%d2_%h230z.nc
 #
 # Latitudinal Tapering between 42.5 and 62.5 degrees mimics NCEP's approach of using GCM-based precip at high latitudes
 # --------------------
@@ -360,7 +360,8 @@ LSM_CHOICE: @LSM_CHOICE
 # AGCM_INTERNAL = BIAS Correction Increment: BIAS(n+1) = ALPHA*IAU(n) + BETA*BIAS(n)
 # ----------------------------------------------------------------------------------
 
->>>withODAS<<<REPLAY_CHECKPOINT_FILE:                  M2OCEAN_S2SV3_agcm_import
+>>>withODAS<<<REPLAY_CHECKPOINT_FILE:                  agcm_import_rst
+>>>withODAS<<<REPLAY_CHECKPOINT_TYPE:                  pnc4
 
 >>>FORCEDAS<<<AGCM_IMPORT_RESTART_FILE:               agcm_import_rst
 
@@ -637,7 +638,8 @@ CO2:            -1
 # -----------------------
 USE_SATSIM:       @SATSIM
 USE_SATSIM_ISCCP: @ISCCP_SATSIM
-USE_SATSIM_MODIS: @MODIS_SATSIM
+>>>noODAS<<<USE_SATSIM_MODIS: @MODIS_SATSIM
+>>>withODAS<<<USE_SATSIM_MODIS: 1
 USE_SATSIM_RADAR: @RADAR_SATSIM
 USE_SATSIM_LIDAR: @LIDAR_SATSIM
 USE_SATSIM_MISR:  @MISR_SATSIM

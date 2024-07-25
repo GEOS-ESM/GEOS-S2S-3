@@ -86,10 +86,21 @@ endif
 FREAL = $(FREAL4) # for now, require 32 bit reals (R4)
 #
 
+# We can't use vectorized flags here for Intel
+ifeq ($(ESMA_FC), ifort)
+ifeq ("$(BOPT)", "fast")
+   FPE := -fpe0 -fp-model source -heap-arrays 32 -assume noold_maxminloc
+   FOPT := $(FOPT3) -qopt-report0 -ftz -align all -fno-alias
+   FPE += -fimf-arch-consistency=true
+   FOPT += -traceback
+   FOPT += -assume realloc_lhs
+endif
+endif
+
 #-------------------------------------------------------------------------------
-# CVS $Id: GNUmakefile,v 1.8.18.2.8.4.6.2 2015/09/02 15:59:45 mathomp4 Exp $
+# CVS $Id: GNUmakefile,v 1.8.18.2.8.4.6.2.198.1 2024/07/15 13:29:12 mathomp4 Exp $
 # CVS $Source: /cvsroot/esma/esma/src/Components/GEOSCICEThermo_GridComp/cice/GNUmakefile,v $
-# CVS $Name: GEOS-S2S-3_20231512 $
+# CVS $Name: mat-amolod-s2s3-unstable-FullModelp3-SLES15-2024Jul15-FullModel $
 #-------------------------------------------------------------------------------
 # Common Makefile: a framework for building all CCSM components and more
 #

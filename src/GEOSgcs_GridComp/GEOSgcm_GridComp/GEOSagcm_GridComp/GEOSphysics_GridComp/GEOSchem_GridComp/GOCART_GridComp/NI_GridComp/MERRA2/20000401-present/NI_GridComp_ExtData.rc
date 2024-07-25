@@ -11,7 +11,7 @@ PrimaryExports%%
 # -------------|-------|-------|--------|----------------------|--------|--------|-------------|----------|
 
 # Nitrates
-EMI_NH3_BB          'kg m-2 s-1'         N        Y     %y4-%m2-%d2T12:00:00    none     none    biomass    ExtData/PIESA/sfc/QFED/v2.5r1/0.1/Y%y4/M%m2/qfed2.emis_nh3.005.%y4%m2%d2.nc4
+EMI_NH3_BB          'kg m-2 s-1'         N        Y     %y4-%m2-%d2T12:00:00    none     none    biomass    ExtData/chemistry/QFED/v2.6r1/sfc/0.1/Y%y4/M%m2/qfed2.emis_nh3.061.%y4%m2%d2.nc4
 EMI_NH3_AG          'kg m-2 s-1'         Y        Y       -                     none     none    emi_nh3    /dev/null
 EMI_NH3_EN          'kg m-2 s-1'         N        Y     %y4-%m2-%d2T12:00:00    none     none    emi_nh3    ExtData/MERRA2/sfc/edgar-v42.emis_nh3.anthropogenic.x1152_y721.19700703T12z_20200703T00z.nc4
 EMI_NH3_IN          'kg m-2 s-1'         Y        Y       -                     none     none    emi_nh3    /dev/null

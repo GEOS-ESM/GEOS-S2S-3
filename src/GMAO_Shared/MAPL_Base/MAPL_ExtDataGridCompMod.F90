@@ -2658,7 +2658,7 @@ CONTAINS
   end subroutine UpdateBracketTime
 
   subroutine MakeCFIO(file,cfio,found,rc)
-     character(len=ESMF_MAXSTR), intent(in   ) :: file
+     character(len=ESMF_MAXPATHLEN), intent(in) :: file
      type(ESMF_CFIO)                           :: cfio
      logical                                   :: found
      integer, optional,          intent(out  ) :: rc
