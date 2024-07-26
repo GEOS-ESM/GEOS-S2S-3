@@ -85,7 +85,7 @@ ifeq ($(F2PY),OFF)
 endif
 
 esma_install install: $(LIB) $(BINS) $(PY_EXTS)
-	$(MKDIR) $(ESMALIB) $(ESMAETC) $(ESMAETC)/CMIP $(ESMAETC)/MERRA2 $(ESMAETC)/MERRA2-DD $(ESMAETC)/NR $(ESMAETC)/PIESA \
+	$(MKDIR) $(ESMALIB) $(ESMAETC) $(ESMAETC)/CMIP $(ESMAETC)/MERRA2 $(ESMAETC)/MERRA2-DD $(ESMAETC)/NR $(ESMAETC)/NRFCST $(ESMAETC)/PIESA \
                  $(ESMAETC)/CCMI_REF-C1 $(ESMAETC)/CCMI_REF-C2 $(ESMAINC)/$(THIS) $(ESMABIN)
 	$(CP) -p  *.a                    $(ESMALIB)
 	$(CP) -p  *.rc                   $(ESMAETC)
@@ -93,6 +93,7 @@ esma_install install: $(LIB) $(BINS) $(PY_EXTS)
 	$(CP) -p  MERRA2/*.rc            $(ESMAETC)/MERRA2
 	$(CP) -p  MERRA2-DD/*.rc         $(ESMAETC)/MERRA2-DD
 	$(CP) -p  NR/*.rc                $(ESMAETC)/NR
+	$(CP) -p  NRFCST/*.rc            $(ESMAETC)/NRFCST
 	$(CP) -p  PIESA/*.rc             $(ESMAETC)/PIESA
 	$(CP) -p  CCMI_REF-C1/*.rc       $(ESMAETC)/CCMI_REF-C1
 	$(CP) -p  CCMI_REF-C2/*.rc       $(ESMAETC)/CCMI_REF-C2
