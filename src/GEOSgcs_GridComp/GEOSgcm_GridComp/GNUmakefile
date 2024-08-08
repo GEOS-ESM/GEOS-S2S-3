@@ -146,6 +146,7 @@ $(LIB) lib : $(OBJS)
 #              ------------------------------------------
 
 GEOSmkiau_GridComp_install : GEOSagcm_GridComp_install
+GEOSdataatm_GridComp_install : GEOSagcm_GridComp_install
 
 #.
 
