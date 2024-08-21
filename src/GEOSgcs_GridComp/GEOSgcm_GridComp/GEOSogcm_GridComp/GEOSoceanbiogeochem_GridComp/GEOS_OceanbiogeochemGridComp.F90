@@ -22,6 +22,7 @@ module GEOS_OceanbiogeochemGridCompMod
 ! !PUBLIC ROUTINES:
   public SetServices
 
+  integer            :: DO_DATA_ATM4OCN
   integer            :: NUM_ICE_CATEGORIES
   integer, parameter :: NUM_DUDP           = 5
   integer, parameter :: NUM_DUWT           = 5
@@ -133,6 +134,9 @@ module GEOS_OceanbiogeochemGridCompMod
     else
        NUM_ICE_CATEGORIES = 1
     endif
+
+    call MAPL_GetResource ( MAPL, DO_DATA_ATM4OCN, Label="USE_DATA_ATM4OCN:" , DEFAULT=0, RC=STATUS)
+    VERIFY_(STATUS)
 
 ! Set the Run entry point
 ! -----------------------
@@ -364,49 +368,51 @@ module GEOS_OceanbiogeochemGridCompMod
     RC=STATUS  )
     VERIFY_(STATUS)
 
-    call MAPL_AddImportSpec(GC,                               &
-    LONG_NAME               = 'Black Carbon Dry Deposition',  &
-    UNITS                   = 'kg m-2 s-1',                   &
-    SHORT_NAME              = 'BCDP',                         &
-    DIMS                    = MAPL_DimsHorzOnly,              &
-    UNGRIDDED_DIMS          = (/NUM_BCDP/),                   &
-    VLOCATION               = MAPL_VLocationNone,             &
-    RESTART                 = MAPL_RestartSkip,               &
-    RC=STATUS  )
-    VERIFY_(STATUS)
+    if (DO_DATA_ATM4OCN==0) then
+      call MAPL_AddImportSpec(GC,                               &
+      LONG_NAME               = 'Black Carbon Dry Deposition',  &
+      UNITS                   = 'kg m-2 s-1',                   &
+      SHORT_NAME              = 'BCDP',                         &
+      DIMS                    = MAPL_DimsHorzOnly,              &
+      UNGRIDDED_DIMS          = (/NUM_BCDP/),                   &
+      VLOCATION               = MAPL_VLocationNone,             &
+      RESTART                 = MAPL_RestartSkip,               &
+      RC=STATUS  )
+      VERIFY_(STATUS)
 
-    call MAPL_AddImportSpec(GC,                               &
-    LONG_NAME               = 'Black Carbon Wet Deposition',  &
-    UNITS                   = 'kg m-2 s-1',                   &
-    SHORT_NAME              = 'BCWT',                         &
-    DIMS                    = MAPL_DimsHorzOnly,              &
-    UNGRIDDED_DIMS          = (/NUM_BCWT/),                   &
-    VLOCATION               = MAPL_VLocationNone,             &
-    RESTART                 = MAPL_RestartSkip,               &
-    RC=STATUS  )
-    VERIFY_(STATUS)
+      call MAPL_AddImportSpec(GC,                               &
+      LONG_NAME               = 'Black Carbon Wet Deposition',  &
+      UNITS                   = 'kg m-2 s-1',                   &
+      SHORT_NAME              = 'BCWT',                         &
+      DIMS                    = MAPL_DimsHorzOnly,              &
+      UNGRIDDED_DIMS          = (/NUM_BCWT/),                   &
+      VLOCATION               = MAPL_VLocationNone,             &
+      RESTART                 = MAPL_RestartSkip,               &
+      RC=STATUS  )
+      VERIFY_(STATUS)
 
-    call MAPL_AddImportSpec(GC,                               &
-    LONG_NAME               = 'Organic Carbon Dry Deposition',&
-    UNITS                   = 'kg m-2 s-1',                   &
-    SHORT_NAME              = 'OCDP',                         &
-    DIMS                    = MAPL_DimsHorzOnly,              &
-    UNGRIDDED_DIMS          = (/NUM_OCDP/),                   &
-    VLOCATION               = MAPL_VLocationNone,             &
-    RESTART                 = MAPL_RestartSkip,               &
-    RC=STATUS  )
-    VERIFY_(STATUS)
+      call MAPL_AddImportSpec(GC,                               &
+      LONG_NAME               = 'Organic Carbon Dry Deposition',&
+      UNITS                   = 'kg m-2 s-1',                   &
+      SHORT_NAME              = 'OCDP',                         &
+      DIMS                    = MAPL_DimsHorzOnly,              &
+      UNGRIDDED_DIMS          = (/NUM_OCDP/),                   &
+      VLOCATION               = MAPL_VLocationNone,             &
+      RESTART                 = MAPL_RestartSkip,               &
+      RC=STATUS  )
+      VERIFY_(STATUS)
 
-    call MAPL_AddImportSpec(GC,                               &
-    LONG_NAME               = 'Organic Carbon Wet Deposition',&
-    UNITS                   = 'kg m-2 s-1',                   &
-    SHORT_NAME              = 'OCWT',                         &
-    DIMS                    = MAPL_DimsHorzOnly,              &
-    UNGRIDDED_DIMS          = (/NUM_OCWT/),                   &
-    VLOCATION               = MAPL_VLocationNone,             &
-    RESTART                 = MAPL_RestartSkip,               &
-    RC=STATUS  )
-    VERIFY_(STATUS)
+      call MAPL_AddImportSpec(GC,                               &
+      LONG_NAME               = 'Organic Carbon Wet Deposition',&
+      UNITS                   = 'kg m-2 s-1',                   &
+      SHORT_NAME              = 'OCWT',                         &
+      DIMS                    = MAPL_DimsHorzOnly,              &
+      UNGRIDDED_DIMS          = (/NUM_OCWT/),                   &
+      VLOCATION               = MAPL_VLocationNone,             &
+      RESTART                 = MAPL_RestartSkip,               &
+      RC=STATUS  )
+      VERIFY_(STATUS)
+    endif
 
     call MAPL_AddImportSpec(GC,                               &
     SHORT_NAME              = 'CO2SC',                        &
@@ -445,7 +451,7 @@ module GEOS_OceanbiogeochemGridCompMod
     UNITS      = 'mg m-3',                                    &
     DIMS       = MAPL_DimsHorzVert,                           &
     VLOCATION  = MAPL_VLocationCenter,                        &
-!    DEFAULT    = 0.2,                                         &
+    DEFAULT    = 0.2,                                         &
     FRIENDLYTO = 'OANA',                                      &
     RESTART    = MAPL_RestartSkip,                            & 
     __RC__  )
@@ -476,7 +482,7 @@ module GEOS_OceanbiogeochemGridCompMod
     UNITS      = 'uM',                                        &
     DIMS       = MAPL_DimsHorzVert,                           &
     VLOCATION  = MAPL_VLocationCenter,                        &
-!    DEFAULT    = 5.0,                                         &
+    DEFAULT    = 5.0,                                         &
     FRIENDLYTO = 'OCEAN:OANA',                                 &
     RC=STATUS  )
     VERIFY_(STATUS)
@@ -487,7 +493,7 @@ module GEOS_OceanbiogeochemGridCompMod
     UNITS      = 'uM',                                        &
     DIMS       = MAPL_DimsHorzVert,                           &
     VLOCATION  = MAPL_VLocationCenter,                        &
-!    DEFAULT    = 0.05,                                        &
+    DEFAULT    = 0.05,                                        &
     FRIENDLYTO = 'OCEAN:OANA',                                 &
     RC=STATUS  )
     VERIFY_(STATUS)
@@ -498,7 +504,7 @@ module GEOS_OceanbiogeochemGridCompMod
     UNITS      = 'uM',                                        &
     DIMS       = MAPL_DimsHorzVert,                           &
     VLOCATION  = MAPL_VLocationCenter,                        &
-!    DEFAULT    = 5.0,                                         &
+    DEFAULT    = 5.0,                                         &
     FRIENDLYTO = 'OCEAN:OANA',                                 &
     RC=STATUS  )
     VERIFY_(STATUS)
@@ -509,7 +515,7 @@ module GEOS_OceanbiogeochemGridCompMod
     UNITS      = 'nM',                                        &
     DIMS       = MAPL_DimsHorzVert,                           &
     VLOCATION  = MAPL_VLocationCenter,                        &
-!    DEFAULT    = 0.2,                                         &
+    DEFAULT    = 0.2,                                         &
     FRIENDLYTO = 'OCEAN:OANA',                                &
     RC=STATUS  )
     VERIFY_(STATUS)
@@ -520,7 +526,7 @@ module GEOS_OceanbiogeochemGridCompMod
     UNITS      = 'mg m-3',                                    &
     DIMS       = MAPL_DimsHorzVert,                           &
     VLOCATION  = MAPL_VLocationCenter,                        &
-!    DEFAULT    = 0.05,                                        &
+    DEFAULT    = 0.05,                                        &
     FRIENDLYTO = 'OCEAN',                                     &
     RC=STATUS  )
     VERIFY_(STATUS)
@@ -531,7 +537,7 @@ module GEOS_OceanbiogeochemGridCompMod
     UNITS      = 'mg m-3',                                    &
     DIMS       = MAPL_DimsHorzVert,                           &
     VLOCATION  = MAPL_VLocationCenter,                        &
-!    DEFAULT    = 0.05,                                        &
+    DEFAULT    = 0.05,                                        &
     FRIENDLYTO = 'OCEAN',                                     &
     RC=STATUS  )
     VERIFY_(STATUS)
@@ -542,7 +548,7 @@ module GEOS_OceanbiogeochemGridCompMod
     UNITS      = 'mg m-3',                                    &
     DIMS       = MAPL_DimsHorzVert,                           &
     VLOCATION  = MAPL_VLocationCenter,                        &
-!    DEFAULT    = 0.05,                                        &
+    DEFAULT    = 0.05,                                        &
     FRIENDLYTO = 'OCEAN',                                     &
     RC=STATUS  )
     VERIFY_(STATUS)
@@ -553,7 +559,7 @@ module GEOS_OceanbiogeochemGridCompMod
     UNITS      = 'mg m-3',                                    &
     DIMS       = MAPL_DimsHorzVert,                           &
     VLOCATION  = MAPL_VLocationCenter,                        &
-!    DEFAULT    = 0.05,                                        &
+    DEFAULT    = 0.05,                                        &
     FRIENDLYTO = 'OCEAN',                                     &
     RC=STATUS  )
     VERIFY_(STATUS)
@@ -564,7 +570,7 @@ module GEOS_OceanbiogeochemGridCompMod
     UNITS      = 'mg m-3',                                    &
     DIMS       = MAPL_DimsHorzVert,                           &
     VLOCATION  = MAPL_VLocationCenter,                        &
-!    DEFAULT    = 0.05,                                        &
+    DEFAULT    = 0.05,                                        &
     FRIENDLYTO = 'OCEAN',                                     &
     RC=STATUS  )
     VERIFY_(STATUS)
@@ -575,7 +581,7 @@ module GEOS_OceanbiogeochemGridCompMod
     UNITS      = 'mg m-3',                                    &
     DIMS       = MAPL_DimsHorzVert,                           &
     VLOCATION  = MAPL_VLocationCenter,                        &
-!    DEFAULT    = 0.05,                                        &
+    DEFAULT    = 0.05,                                        &
     FRIENDLYTO = 'OCEAN',                                     &
     RC=STATUS  )
     VERIFY_(STATUS)
@@ -586,7 +592,7 @@ module GEOS_OceanbiogeochemGridCompMod
     UNITS      = 'mg m-3',                                    &
     DIMS       = MAPL_DimsHorzVert,                           &
     VLOCATION  = MAPL_VLocationCenter,                        &
-!    DEFAULT    = 0.05,                                        &
+    DEFAULT    = 0.05,                                        &
     FRIENDLYTO = 'OCEAN',                                     &
     RC=STATUS  )
     VERIFY_(STATUS)
@@ -597,7 +603,7 @@ module GEOS_OceanbiogeochemGridCompMod
     UNITS      = 'ugC l-1',                                   &
     DIMS       = MAPL_DimsHorzVert,                           &
     VLOCATION  = MAPL_VLocationCenter,                        &
-!    DEFAULT    = 0.0,                                         &
+    DEFAULT    = 0.0,                                         &
     FRIENDLYTO = 'OCEAN',                                     &
     RC=STATUS  )
     VERIFY_(STATUS)
@@ -608,7 +614,7 @@ module GEOS_OceanbiogeochemGridCompMod
     UNITS      = 'uM',                                        &
     DIMS       = MAPL_DimsHorzVert,                           &
     VLOCATION  = MAPL_VLocationCenter,                        &
-!    DEFAULT    = 0.0,                                         &
+    DEFAULT    = 0.0,                                         &
     FRIENDLYTO = 'OCEAN',                                     &
     RC=STATUS  )
     VERIFY_(STATUS)
@@ -619,7 +625,7 @@ module GEOS_OceanbiogeochemGridCompMod
     UNITS      = 'nM',                                        &
     DIMS       = MAPL_DimsHorzVert,                           &
     VLOCATION  = MAPL_VLocationCenter,                        &
-!    DEFAULT    = 0.0,                                         &
+    DEFAULT    = 0.0,                                         &
     FRIENDLYTO = 'OCEAN',                                     &
     RC=STATUS  )
     VERIFY_(STATUS)
@@ -630,7 +636,7 @@ module GEOS_OceanbiogeochemGridCompMod
     UNITS      = 'uM',                                        &
     DIMS       = MAPL_DimsHorzVert,                           &
     VLOCATION  = MAPL_VLocationCenter,                        &
-!    DEFAULT    = 0.0,                                         &
+    DEFAULT    = 0.0,                                         &
     FRIENDLYTO = 'OCEAN',                                     &
     RC=STATUS  )
     VERIFY_(STATUS)
@@ -641,7 +647,7 @@ module GEOS_OceanbiogeochemGridCompMod
     UNITS      = 'uM',                                        &
     DIMS       = MAPL_DimsHorzVert,                           &
     VLOCATION  = MAPL_VLocationCenter,                        &
-!    DEFAULT    = 2055.0,                                      &
+    DEFAULT    = 2055.0,                                      &
     FRIENDLYTO = 'OCEAN',                                     &
     RC=STATUS  )
     VERIFY_(STATUS)
@@ -652,7 +658,7 @@ module GEOS_OceanbiogeochemGridCompMod
     UNITS      = 'uEq l-1',                                   &
     DIMS       = MAPL_DimsHorzVert,                           &
     VLOCATION  = MAPL_VLocationCenter,                        &
-!    DEFAULT    = 2055.0,                                      &
+    DEFAULT    = 2055.0,                                      &
     FRIENDLYTO = 'OCEAN',                                     &
     RC=STATUS  )
     VERIFY_(STATUS)
@@ -663,7 +669,7 @@ module GEOS_OceanbiogeochemGridCompMod
     UNITS      = 'ug l-1',                                    &
     DIMS       = MAPL_DimsHorzVert,                           &
     VLOCATION  = MAPL_VLocationCenter,                        &
-!    DEFAULT    = 0.0,                                         &
+    DEFAULT    = 0.0,                                         &
     FRIENDLYTO = 'OCEAN',                                     &
     RC=STATUS  )
     VERIFY_(STATUS)
@@ -674,7 +680,7 @@ module GEOS_OceanbiogeochemGridCompMod
     UNITS      = 'uM',                                        &
     DIMS       = MAPL_DimsHorzVert,                           &
     VLOCATION  = MAPL_VLocationCenter,                        &
-!    DEFAULT    = 0.0,                                         &
+    DEFAULT    = 0.0,                                         &
     FRIENDLYTO = 'OCEAN',                                     &
     RC=STATUS  )
     VERIFY_(STATUS)
@@ -685,7 +691,7 @@ module GEOS_OceanbiogeochemGridCompMod
     UNITS      = 's-1',                                       &
     DIMS       = MAPL_DimsHorzVert,                           &
     VLOCATION  = MAPL_VLocationCenter,                        &
-!    DEFAULT    = 0.00000579,                                  &
+    DEFAULT    = 0.00000579,                                  &
     RC=STATUS  )
     VERIFY_(STATUS)
 
@@ -695,7 +701,7 @@ module GEOS_OceanbiogeochemGridCompMod
     UNITS      = 'm s-1',                                     &
     DIMS       = MAPL_DimsHorzVert,                           &
     VLOCATION  = MAPL_VLocationCenter,                        &
-!    DEFAULT    = 0.00000347,                                  &
+    DEFAULT    = 0.00000347,                                  &
     RC=STATUS  )
     VERIFY_(STATUS)
 
@@ -705,7 +711,7 @@ module GEOS_OceanbiogeochemGridCompMod
     UNITS      = 'umol m-2 s-1',                              &
     DIMS       = MAPL_DimsHorzVert,                           &
     VLOCATION  = MAPL_VLocationCenter,                        &
-!    DEFAULT    = 100.0,                                       &
+    DEFAULT    = 100.0,                                       &
     FRIENDLYTO = 'ORAD',                                      &
     RC=STATUS  )
     VERIFY_(STATUS)
@@ -716,7 +722,7 @@ module GEOS_OceanbiogeochemGridCompMod
     UNITS      = 'g to g-1',                                  &
     DIMS       = MAPL_DimsHorzVert,                           &
     VLOCATION  = MAPL_VLocationCenter,                        &
-!    DEFAULT    = 50.0,                                        &
+    DEFAULT    = 50.0,                                        &
     ADD2EXPORT = .TRUE.,                                      &
     RC=STATUS  )
     VERIFY_(STATUS)
@@ -727,7 +733,7 @@ module GEOS_OceanbiogeochemGridCompMod
     UNITS      = 'umol m-2 s-1',                              &
     DIMS       = MAPL_DimsHorzVert,                           &
     VLOCATION  = MAPL_VLocationCenter,                        &
-!    DEFAULT    = 25.0,                                        &
+    DEFAULT    = 25.0,                                        &
     RC=STATUS  )
     VERIFY_(STATUS)
 
@@ -737,7 +743,7 @@ module GEOS_OceanbiogeochemGridCompMod
     UNITS      = 'umol m-2 s-1',                              &
     DIMS       = MAPL_DimsHorzVert,                           &
     VLOCATION  = MAPL_VLocationCenter,                        &
-!    DEFAULT    = 25.0,                                        &
+    DEFAULT    = 25.0,                                        &
     RC=STATUS  )
     VERIFY_(STATUS)
 
@@ -747,7 +753,7 @@ module GEOS_OceanbiogeochemGridCompMod
     UNITS      = 'umol m-2 s-1',                              &
     DIMS       = MAPL_DimsHorzVert,                           &
     VLOCATION  = MAPL_VLocationCenter,                        &
-!    DEFAULT    = 25.0,                                        &
+    DEFAULT    = 25.0,                                        &
     RC=STATUS  )
     VERIFY_(STATUS)
 
@@ -757,7 +763,7 @@ module GEOS_OceanbiogeochemGridCompMod
     UNITS      = 'umol m-2 s-1',                              &
     DIMS       = MAPL_DimsHorzVert,                           &
     VLOCATION  = MAPL_VLocationCenter,                        &
-!    DEFAULT    = 25.0,                                        &
+    DEFAULT    = 25.0,                                        &
     RC=STATUS  )
     VERIFY_(STATUS)
 
@@ -767,7 +773,7 @@ module GEOS_OceanbiogeochemGridCompMod
     UNITS      = 'umol m-2 s-1',                              &
     DIMS       = MAPL_DimsHorzVert,                           &
     VLOCATION  = MAPL_VLocationCenter,                        &
-!    DEFAULT    = 25.0,                                        &
+    DEFAULT    = 25.0,                                        &
     RC=STATUS  )
     VERIFY_(STATUS)
 
@@ -777,7 +783,7 @@ module GEOS_OceanbiogeochemGridCompMod
     UNITS      = 'umol m-2 s-1',                              &
     DIMS       = MAPL_DimsHorzVert,                           &
     VLOCATION  = MAPL_VLocationCenter,                        &
-!    DEFAULT    = 25.0,                                        &
+    DEFAULT    = 25.0,                                        &
     RC=STATUS  )
     VERIFY_(STATUS)
 

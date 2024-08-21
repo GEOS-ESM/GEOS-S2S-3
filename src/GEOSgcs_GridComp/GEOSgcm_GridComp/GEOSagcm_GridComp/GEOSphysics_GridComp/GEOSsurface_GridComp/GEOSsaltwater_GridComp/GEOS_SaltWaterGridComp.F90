@@ -64,6 +64,7 @@ module GEOS_SaltwaterGridCompMod
   integer, parameter :: NB_CHOU     = NB_CHOU_UV + NB_CHOU_NIR ! total number of bands
 
   integer, parameter :: NB_OBIO  = 33 !total number of bands for OradBio
+  integer            :: DO_DATA_ATM4OCN
 
   contains
 
@@ -139,6 +140,11 @@ module GEOS_SaltwaterGridCompMod
 !------------------------------------------------
 
     call MAPL_GetResource ( MAPL, DO_OBIO,            Label="USE_OCEANOBIOGEOCHEM:",DEFAULT=0, RC=STATUS)
+    VERIFY_(STATUS)
+
+! Are we running DataAtm?
+!------------------------
+    call MAPL_GetResource ( MAPL, DO_DATA_ATM4OCN,    Label="USE_DATA_ATM4OCN:" ,   DEFAULT=0,   RC=STATUS)
     VERIFY_(STATUS)
 
     call MAPL_GridCompSetEntryPoint ( GC, ESMF_METHOD_INITIALIZE, Initialize, RC=STATUS )
@@ -663,46 +669,48 @@ module GEOS_SaltwaterGridCompMod
            VLOCATION          = MAPL_VLocationNone          ,&
            RC=STATUS  ) 
       VERIFY_(STATUS)
+
+      if (DO_DATA_ATM4OCN==0) then     
+        call MAPL_AddExportSpec(GC,                    &
+             SHORT_NAME         = 'BCDP'                            ,&
+             LONG_NAME          = 'Black Carbon Dry Deposition'     ,&
+             UNITS              = 'kg m-2 s-1'                      ,&
+             DIMS               = MAPL_DimsTileOnly                 ,&
+             UNGRIDDED_DIMS     = (/NUM_BCDP/)                      ,&
+             VLOCATION          = MAPL_VLocationNone                ,&
+             RC=STATUS  ) 
+        VERIFY_(STATUS)
      
-      call MAPL_AddExportSpec(GC,                    &
-           SHORT_NAME         = 'BCDP'                            ,&
-           LONG_NAME          = 'Black Carbon Dry Deposition'     ,&
-           UNITS              = 'kg m-2 s-1'                      ,&
-           DIMS               = MAPL_DimsTileOnly                 ,&
-           UNGRIDDED_DIMS     = (/NUM_BCDP/)                      ,&
-           VLOCATION          = MAPL_VLocationNone                ,&
-           RC=STATUS  ) 
-      VERIFY_(STATUS)
+        call MAPL_AddExportSpec(GC,                    &
+             SHORT_NAME         = 'BCWT'                            ,&
+             LONG_NAME          = 'Black Carbon Wet Deposition'     ,&
+             UNITS              = 'kg m-2 s-1'                      ,&
+             DIMS               = MAPL_DimsTileOnly                 ,&
+             UNGRIDDED_DIMS     = (/NUM_BCWT/)                      ,&
+             VLOCATION          = MAPL_VLocationNone                ,&
+             RC=STATUS  ) 
+        VERIFY_(STATUS)
      
-      call MAPL_AddExportSpec(GC,                    &
-           SHORT_NAME         = 'BCWT'                            ,&
-           LONG_NAME          = 'Black Carbon Wet Deposition'     ,&
-           UNITS              = 'kg m-2 s-1'                      ,&
-           DIMS               = MAPL_DimsTileOnly                 ,&
-           UNGRIDDED_DIMS     = (/NUM_BCWT/)                      ,&
-           VLOCATION          = MAPL_VLocationNone                ,&
-           RC=STATUS  ) 
-      VERIFY_(STATUS)
+        call MAPL_AddExportSpec(GC,                    &
+             SHORT_NAME         = 'OCDP'                            ,&
+             LONG_NAME          = 'Organic Carbon Dry Deposition'   ,&
+             UNITS              = 'kg m-2 s-1'                      ,&
+             DIMS               = MAPL_DimsTileOnly                 ,&
+             UNGRIDDED_DIMS     = (/NUM_OCDP/)                      ,&
+             VLOCATION          = MAPL_VLocationNone                ,&
+             RC=STATUS  ) 
+        VERIFY_(STATUS)
      
-      call MAPL_AddExportSpec(GC,                    &
-           SHORT_NAME         = 'OCDP'                            ,&
-           LONG_NAME          = 'Organic Carbon Dry Deposition'   ,&
-           UNITS              = 'kg m-2 s-1'                      ,&
-           DIMS               = MAPL_DimsTileOnly                 ,&
-           UNGRIDDED_DIMS     = (/NUM_OCDP/)                      ,&
-           VLOCATION          = MAPL_VLocationNone                ,&
-           RC=STATUS  ) 
-      VERIFY_(STATUS)
-     
-      call MAPL_AddExportSpec(GC,                    &
-           SHORT_NAME         = 'OCWT'                            ,&
-           LONG_NAME          = 'Organic Carbon Wet Deposition'   ,&
-           UNITS              = 'kg m-2 s-1'                      ,&
-           DIMS               = MAPL_DimsTileOnly                 ,&
-           UNGRIDDED_DIMS     = (/NUM_OCWT/)                      ,&
-           VLOCATION          = MAPL_VLocationNone                ,&
-           RC=STATUS  ) 
-      VERIFY_(STATUS)
+        call MAPL_AddExportSpec(GC,                    &
+             SHORT_NAME         = 'OCWT'                            ,&
+             LONG_NAME          = 'Organic Carbon Wet Deposition'   ,&
+             UNITS              = 'kg m-2 s-1'                      ,&
+             DIMS               = MAPL_DimsTileOnly                 ,&
+             UNGRIDDED_DIMS     = (/NUM_OCWT/)                      ,&
+             VLOCATION          = MAPL_VLocationNone                ,&
+             RC=STATUS  ) 
+        VERIFY_(STATUS)
+      endif
 
       call MAPL_AddExportSpec(GC,                    &
            SHORT_NAME         = 'DRBAND'                          ,&
@@ -724,26 +732,6 @@ module GEOS_SaltwaterGridCompMod
            RC=STATUS  )
       VERIFY_(STATUS)
     
-      call MAPL_AddExportSpec(GC,                    &
-           SHORT_NAME         = 'FSWBAND'                         ,                   &
-           LONG_NAME          = 'net_surface_downward_shortwave_flux_per_band_in_air',&
-           UNITS              = 'W m-2'                           ,&
-           DIMS               = MAPL_DimsTileOnly                 ,&
-           UNGRIDDED_DIMS     = (/NB_CHOU/)                       ,&
-           VLOCATION          = MAPL_VLocationNone                ,&
-           RC=STATUS  ) 
-      VERIFY_(STATUS)
-
-      call MAPL_AddExportSpec(GC,                    &
-           SHORT_NAME         = 'FSWBANDNA'                       ,                                       &
-           LONG_NAME          = 'net_surface_downward_shortwave_flux_per_band_in_air_assuming_no_aerosol',&
-           UNITS              = 'W m-2'                           ,&
-           DIMS               = MAPL_DimsTileOnly                 ,&
-           UNGRIDDED_DIMS     = (/NB_CHOU/)                       ,&
-           VLOCATION          = MAPL_VLocationNone                ,&
-           RC=STATUS  ) 
-      VERIFY_(STATUS)
-
     endif ! DO_OBIO
      
 ! following 3 exports (HFLUX, WATERFLUX, SALTFLUX) are for ocean model - need to be filled up.
@@ -900,49 +888,51 @@ module GEOS_SaltwaterGridCompMod
            RC=STATUS  ) 
       VERIFY_(STATUS)
 
-      call MAPL_AddImportSpec(GC,                                  &
-           SHORT_NAME         = 'BCDP'                            ,&
-           LONG_NAME          = 'Black Carbon Dry Deposition'     ,&
-           UNITS              = 'kg m-2 s-1'                      ,&
-           DIMS               = MAPL_DimsTileOnly                 ,&
-           UNGRIDDED_DIMS     = (/NUM_BCDP/)                      ,&
-           VLOCATION          = MAPL_VLocationNone                ,&
-           RESTART            = MAPL_RestartSkip                  ,&
-           RC=STATUS  ) 
-      VERIFY_(STATUS)
+      if (DO_DATA_ATM4OCN==0) then
+        call MAPL_AddImportSpec(GC,                                  &
+             SHORT_NAME         = 'BCDP'                            ,&
+             LONG_NAME          = 'Black Carbon Dry Deposition'     ,&
+             UNITS              = 'kg m-2 s-1'                      ,&
+             DIMS               = MAPL_DimsTileOnly                 ,&
+             UNGRIDDED_DIMS     = (/NUM_BCDP/)                      ,&
+             VLOCATION          = MAPL_VLocationNone                ,&
+             RESTART            = MAPL_RestartSkip                  ,&
+             RC=STATUS  ) 
+        VERIFY_(STATUS)
 
-      call MAPL_AddImportSpec(GC,                                  &
-           SHORT_NAME         = 'BCWT'                            ,&
-           LONG_NAME          = 'Black Carbon Wet Deposition'     ,&
-           UNITS              = 'kg m-2 s-1'                      ,&
-           DIMS               = MAPL_DimsTileOnly                 ,&
-           UNGRIDDED_DIMS     = (/NUM_BCWT/)                      ,&
-           VLOCATION          = MAPL_VLocationNone                ,&
-           RESTART            = MAPL_RestartSkip                  ,&
-           RC=STATUS  ) 
-      VERIFY_(STATUS)
+        call MAPL_AddImportSpec(GC,                                  &
+             SHORT_NAME         = 'BCWT'                            ,&
+             LONG_NAME          = 'Black Carbon Wet Deposition'     ,&
+             UNITS              = 'kg m-2 s-1'                      ,&
+             DIMS               = MAPL_DimsTileOnly                 ,&
+             UNGRIDDED_DIMS     = (/NUM_BCWT/)                      ,&
+             VLOCATION          = MAPL_VLocationNone                ,&
+             RESTART            = MAPL_RestartSkip                  ,&
+             RC=STATUS  ) 
+        VERIFY_(STATUS)
 
-      call MAPL_AddImportSpec(GC,                                  &
-           SHORT_NAME         = 'OCDP'                            ,&
-           LONG_NAME          = 'Organic Carbon Dry Deposition'   ,&
-           UNITS              = 'kg m-2 s-1'                      ,&
-           DIMS               = MAPL_DimsTileOnly                 ,&
-           UNGRIDDED_DIMS     = (/NUM_OCDP/)                      ,&
-           VLOCATION          = MAPL_VLocationNone                ,&
-           RESTART            = MAPL_RestartSkip                  ,&
-           RC=STATUS  ) 
-      VERIFY_(STATUS)
+        call MAPL_AddImportSpec(GC,                                  &
+             SHORT_NAME         = 'OCDP'                            ,&
+             LONG_NAME          = 'Organic Carbon Dry Deposition'   ,&
+             UNITS              = 'kg m-2 s-1'                      ,&
+             DIMS               = MAPL_DimsTileOnly                 ,&
+             UNGRIDDED_DIMS     = (/NUM_OCDP/)                      ,&
+             VLOCATION          = MAPL_VLocationNone                ,&
+             RESTART            = MAPL_RestartSkip                  ,&
+             RC=STATUS  ) 
+        VERIFY_(STATUS)
 
-      call MAPL_AddImportSpec(GC,                                  &
-           SHORT_NAME         = 'OCWT'                            ,&
-           LONG_NAME          = 'Organic Carbon Wet Deposition'   ,&
-           UNITS              = 'kg m-2 s-1'                      ,&
-           DIMS               = MAPL_DimsTileOnly                 ,&
-           UNGRIDDED_DIMS     = (/NUM_OCWT/)                      ,&
-           VLOCATION          = MAPL_VLocationNone                ,&
-           RESTART            = MAPL_RestartSkip                  ,&
-           RC=STATUS  ) 
-      VERIFY_(STATUS)
+        call MAPL_AddImportSpec(GC,                                  &
+             SHORT_NAME         = 'OCWT'                            ,&
+             LONG_NAME          = 'Organic Carbon Wet Deposition'   ,&
+             UNITS              = 'kg m-2 s-1'                      ,&
+             DIMS               = MAPL_DimsTileOnly                 ,&
+             UNGRIDDED_DIMS     = (/NUM_OCWT/)                      ,&
+             VLOCATION          = MAPL_VLocationNone                ,&
+             RESTART            = MAPL_RestartSkip                  ,&
+             RC=STATUS  ) 
+        VERIFY_(STATUS)
+      endif
 
       call MAPL_AddImportSpec(GC,                    &
            SHORT_NAME         = 'DRBAND'                          ,&
@@ -964,28 +954,6 @@ module GEOS_SaltwaterGridCompMod
            VLOCATION          = MAPL_VLocationNone                ,&
            RESTART            = MAPL_RestartSkip                  ,&
            RC=STATUS  )
-      VERIFY_(STATUS)
-
-      call MAPL_AddImportSpec(GC,                    &
-           SHORT_NAME         = 'FSWBAND'                         ,                   &
-           LONG_NAME          = 'net_surface_downward_shortwave_flux_per_band_in_air',&
-           UNITS              = 'W m-2'                           ,&
-           DIMS               = MAPL_DimsTileOnly                 ,&
-           UNGRIDDED_DIMS     = (/NB_CHOU/)                       ,&
-           VLOCATION          = MAPL_VLocationNone                ,&
-           RESTART            = MAPL_RestartSkip                  ,&
-           RC=STATUS  ) 
-      VERIFY_(STATUS)
-
-      call MAPL_AddImportSpec(GC,                    &
-           SHORT_NAME         = 'FSWBANDNA'                       ,                                       &
-           LONG_NAME          = 'net_surface_downward_shortwave_flux_per_band_in_air_assuming_no_aerosol',&
-           UNITS              = 'W m-2'                           ,&
-           DIMS               = MAPL_DimsTileOnly                 ,&
-           UNGRIDDED_DIMS     = (/NB_CHOU/)                       ,&
-           VLOCATION          = MAPL_VLocationNone                ,&
-           RESTART            = MAPL_RestartSkip                  ,&
-           RC=STATUS  ) 
       VERIFY_(STATUS)
 
     endif !DO_OBIO
@@ -1802,8 +1770,6 @@ contains
    real, pointer, dimension(:,:)  :: OCWTEX      => null()
    real, pointer, dimension(:,:)  :: DRBANDEX    => null()
    real, pointer, dimension(:,:)  :: DFBANDEX    => null()
-   real, pointer, dimension(:,:)  :: FSWBANDEX   => null()
-   real, pointer, dimension(:,:)  :: FSWBANDNAEX => null()
 
 ! pointers to import
 
@@ -1822,8 +1788,6 @@ contains
    real, pointer, dimension(:,:)  :: OCWT      => null()
    real, pointer, dimension(:,:)  :: DRBAND    => null()
    real, pointer, dimension(:,:)  :: DFBAND    => null()
-   real, pointer, dimension(:,:)  :: FSWBAND   => null()
-   real, pointer, dimension(:,:)  :: FSWBANDNA => null()
 
 ! pointers to the childrens' export
    real, pointer, dimension(:)    :: TS        => null() 
@@ -1891,14 +1855,14 @@ contains
       call MAPL_GetPointer(IMPORT,DUDP   , 'DUDP'   ,    RC=STATUS); VERIFY_(STATUS)
       call MAPL_GetPointer(IMPORT,DUWT   , 'DUWT'   ,    RC=STATUS); VERIFY_(STATUS)
       call MAPL_GetPointer(IMPORT,DUSD   , 'DUSD'   ,    RC=STATUS); VERIFY_(STATUS)
-      call MAPL_GetPointer(IMPORT,BCDP   , 'BCDP'   ,    RC=STATUS); VERIFY_(STATUS)
-      call MAPL_GetPointer(IMPORT,BCWT   , 'BCWT'   ,    RC=STATUS); VERIFY_(STATUS)
-      call MAPL_GetPointer(IMPORT,OCDP   , 'OCDP'   ,    RC=STATUS); VERIFY_(STATUS)
-      call MAPL_GetPointer(IMPORT,OCWT   , 'OCWT'   ,    RC=STATUS); VERIFY_(STATUS)
+      if (DO_DATA_ATM4OCN==0) then
+        call MAPL_GetPointer(IMPORT,BCDP   , 'BCDP'   ,    RC=STATUS); VERIFY_(STATUS)
+        call MAPL_GetPointer(IMPORT,BCWT   , 'BCWT'   ,    RC=STATUS); VERIFY_(STATUS)
+        call MAPL_GetPointer(IMPORT,OCDP   , 'OCDP'   ,    RC=STATUS); VERIFY_(STATUS)
+        call MAPL_GetPointer(IMPORT,OCWT   , 'OCWT'   ,    RC=STATUS); VERIFY_(STATUS)
+      endif
       call MAPL_GetPointer(IMPORT,DRBAND , 'DRBAND' ,    RC=STATUS); VERIFY_(STATUS)
       call MAPL_GetPointer(IMPORT,DFBAND , 'DFBAND' ,    RC=STATUS); VERIFY_(STATUS)
-      call MAPL_GetPointer(IMPORT,FSWBAND ,'FSWBAND' ,   RC=STATUS); VERIFY_(STATUS)
-      call MAPL_GetPointer(IMPORT,FSWBANDNA,'FSWBANDNA', RC=STATUS); VERIFY_(STATUS)
    endif
 
 
@@ -1948,14 +1912,14 @@ contains
        call MAPL_GetPointer(EXPORT,DUDPEX ,    'DUDP'    ,    RC=STATUS); VERIFY_(STATUS)
        call MAPL_GetPointer(EXPORT,DUWTEX ,    'DUWT'    ,    RC=STATUS); VERIFY_(STATUS)
        call MAPL_GetPointer(EXPORT,DUSDEX ,    'DUSD'    ,    RC=STATUS); VERIFY_(STATUS)
-       call MAPL_GetPointer(EXPORT,BCDPEX ,    'BCDP'    ,    RC=STATUS); VERIFY_(STATUS)
-       call MAPL_GetPointer(EXPORT,BCWTEX ,    'BCWT'    ,    RC=STATUS); VERIFY_(STATUS)
-       call MAPL_GetPointer(EXPORT,OCDPEX ,    'OCDP'    ,    RC=STATUS); VERIFY_(STATUS)
-       call MAPL_GetPointer(EXPORT,OCWTEX ,    'OCWT'    ,    RC=STATUS); VERIFY_(STATUS)
+       if (DO_DATA_ATM4OCN==0) then
+         call MAPL_GetPointer(EXPORT,BCDPEX ,    'BCDP'    ,    RC=STATUS); VERIFY_(STATUS)
+         call MAPL_GetPointer(EXPORT,BCWTEX ,    'BCWT'    ,    RC=STATUS); VERIFY_(STATUS)
+         call MAPL_GetPointer(EXPORT,OCDPEX ,    'OCDP'    ,    RC=STATUS); VERIFY_(STATUS)
+         call MAPL_GetPointer(EXPORT,OCWTEX ,    'OCWT'    ,    RC=STATUS); VERIFY_(STATUS)
+       endif
        call MAPL_GetPointer(EXPORT,DRBANDEX,   'DRBAND'  ,    RC=STATUS); VERIFY_(STATUS)
        call MAPL_GetPointer(EXPORT,DFBANDEX,   'DFBAND'  ,    RC=STATUS); VERIFY_(STATUS)
-       call MAPL_GetPointer(EXPORT,FSWBANDEX,  'FSWBAND',     RC=STATUS); VERIFY_(STATUS)
-       call MAPL_GetPointer(EXPORT,FSWBANDNAEX,'FSWBANDNA',   RC=STATUS); VERIFY_(STATUS)
    endif
 
    call MAPL_Get (MAPL, GCS=GCS, GIM=GIM, GEX=GEX, GCnames=GCnames,rc=STATUS)
@@ -2180,14 +2144,14 @@ contains
        if  (  associated(DUDPEX)       )  DUDPEX       =  DUDP
        if  (  associated(DUWTEX)       )  DUWTEX       =  DUWT
        if  (  associated(DUSDEX)       )  DUSDEX       =  DUSD
-       if  (  associated(BCDPEX)       )  BCDPEX       =  BCDP
-       if  (  associated(BCWTEX)       )  BCWTEX       =  BCWT
-       if  (  associated(OCDPEX)       )  OCDPEX       =  OCDP
-       if  (  associated(OCWTEX)       )  OCWTEX       =  OCWT
+       if (DO_DATA_ATM4OCN==0) then
+         if  (  associated(BCDPEX)       )  BCDPEX       =  BCDP
+         if  (  associated(BCWTEX)       )  BCWTEX       =  BCWT
+         if  (  associated(OCDPEX)       )  OCDPEX       =  OCDP
+         if  (  associated(OCWTEX)       )  OCWTEX       =  OCWT
+       endif
        if  (  associated(DRBANDEX)     )  DRBANDEX     =  DRBAND
        if  (  associated(DFBANDEX)     )  DFBANDEX     =  DFBAND
-       if  (  associated(FSWBANDEX)    )  FSWBANDEX    =  FSWBAND
-       if  (  associated(FSWBANDNAEX)  )  FSWBANDNAEX  =  FSWBANDNA
     endif
 
 !  All done with SALTWATERCORE

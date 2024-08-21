@@ -58,15 +58,20 @@ esma_doc doc:
 #                  --------------------
 
 
-SRCS = $(shell echo *.F90)
-OBJS = $(SRCS:.F90=.o)
-DEPS := $(addsuffix .d, $(basename $(SRCS)))
+SRCS = OASIM/src/clrtrans.F90 \
+		 OASIM/src/sfcirr.F90 \
+		 OASIM/src/slingo.F90 \
+		 OASIM/src/lidatatm.F90 \
+		 OASIM/src/setsfclte.F90 \
+		 GEOS_DataAtmGridComp.F90
+OBJS := $(notdir $(addsuffix .o, $(basename $(SRCS))))
+DEPS := $(notdir $(addsuffix .d, $(basename $(SRCS))))
 
 FREAL = $(FREAL4) # for now, require 32 bit reals (R4)
 
 THIS_CFIO = MAPL_cfio_r4
 
-INC_DIRS = . $(INC_ESMF) $(INC_GMAO_SHARED) $(INC_MAPL_BASE) $(INC_GEOS_SHARED) $(ESMAINC)/LANL_cice
+INC_DIRS = . OASIM/src $(INC_ESMF) $(INC_GMAO_SHARED) $(INC_MAPL_BASE) $(INC_GEOS_SHARED) $(ESMAINC)/FVdycoreCubed_GridComp $(ESMAINC)/LANL_cice $(ESMAINC)/GEOSsurface_GridComp
 
 MOD_DIRS = . $(INC_DIRS) 
 
@@ -93,6 +98,7 @@ $(LIB) lib : $(OBJS) $(DEPS)
 
 #.
 
-GEOS_DataAtmGridComp.o: ncar_ocean_fluxes.o cube_sphere.o
+GEOS_DataAtmGridComp.o: setsfclte.o lidatatm.o sfcirr.o clrtrans.o slingo.o
 
   -include $(ESMADIR)/Config/ESMA_post.mk  # ESMA additional targets, macros
+
