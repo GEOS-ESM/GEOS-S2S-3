@@ -14,7 +14,6 @@ module GEOS_DataAtmGridCompMod
 
   use ESMF
   use MAPL_Mod
-!  use AdvCore_GridCompMod,        only : FVSetServices        => SetServices
   use FVdycoreCubed_GridComp,     only : FVSetServices        => SetServices
   use GEOS_SurfaceGridCompMod,    only : SurfSetServices      => SetServices
   use GEOS_UtilsMod
@@ -300,7 +299,7 @@ module GEOS_DataAtmGridCompMod
 ! Create children`s gridded components and invoke their SetServices
 ! -----------------------------------------------------------------
 
-    FV = MAPL_AddChild(GC, NAME='AdvCore', SS=FVSetServices, RC=STATUS)
+    FV = MAPL_AddChild(GC, NAME='FVdyCore', SS=FVSetServices, RC=STATUS)
     VERIFY_(STATUS)
     SURF = MAPL_AddChild(GC, NAME='SURFACE', SS=SurfSetServices, RC=STATUS)
     VERIFY_(STATUS)
