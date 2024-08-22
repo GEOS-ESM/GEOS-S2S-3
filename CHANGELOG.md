@@ -5,8 +5,8 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] 
-2024-08-22
+## [Unreleased] 2024-08-22
+
 ### Added
 - The new DataAtm has been backported from the current GEOS version to the S2Sv3 model, it replaced the old one. It includes the atmospheric component of OASIM (Ocean and Atmosphere Spectral Irradiance Model) that is used to force OBIO (NOBM).
 - .rc files needed by DataAtm. 
