@@ -147,6 +147,9 @@ if ( $site == NCCS ) then
 
       set mod5 = python/GEOSpyD/Min23.5.2-0_py3.11
 
+      set mod6 = other/mpi4py/3.1.5-py3.11/ifort_18.0.5.274-intelmpi_2021.2.0-SLES12
+      set mod7 = other/ncap2/5.1.1
+
    else
 
       set mod2 = comp/gcc/12.3.0
@@ -157,12 +160,15 @@ if ( $site == NCCS ) then
       set mod4 = mpi/impi/2021.13
 
       set mod5 = python/GEOSpyD/Min23.5.2-0_py3.11
-   
+
+      set mod6 = other/mpi4py/3.1.5-py3.11/ifort_2021.6.0-intelmpi_2021.13.0-SLES15
+      set mod7 = other/ncap2/5.1.7
+
    endif
 
    set momdir = /home/yvikhlia/nobackup/mom5
 
-   set mods = ( $mod1 $mod2 $mod3 $mod4 $mod5 )
+   set mods = ( $mod1 $mod2 $mod3 $mod4 $mod5 $mod6 $mod7 )
    set modinit = /usr/share/modules/init/csh
    set loadmodules = 0
    set usemodules = 1
