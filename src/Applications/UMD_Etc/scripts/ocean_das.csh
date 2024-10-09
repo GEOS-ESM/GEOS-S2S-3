@@ -7,17 +7,7 @@
 
 limit stacksize unlimited
 
-source ../ocean_das_config
-#module purge
-#set MODS = `$GEOSDIR/Linux/bin/g5_modules modules`
-#module load $MODS
-#module load python/GEOSpyD/Ana2019.10_py3.7
-#module load python/GEOSpyD/Min4.8.3_py3.8
-#set BASEDIR = `$GEOSDIR/Linux/bin/g5_modules basedir`
-
-#module use -a /discover/swdev/gmao_SIteam/modulefiles-SLES12
-#module load mpi/impi-prov/19.1.0.166
-#module swap mpi/impi mpi/impi/2021.2.0
+source ${EXPDIR}/ocean_das_config
 
 #######################################################################
 #               Set Analysis Date Time
@@ -44,12 +34,9 @@ set center_fname_cice = ${EXPDIR}/scratch/${EXPID}.${SEAICE}.${yyyy}${mm}${dd}_$
 
 #Convert T in center_ctrl in deg C
 #  Bin's recipe 4/1/19 /home/bzhao/V3_Recipes
-#${BASEDIR}/Linux/bin/ncap  -O -s "temp=(temp-273.15)" $center_ctrl $center_ctrl   # !!! DANGER !!! the background file at the time 
-#${BASEDIR}/Linux/bin/ncap2 -O -s "temp=(temp-273.15)" $center_ctrl $center_ctrl   # !!! DANGER !!! the background file at the time 
-#/discover/swdev/mathomp4/Baselibs/ESMA-Baselibs-4.0.11-SLES12/x86_64-unknown-linux-gnu/ifort_18.0.5.274-intelmpi_19.1.0.166-nco_2020Apr09_snapshot/Linux/bin/ncap2 -O -s "temp=(temp-273.15)" $center_ctrl $center_ctrl   # !!! DANGER !!! the background file at the time
-/discover/swdev/gmao_SIteam/Baselibs/latest-mpiuni-SLES12/Linux/bin/ncap2 -O -s "temp=(temp-273.15)" $center_ctrl $center_ctrl   # !!! DANGER !!! the background file at the time
-										 #                of the analysis is now in C
-                                                                                 #                while the others are in K  
+ncap2 -O -s "temp=(temp-273.15)" $center_ctrl $center_ctrl   # !!! DANGER !!! the background file at the time
+							     # of the analysis is now in C
+                                                             # while the others are in K  
 
 #######################################################################
 #                 Create Experiment Sub-Directories
@@ -339,8 +326,7 @@ endif
     #set mass_incr = `cat seaice_mass_incr.txt`
     #echo 'Mass incr = '$mass_incr
 #   Bin's recipe 4119 (/home/bzhao/V3_Recipes)
-    #${BASEDIR}/Linux/bin/ncap  -O -s "eta_t=(eta_t+${mass_incr})" $SCRDIR/INPUT/ocean_barotropic.res.nc $SCRDIR/INPUT/ocean_barotropic.res.nc > add_si_mass.out
-    #${BASEDIR}/Linux/bin/ncap2 -O -s "eta_t=(eta_t+${mass_incr})" $SCRDIR/INPUT/ocean_barotropic.res.nc $SCRDIR/INPUT/ocean_barotropic.res.nc > add_si_mass.out
+    #ncap2 -O -s "eta_t=(eta_t+${mass_incr})" $SCRDIR/INPUT/ocean_barotropic.res.nc $SCRDIR/INPUT/ocean_barotropic.res.nc > add_si_mass.out
 #endif
 
 ###############################################################################
@@ -370,10 +356,7 @@ endif
 
 #Revert T in center_ctrl back to K
 #  Bin's recipe 4119 (/home/bzhao/V3_Recipes)
-#${BASEDIR}/Linux/bin/ncap  -O -s "temp=(temp+273.15)" $center_ctrl $center_ctrl > ncap_back2K.out
-#${BASEDIR}/Linux/bin/ncap2 -O -s "temp=(temp+273.15)" $center_ctrl $center_ctrl > ncap_back2K.out
-#/discover/swdev/mathomp4/Baselibs/ESMA-Baselibs-4.0.11-SLES12/x86_64-unknown-linux-gnu/ifort_18.0.5.274-intelmpi_19.1.0.166-nco_2020Apr09_snapshot/Linux/bin/ncap2 -O -s "temp=(temp+273.15)" $center_ctrl $center_ctrl > ncap_back2K.out
-/discover/swdev/gmao_SIteam/Baselibs/latest-mpiuni-SLES12/Linux/bin/ncap2 -O -s "temp=(temp+273.15)" $center_ctrl $center_ctrl > ncap_back2K.out
+ncap2 -O -s "temp=(temp+273.15)" $center_ctrl $center_ctrl > ncap_back2K.out
 cp -f temp_increment.nc $SCRDIR/INPUT/
 cp -f salt_increment.nc $SCRDIR/INPUT/
 cp -f  eta_increment.nc $SCRDIR/INPUT/

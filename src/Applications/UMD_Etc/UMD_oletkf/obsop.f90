@@ -165,7 +165,7 @@ PROGRAM obsop
   !write(guesfile(1:7),'(A4,I3.3)') 'bkg/',myrank+1
   !print *,'guesfile=',guesfile
 
-  write(guesfile(1:7),'(A4,I3.3)') guesfile(1:4),myrank+1
+  write(guesfile(5:7),'(I3.3)') myrank+1
   !print *,'fname=',fname
 
   CALL read_grd4(guesfile,v3ds,v2ds)
