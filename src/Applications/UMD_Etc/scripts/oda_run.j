@@ -66,7 +66,7 @@ rm -f $SCRDIR/OCN_OBS_????????_??
 rm -f $SCRDIR/BADOBS
 source ${EXPDIR}/ocean_das_config
 echo 'BEFORE ocean_observer.py omf'
-${UMD_LETKFSCRIPTS}/ocean_observer_comb.py omf ${ANADIR} True $DA_seq &
+${UMD_LETKFSCRIPTS}/ocean_observer.py omf ${ANADIR} True $DA_seq &
 set OBSSTATUS = $status
 echo $OBSSTATUS 'AFTER  ocean_observer.py omf'
 if( $OBSSTATUS != 0 ) then
@@ -115,7 +115,7 @@ echo 'BEFORE ocean_observer.py omf'
 #  False assumes forecast is already writen
 #${UMD_LETKFSCRIPTS}/ocean_observer.py omf ${ANADIR} True $DA_seq &
 #${UMD_LETKFSCRIPTS}/ocean_observer.py omf ${ANADIR} False $DA_seq &
-${UMD_LETKFSCRIPTS}/ocean_observer_comb.py omf ${ANADIR} False $DA_seq
+${UMD_LETKFSCRIPTS}/ocean_observer.py omf ${ANADIR} False $DA_seq
 set OBSSTATUS = $status
 echo $OBSSTATUS 'AFTER  ocean_observer.py omf'
 if( $OBSSTATUS != 0 ) then
