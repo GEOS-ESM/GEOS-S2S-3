@@ -1,0 +1,129 @@
+PrimaryExports%%
+# -------------|-------|-------|--------|----------------------|--------|--------|-------------|----------|
+#  Import      |       |       | Regrid |        Refresh       | OffSet | Scale  | Variable On |   File   |
+#  Name        | Units | Clim  | Method |     Time Template    | Factor | Factor |     File    | Template |
+# -------------|-------|-------|--------|----------------------|--------|--------|-------------|----------|
+
+CO2SC           '1e-6'     Y       N               0              none      none      ATM_CO2   /discover/nobackup/mmehari/DATA/OBS/atmopt/atmco2_360x180_clim.nc
+DUDP001      'kg m-2 s-1'  Y       N               0              none      none      DUDP001   /discover/nobackup/mmehari/DATA/OBS/atmopt/merra2/merra2_dust_clim.nc4
+DUDP002      'kg m-2 s-1'  Y       N               0              none      none      DUDP002   /discover/nobackup/mmehari/DATA/OBS/atmopt/merra2/merra2_dust_clim.nc4
+DUDP003      'kg m-2 s-1'  Y       N               0              none      none      DUDP003   /discover/nobackup/mmehari/DATA/OBS/atmopt/merra2/merra2_dust_clim.nc4
+DUDP004      'kg m-2 s-1'  Y       N               0              none      none      DUDP004   /discover/nobackup/mmehari/DATA/OBS/atmopt/merra2/merra2_dust_clim.nc4
+DUDP005      'kg m-2 s-1'  Y       N               0              none      none      DUDP005   /discover/nobackup/mmehari/DATA/OBS/atmopt/merra2/merra2_dust_clim.nc4
+DUWT001      'kg m-2 s-1'  Y       N               0              none      none      DUWT001   /discover/nobackup/mmehari/DATA/OBS/atmopt/merra2/merra2_dust_clim.nc4
+DUWT002      'kg m-2 s-1'  Y       N               0              none      none      DUWT002   /discover/nobackup/mmehari/DATA/OBS/atmopt/merra2/merra2_dust_clim.nc4
+DUWT003      'kg m-2 s-1'  Y       N               0              none      none      DUWT003   /discover/nobackup/mmehari/DATA/OBS/atmopt/merra2/merra2_dust_clim.nc4
+DUWT004      'kg m-2 s-1'  Y       N               0              none      none      DUWT004   /discover/nobackup/mmehari/DATA/OBS/atmopt/merra2/merra2_dust_clim.nc4
+DUWT005      'kg m-2 s-1'  Y       N               0              none      none      DUWT005   /discover/nobackup/mmehari/DATA/OBS/atmopt/merra2/merra2_dust_clim.nc4
+DUSD001      'kg m-2 s-1'  Y       N               0              none      none      DUSD001   /discover/nobackup/mmehari/DATA/OBS/atmopt/merra2/merra2_dust_clim.nc4
+DUSD002      'kg m-2 s-1'  Y       N               0              none      none      DUSD002   /discover/nobackup/mmehari/DATA/OBS/atmopt/merra2/merra2_dust_clim.nc4
+DUSD003      'kg m-2 s-1'  Y       N               0              none      none      DUSD003   /discover/nobackup/mmehari/DATA/OBS/atmopt/merra2/merra2_dust_clim.nc4
+DUSD004      'kg m-2 s-1'  Y       N               0              none      none      DUSD004   /discover/nobackup/mmehari/DATA/OBS/atmopt/merra2/merra2_dust_clim.nc4
+DUSD005      'kg m-2 s-1'  Y       N               0              none      none      DUSD005   /discover/nobackup/mmehari/DATA/OBS/atmopt/merra2/merra2_dust_clim.nc4
+TAUA_01           NA       Y       N               0              none      none      TAUA_01   /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/taua_bands_360x180_clim.nc
+TAUA_02           NA       Y       N               0              none      none      TAUA_02   /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/taua_bands_360x180_clim.nc
+TAUA_03           NA       Y       N               0              none      none      TAUA_03   /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/taua_bands_360x180_clim.nc
+TAUA_04           NA       Y       N               0              none      none      TAUA_04   /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/taua_bands_360x180_clim.nc
+TAUA_05           NA       Y       N               0              none      none      TAUA_05   /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/taua_bands_360x180_clim.nc
+TAUA_06           NA       Y       N               0              none      none      TAUA_06   /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/taua_bands_360x180_clim.nc
+TAUA_07           NA       Y       N               0              none      none      TAUA_07   /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/taua_bands_360x180_clim.nc
+TAUA_08           NA       Y       N               0              none      none      TAUA_08   /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/taua_bands_360x180_clim.nc
+TAUA_09           NA       Y       N               0              none      none      TAUA_09   /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/taua_bands_360x180_clim.nc
+TAUA_10           NA       Y       N               0              none      none      TAUA_10   /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/taua_bands_360x180_clim.nc
+TAUA_11           NA       Y       N               0              none      none      TAUA_11   /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/taua_bands_360x180_clim.nc
+TAUA_12           NA       Y       N               0              none      none      TAUA_12   /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/taua_bands_360x180_clim.nc
+TAUA_13           NA       Y       N               0              none      none      TAUA_13   /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/taua_bands_360x180_clim.nc
+TAUA_14           NA       Y       N               0              none      none      TAUA_14   /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/taua_bands_360x180_clim.nc
+TAUA_15           NA       Y       N               0              none      none      TAUA_15   /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/taua_bands_360x180_clim.nc
+TAUA_16           NA       Y       N               0              none      none      TAUA_16   /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/taua_bands_360x180_clim.nc
+TAUA_17           NA       Y       N               0              none      none      TAUA_17   /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/taua_bands_360x180_clim.nc
+TAUA_18           NA       Y       N               0              none      none      TAUA_18   /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/taua_bands_360x180_clim.nc
+TAUA_19           NA       Y       N               0              none      none      TAUA_19   /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/taua_bands_360x180_clim.nc
+TAUA_20           NA       Y       N               0              none      none      TAUA_20   /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/taua_bands_360x180_clim.nc
+TAUA_21           NA       Y       N               0              none      none      TAUA_21   /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/taua_bands_360x180_clim.nc
+TAUA_22           NA       Y       N               0              none      none      TAUA_22   /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/taua_bands_360x180_clim.nc
+TAUA_23           NA       Y       N               0              none      none      TAUA_23   /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/taua_bands_360x180_clim.nc
+TAUA_24           NA       Y       N               0              none      none      TAUA_24   /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/taua_bands_360x180_clim.nc
+TAUA_25           NA       Y       N               0              none      none      TAUA_25   /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/taua_bands_360x180_clim.nc
+TAUA_26           NA       Y       N               0              none      none      TAUA_26   /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/taua_bands_360x180_clim.nc
+TAUA_27           NA       Y       N               0              none      none      TAUA_27   /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/taua_bands_360x180_clim.nc
+TAUA_28           NA       Y       N               0              none      none      TAUA_28   /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/taua_bands_360x180_clim.nc
+TAUA_29           NA       Y       N               0              none      none      TAUA_29   /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/taua_bands_360x180_clim.nc
+TAUA_30           NA       Y       N               0              none      none      TAUA_30   /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/taua_bands_360x180_clim.nc
+TAUA_31           NA       Y       N               0              none      none      TAUA_31   /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/taua_bands_360x180_clim.nc
+TAUA_32           NA       Y       N               0              none      none      TAUA_32   /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/taua_bands_360x180_clim.nc
+TAUA_33           NA       Y       N               0              none      none      TAUA_33   /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/taua_bands_360x180_clim.nc
+ASYMP_01          NA       Y       N               0              none      none      ASYMP_01  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/asymp_bands_360x180_clim.nc
+ASYMP_02          NA       Y       N               0              none      none      ASYMP_02  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/asymp_bands_360x180_clim.nc
+ASYMP_03          NA       Y       N               0              none      none      ASYMP_03  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/asymp_bands_360x180_clim.nc
+ASYMP_04          NA       Y       N               0              none      none      ASYMP_04  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/asymp_bands_360x180_clim.nc
+ASYMP_05          NA       Y       N               0              none      none      ASYMP_05  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/asymp_bands_360x180_clim.nc
+ASYMP_06          NA       Y       N               0              none      none      ASYMP_06  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/asymp_bands_360x180_clim.nc
+ASYMP_07          NA       Y       N               0              none      none      ASYMP_07  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/asymp_bands_360x180_clim.nc
+ASYMP_08          NA       Y       N               0              none      none      ASYMP_08  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/asymp_bands_360x180_clim.nc
+ASYMP_09          NA       Y       N               0              none      none      ASYMP_09  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/asymp_bands_360x180_clim.nc
+ASYMP_10          NA       Y       N               0              none      none      ASYMP_10  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/asymp_bands_360x180_clim.nc
+ASYMP_11          NA       Y       N               0              none      none      ASYMP_11  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/asymp_bands_360x180_clim.nc
+ASYMP_12          NA       Y       N               0              none      none      ASYMP_12  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/asymp_bands_360x180_clim.nc
+ASYMP_13          NA       Y       N               0              none      none      ASYMP_13  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/asymp_bands_360x180_clim.nc
+ASYMP_14          NA       Y       N               0              none      none      ASYMP_14  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/asymp_bands_360x180_clim.nc
+ASYMP_15          NA       Y       N               0              none      none      ASYMP_15  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/asymp_bands_360x180_clim.nc
+ASYMP_16          NA       Y       N               0              none      none      ASYMP_16  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/asymp_bands_360x180_clim.nc
+ASYMP_17          NA       Y       N               0              none      none      ASYMP_17  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/asymp_bands_360x180_clim.nc
+ASYMP_18          NA       Y       N               0              none      none      ASYMP_18  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/asymp_bands_360x180_clim.nc
+ASYMP_19          NA       Y       N               0              none      none      ASYMP_19  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/asymp_bands_360x180_clim.nc
+ASYMP_20          NA       Y       N               0              none      none      ASYMP_20  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/asymp_bands_360x180_clim.nc
+ASYMP_21          NA       Y       N               0              none      none      ASYMP_21  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/asymp_bands_360x180_clim.nc
+ASYMP_22          NA       Y       N               0              none      none      ASYMP_22  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/asymp_bands_360x180_clim.nc
+ASYMP_23          NA       Y       N               0              none      none      ASYMP_23  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/asymp_bands_360x180_clim.nc
+ASYMP_24          NA       Y       N               0              none      none      ASYMP_24  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/asymp_bands_360x180_clim.nc
+ASYMP_25          NA       Y       N               0              none      none      ASYMP_25  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/asymp_bands_360x180_clim.nc
+ASYMP_26          NA       Y       N               0              none      none      ASYMP_26  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/asymp_bands_360x180_clim.nc
+ASYMP_27          NA       Y       N               0              none      none      ASYMP_27  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/asymp_bands_360x180_clim.nc
+ASYMP_28          NA       Y       N               0              none      none      ASYMP_28  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/asymp_bands_360x180_clim.nc
+ASYMP_29          NA       Y       N               0              none      none      ASYMP_29  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/asymp_bands_360x180_clim.nc
+ASYMP_30          NA       Y       N               0              none      none      ASYMP_30  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/asymp_bands_360x180_clim.nc
+ASYMP_31          NA       Y       N               0              none      none      ASYMP_31  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/asymp_bands_360x180_clim.nc
+ASYMP_32          NA       Y       N               0              none      none      ASYMP_32  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/asymp_bands_360x180_clim.nc
+ASYMP_33          NA       Y       N               0              none      none      ASYMP_33  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/asymp_bands_360x180_clim.nc
+SSALB_01          NA       Y       N               0              none      none      SSALB_01  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/ssalb_bands_360x180_clim.nc
+SSALB_02          NA       Y       N               0              none      none      SSALB_02  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/ssalb_bands_360x180_clim.nc
+SSALB_03          NA       Y       N               0              none      none      SSALB_03  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/ssalb_bands_360x180_clim.nc
+SSALB_04          NA       Y       N               0              none      none      SSALB_04  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/ssalb_bands_360x180_clim.nc
+SSALB_05          NA       Y       N               0              none      none      SSALB_05  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/ssalb_bands_360x180_clim.nc
+SSALB_06          NA       Y       N               0              none      none      SSALB_06  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/ssalb_bands_360x180_clim.nc
+SSALB_07          NA       Y       N               0              none      none      SSALB_07  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/ssalb_bands_360x180_clim.nc
+SSALB_08          NA       Y       N               0              none      none      SSALB_08  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/ssalb_bands_360x180_clim.nc
+SSALB_09          NA       Y       N               0              none      none      SSALB_09  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/ssalb_bands_360x180_clim.nc
+SSALB_10          NA       Y       N               0              none      none      SSALB_10  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/ssalb_bands_360x180_clim.nc
+SSALB_11          NA       Y       N               0              none      none      SSALB_11  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/ssalb_bands_360x180_clim.nc
+SSALB_12          NA       Y       N               0              none      none      SSALB_12  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/ssalb_bands_360x180_clim.nc
+SSALB_13          NA       Y       N               0              none      none      SSALB_13  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/ssalb_bands_360x180_clim.nc
+SSALB_14          NA       Y       N               0              none      none      SSALB_14  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/ssalb_bands_360x180_clim.nc
+SSALB_15          NA       Y       N               0              none      none      SSALB_15  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/ssalb_bands_360x180_clim.nc
+SSALB_16          NA       Y       N               0              none      none      SSALB_16  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/ssalb_bands_360x180_clim.nc
+SSALB_17          NA       Y       N               0              none      none      SSALB_17  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/ssalb_bands_360x180_clim.nc
+SSALB_18          NA       Y       N               0              none      none      SSALB_18  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/ssalb_bands_360x180_clim.nc
+SSALB_19          NA       Y       N               0              none      none      SSALB_19  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/ssalb_bands_360x180_clim.nc
+SSALB_20          NA       Y       N               0              none      none      SSALB_20  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/ssalb_bands_360x180_clim.nc
+SSALB_21          NA       Y       N               0              none      none      SSALB_21  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/ssalb_bands_360x180_clim.nc
+SSALB_22          NA       Y       N               0              none      none      SSALB_22  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/ssalb_bands_360x180_clim.nc
+SSALB_23          NA       Y       N               0              none      none      SSALB_23  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/ssalb_bands_360x180_clim.nc
+SSALB_24          NA       Y       N               0              none      none      SSALB_24  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/ssalb_bands_360x180_clim.nc
+SSALB_25          NA       Y       N               0              none      none      SSALB_25  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/ssalb_bands_360x180_clim.nc
+SSALB_26          NA       Y       N               0              none      none      SSALB_26  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/ssalb_bands_360x180_clim.nc
+SSALB_27          NA       Y       N               0              none      none      SSALB_27  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/ssalb_bands_360x180_clim.nc
+SSALB_28          NA       Y       N               0              none      none      SSALB_28  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/ssalb_bands_360x180_clim.nc
+SSALB_29          NA       Y       N               0              none      none      SSALB_29  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/ssalb_bands_360x180_clim.nc
+SSALB_30          NA       Y       N               0              none      none      SSALB_30  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/ssalb_bands_360x180_clim.nc
+SSALB_31          NA       Y       N               0              none      none      SSALB_31  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/ssalb_bands_360x180_clim.nc
+SSALB_32          NA       Y       N               0              none      none      SSALB_32  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/ssalb_bands_360x180_clim.nc
+SSALB_33          NA       Y       N               0              none      none      SSALB_33  /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/ssalb_bands_360x180_clim.nc
+CDREM             NA       Y       N               0              none      none      CDREM     /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/cdrem_360x180_clim.nc
+CLDTCM            NA       Y       N               0              none      none      CLDTCM    /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/cldtcm_360x180_clim.nc
+RLWPM             NA       Y       N               0              none      none      RLWPM     /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/rlwpm_360x180_clim.nc
+CCOVM  'fraction (dimensionless)'  Y     N         0              none      none      CCOVM     /discover/nobackup/mmehari/DATA/OBS/atmopt/modis/ccovm_360x180_clim.nc
+WV            'kg m-2'     Y       N               0              none      none      TQV       /discover/nobackup/mmehari/DATA/OBS/atmopt/merra2/merra2_wv_clim.nc4
+RH            'percent'    Y       N               0              none      none      RH        /discover/nobackup/mmehari/DATA/OBS/atmopt/merra2/merra2_rh_clim.nc4 
+OZ         'Dobson units'  Y       N               0              none      none      TO3       /discover/nobackup/mmehari/DATA/OBS/atmopt/merra2/merra2_oz_clim.nc4 
+%%

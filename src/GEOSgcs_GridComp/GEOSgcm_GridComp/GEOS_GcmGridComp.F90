@@ -34,17 +34,17 @@ module GEOS_GcmGridCompMod
   integer            :: NUM_ICE_CATEGORIES
   integer            :: NUM_ICE_LAYERS
   integer, parameter :: NUM_SNOW_LAYERS=1
-  integer            :: DO_CICE_THERMO  
-  integer            :: DO_DATAATM
+  integer            :: DO_CICE_THERMO
+  integer            :: DO_DATA_ATM4OCN
   integer            :: DO_OBIO
   integer            :: DO_DATASEA
 
 !=============================================================================
 
-! !DESCRIPTION: This gridded component (GC) combines the Agcm GC, 
+! !DESCRIPTION: This gridded component (GC) combines the Agcm GC,
 !   and Ogcm GC into a new composite Gcm GC.
 
- 
+
 !EOP
 
 integer ::       AGCM
@@ -100,8 +100,8 @@ contains
     integer, optional                  :: RC  ! return code
 
 ! !DESCRIPTION:  The SetServices for the PhysicsGcm GC needs to register its
-!   Initialize and Run.  It uses the MAPL\_Generic construct for defining 
-!   state specs and couplings among its children.  In addition, it creates the   
+!   Initialize and Run.  It uses the MAPL\_Generic construct for defining
+!   state specs and couplings among its children.  In addition, it creates the
 !   children GCs (AGCM and OGCM) and runs their
 !   respective SetServices.
 
@@ -117,9 +117,9 @@ contains
 
 ! Locals
 
-    type (T_GCM_STATE), pointer         :: gcm_internal_state => null() 
+    type (T_GCM_STATE), pointer         :: gcm_internal_state => null()
     type (GCM_wrap)                     :: wrap
-    type (T_EXTDATA_STATE), pointer     :: extdata_internal_state 
+    type (T_EXTDATA_STATE), pointer     :: extdata_internal_state
     type (EXTDATA_wrap)                 :: ExtDataWrap
     type (MAPL_MetaComp),  pointer      :: MAPL
     character(len=ESMF_MAXSTR)          :: ReplayMode
@@ -174,14 +174,14 @@ contains
        VERIFY_(STATUS)
        call ESMF_ConfigGetAttribute(CF, NUM_ICE_LAYERS,     Label="CICE_N_ICE_LAYERS:" ,     RC=STATUS)
        VERIFY_(STATUS)
-    else 
+    else
        NUM_ICE_CATEGORIES = 1
-       NUM_ICE_LAYERS     = 1  
+       NUM_ICE_LAYERS     = 1
     endif
 
     call MAPL_GetResource ( MAPL, DO_OBIO,        Label="USE_OCEANOBIOGEOCHEM:",DEFAULT=0, RC=STATUS)
     VERIFY_(STATUS)
-    call MAPL_GetResource ( MAPL, DO_DATAATM,     Label="USE_DATAATM:" ,     DEFAULT=0, RC=STATUS)
+    call MAPL_GetResource ( MAPL, DO_DATA_ATM4OCN,     Label="USE_DATA_ATM4OCN:" ,     DEFAULT=0, RC=STATUS)
     VERIFY_(STATUS)
     call MAPL_GetResource ( MAPL, DO_DATASEA,       Label="USE_DATASEA:" , DEFAULT=1, RC=STATUS)
     VERIFY_(STATUS)
@@ -201,7 +201,7 @@ contains
 ! Create childrens gridded components and invoke their SetServices
 ! ----------------------------------------------------------------
 
-    if(DO_DATAATM/=0) then
+    if(DO_DATA_ATM4OCN/=0) then
        AGCM = MAPL_AddChild(GC, NAME='DATAATM', SS=DATAATM_SetServices, RC=STATUS)
        VERIFY_(STATUS)
     else
@@ -304,7 +304,7 @@ contains
                                                            OFFSET = PREDICTOR_DURATION +(REPLAY_BKGAVE/2), RC=status )
           VERIFY_(STATUS)
        end if
-    else    
+    else
        rplRegular = .false.
           REPLAY_BKGAVE = 0
     endif
@@ -313,7 +313,7 @@ contains
 
 ! Export for IAU and/or Analysis purposes
 ! ---------------------------------------
-    if(DO_DATAATM==0) then
+    if(DO_DATA_ATM4OCN==0) then
        call MAPL_AddExportSpec ( GC, &
             SHORT_NAME = 'AK',       &
             CHILD_ID = AGCM,         &
@@ -471,7 +471,7 @@ contains
        VERIFY_(STATUS)
     endif
 
-    if(DO_DATAATM==0) then
+    if(DO_DATA_ATM4OCN==0) then
        call MAPL_AddConnectivity ( GC,                              &
             SHORT_NAME  = (/'PHIS  ','AK    ','BK    ','U     ','V     ','TV    ','PS    ','DELP  ','O3PPMV', 'TS    ','AREA  '/),       &
             DST_ID = AIAU,                                          &
@@ -521,26 +521,10 @@ contains
      VERIFY_(STATUS)
 
      if (DO_OBIO/=0) then
-       call OBIO_TerminateImports(DO_DATAATM, RC)
+       call OBIO_TerminateImports(DO_DATA_ATM4OCN, RC)
      end if
 
-
-     if(DO_DATAATM/=0) then
-        call MAPL_TerminateImport    ( GC,   & 
-             SHORT_NAME = (/'KPAR   ','UW     ','VW     ','UI     ', &
-             'VI     ','TAUXBOT','TAUYBOT'/),         &
-             CHILD      = AGCM,           &
-             RC=STATUS  )
-        VERIFY_(STATUS)
-
-        call MAPL_TerminateImport    ( GC,                             &
-             SHORT_NAME = (/'TS_FOUND', 'SS_FOUND', 'FRZMLT  '/),      &
-             CHILD      = AGCM,                                        &
-             RC=STATUS  )
-        VERIFY_(STATUS)
-     end if
-
-    if (DO_CICE_THERMO /= 0) then  
+    if (DO_CICE_THERMO /= 0) then
        call MAPL_TerminateImport    ( GC,   &
           SHORT_NAME = (/ &
                          'FRACICE', 'VOLICE ', 'VOLSNO ',              &
@@ -548,7 +532,7 @@ contains
           CHILD      = OGCM,           &
           RC=STATUS  )
        VERIFY_(STATUS)
-   endif 
+    endif
 
 ! Allocate this instance of the internal state and put it in wrapper.
 ! -------------------------------------------------------------------
@@ -569,10 +553,10 @@ contains
        VERIFY_(STATUS)
        ExtDataWrap%ptr => extdata_internal_state
        call ESMF_UserCompSetInternalState( GC, 'ExtData_state',ExtDataWrap,status)
-       VERIFY_(STATUS) 
+       VERIFY_(STATUS)
     end if
 
- 
+
 ! Save pointer to the wrapped internal state in the GC
 ! ----------------------------------------------------
 
@@ -602,9 +586,9 @@ contains
 
     contains
 
-      subroutine OBIO_TerminateImports(DO_DATAATM, RC)
+      subroutine OBIO_TerminateImports(DO_DATA_ATM4OCN, RC)
 
-        integer,                    intent(IN   ) ::  DO_DATAATM
+        integer,                    intent(IN   ) ::  DO_DATA_ATM4OCN
         integer, optional,          intent(  OUT) ::  RC
 
         character(len=ESMF_MAXSTR), parameter     :: IAm="OBIO_TerminateImports"
@@ -624,16 +608,15 @@ contains
            RC=STATUS  )
         VERIFY_(STATUS)
 
-        if(DO_DATAATM==0) then
+        call MAPL_TerminateImport    ( GC,                         &
+             SHORT_NAME = (/'DRBAND',  'DFBAND'/),                 &
+             CHILD      = OGCM,                                    &
+             RC=STATUS  )
+        VERIFY_(STATUS)
+
+        if(DO_DATA_ATM4OCN==0) then
           call MAPL_TerminateImport    ( GC,                         &
                SHORT_NAME = (/'BCDP', 'BCWT', 'OCDP', 'OCWT' /),     &
-               CHILD      = OGCM,                                    &
-               RC=STATUS  )
-          VERIFY_(STATUS)
-
-          call MAPL_TerminateImport    ( GC,                         &
-               SHORT_NAME = (/'DRBAND',  'DFBAND',                   &
-                              'FSWBAND  ', 'FSWBANDNA'/),            &
                CHILD      = OGCM,                                    &
                RC=STATUS  )
           VERIFY_(STATUS)
@@ -641,7 +624,7 @@ contains
 
         RETURN_(ESMF_SUCCESS)
       end subroutine OBIO_TerminateImports
-  
+
   end subroutine SetServices
 
 
@@ -655,20 +638,20 @@ contains
 
 ! !ARGUMENTS:
 
-    type(ESMF_GridComp), intent(inout) :: GC     ! Gridded component 
+    type(ESMF_GridComp), intent(inout) :: GC     ! Gridded component
     type(ESMF_State),    intent(inout) :: IMPORT ! Import state
     type(ESMF_State),    intent(inout) :: EXPORT ! Export state
     type(ESMF_Clock),    intent(inout) :: CLOCK  ! The clock
     integer, optional,   intent(  out) :: RC     ! Error code
 
-! !DESCRIPTION: 
- 
+! !DESCRIPTION:
+
 
 !EOP
 
 ! ErrLog Variables
 
-    character(len=ESMF_MAXSTR)           :: IAm 
+    character(len=ESMF_MAXSTR)           :: IAm
     integer                              :: STATUS
     character(len=ESMF_MAXSTR)           :: COMP_NAME
 
@@ -692,9 +675,9 @@ contains
     character(len=ESMF_MAXSTR)          :: tilingfile
     character(len=ESMF_MAXSTR)          :: tmpStr
     character(len=ESMF_MAXSTR)          :: ReplayMode
-    type (T_GCM_STATE), pointer         :: gcm_internal_state => null() 
+    type (T_GCM_STATE), pointer         :: gcm_internal_state => null()
     type (GCM_wrap)                     :: wrap
-    
+
     type(ESMF_Calendar)                 :: cal
     type(ESMF_Time)                     :: rep_StartTime
     type(ESMF_Time)                     :: currTime
@@ -725,7 +708,7 @@ contains
 
 !=============================================================================
 
-! Begin... 
+! Begin...
 
 ! Get the target components name and set-up traceback handle.
 ! -----------------------------------------------------------
@@ -810,7 +793,7 @@ contains
     call ESMF_GridCompSet(GCS(OGCM),  grid=ogrid, rc=status)
     VERIFY_(STATUS)
 
-    if(DO_DATAATM==0) then
+    if(DO_DATA_ATM4OCN==0) then
        call ESMF_GridCompSet(GCS(AIAU),  grid=agrid, rc=status)
        VERIFY_(STATUS)
        call ESMF_GridCompSet(GCS(ADFI),  grid=agrid, rc=status)
@@ -822,7 +805,7 @@ contains
 
     call ESMF_GridCompSet(GC, grid=agrid, rc=status)
     VERIFY_(STATUS)
-    
+
     GCM_INTERNAL_STATE%checkpointRequested = .false.
 
     if(gcm_internal_state%rplRegular) then
@@ -867,12 +850,12 @@ contains
        VERIFY_(STATUS)
 
        ! Initialize REPLAY_STARTDATE in YYYYMMDD & HHMMSS format
-       ! ------------------------------------------------------- 
+       ! -------------------------------------------------------
        rep_startdate(1) = 10000*rep_YY + 100*rep_MM + rep_DD
-       rep_startdate(2) = 10000*rep_H  + 100*rep_M  + rep_S 
+       rep_startdate(2) = 10000*rep_H  + 100*rep_M  + rep_S
 
        ! Update REPLAY_STARTDATE with User-Supplied values from CONFIG
-       ! ------------------------------------------------------------- 
+       ! -------------------------------------------------------------
        call MAPL_GetResource( MAPL, rep_startdate(1), label='REPLAY_STARTDATE:', default=rep_startdate(1), rc=STATUS )
        call MAPL_GetResource( MAPL, rep_startdate(2), label='REPLAY_STARTTIME:', default=rep_startdate(2), rc=STATUS )
 
@@ -924,7 +907,7 @@ contains
        VERIFY_(STATUS)
 !      IF(MAPL_AM_I_ROOT()) PRINT *,TRIM(Iam)//": Predictor Alarm is ringing? ",ESMF_AlarmIsRinging(PredictorIsActive)
 ! ---------------- Alarm for detecting active PREDICTOR step ---------------- !
-       
+
        call MAPL_GetObjectFromGC ( GCS(AGCM), CMAPL, RC=STATUS)
        VERIFY_(STATUS)
        Alarms(1) = replayStartAlarm
@@ -969,11 +952,7 @@ contains
 ! Create XFORMs
 !--------------
 
-    if(DO_DATAATM/=0) then
-       skinname = 'DATAATM'
-    else
-       skinname = 'SALTWATER'
-    endif
+   skinname = 'SALTWATER'
 
    call MAPL_GetResource(MAPL, bypass_ogcm, "BYPASS_OGCM:", &
         default=0, rc=status)
@@ -1019,7 +998,7 @@ contains
         RC=STATUS)
    VERIFY_(STATUS)
 
-   if (DO_CICE_THERMO /= 0) then  
+   if (DO_CICE_THERMO /= 0) then
       call AllocateExports(GCM_INTERNAL_STATE%expSKIN, &
            (/'TAUXW    ', 'TAUYW    '/), &
            RC=STATUS)
@@ -1032,22 +1011,22 @@ contains
    VERIFY_(STATUS)
 
    if(DO_OBIO/=0) then
-     call AllocateExports_OBIO(DO_DATAATM, RC)
+     call AllocateExports_OBIO(DO_DATA_ATM4OCN, RC)
    endif
 
    call AllocateExports(GEX(OGCM), (/'UW      ', 'VW      ', &
-                                     'UI      ', 'VI      ', & 
-                                     'FRZMLT  ', 'KPAR    ', & 
+                                     'UI      ', 'VI      ', &
+                                     'FRZMLT  ', 'KPAR    ', &
                                      'TS_FOUND', 'SS_FOUND' /), RC=STATUS)
    VERIFY_(STATUS)
 
-   if (DO_CICE_THERMO == 0) then  
+   if (DO_CICE_THERMO == 0) then
       call AllocateExports(GEX(OGCM), (/'FRACICE '/), RC=STATUS)
       VERIFY_(STATUS)
    else
       call AllocateExports(GEX(OGCM), (/'TAUXIBOT', 'TAUYIBOT'/), RC=STATUS)
    end if
-    
+
    call ESMF_ClockGetAlarm(clock, alarmname=trim(GCNAMES(OGCM)) // '_Alarm', &
                            alarm=GCM_INTERNAL_STATE%alarmOcn, rc=status)
    VERIFY_(STATUS)
@@ -1104,9 +1083,9 @@ contains
 
    end subroutine AllocateExports_UGD
 
-   subroutine AllocateExports_OBIO(DO_DATAATM, RC)
+   subroutine AllocateExports_OBIO(DO_DATA_ATM4OCN, RC)
 
-     integer,                    intent(IN   ) ::  DO_DATAATM
+     integer,                    intent(IN   ) ::  DO_DATA_ATM4OCN
      integer, optional,          intent(  OUT) ::  RC
 
      integer                                   :: STATUS
@@ -1127,16 +1106,17 @@ contains
              RC=STATUS )
      VERIFY_(STATUS)
 
-     if(DO_DATAATM==0) then
+     call AllocateExports_UGD( GCM_INTERNAL_STATE%expSKIN,               &
+          (/'DRBAND', 'DFBAND'/),                                        &
+          RC=STATUS )
+     VERIFY_(STATUS)
+
+     if(DO_DATA_ATM4OCN==0) then
         call AllocateExports_UGD( GCM_INTERNAL_STATE%expSKIN,               &
              (/'BCDP', 'BCWT', 'OCDP', 'OCWT' /),                           &
              RC=STATUS )
         VERIFY_(STATUS)
 
-        call AllocateExports_UGD( GCM_INTERNAL_STATE%expSKIN,               &
-             (/'DRBAND', 'DFBAND', 'FSWBAND  ', 'FSWBANDNA'/),              &
-             RC=STATUS )
-        VERIFY_(STATUS)
      endif
 
      RETURN_(ESMF_SUCCESS)
@@ -1154,20 +1134,20 @@ contains
 
 ! !ARGUMENTS:
 
-    type(ESMF_GridComp), intent(inout) :: GC     ! Gridded component 
+    type(ESMF_GridComp), intent(inout) :: GC     ! Gridded component
     type(ESMF_State),    intent(inout) :: IMPORT ! Import state
     type(ESMF_State),    intent(inout) :: EXPORT ! Export state
     type(ESMF_Clock),    intent(inout) :: CLOCK  ! The clock
     integer, optional,   intent(  out) :: RC     ! Error code
 
-! !DESCRIPTION: 
- 
+! !DESCRIPTION:
+
 
 !EOP
 
 ! ErrLog Variables
 
-    character(len=ESMF_MAXSTR)           :: IAm 
+    character(len=ESMF_MAXSTR)           :: IAm
     integer                              :: STATUS
     character(len=ESMF_MAXSTR)           :: COMP_NAME
 
@@ -1186,7 +1166,7 @@ contains
     type(ESMF_State)           :: impSKIN
     type(ESMF_State)           :: expSKIN
 
-    type (T_GCM_STATE), pointer         :: gcm_internal_state => null() 
+    type (T_GCM_STATE), pointer         :: gcm_internal_state => null()
     type (GCM_wrap)                     :: wrap
     type (T_ExtData_STATE), pointer     :: ExtData_internal_state  => null()
     type (ExtData_wrap)                 :: ExtDatawrap
@@ -1213,7 +1193,7 @@ contains
 ! ---------------- Alarm for detecting active PREDICTOR step ---------------- !
 !=============================================================================
 
-! Begin... 
+! Begin...
 
 ! Get the target components name and set-up traceback handle.
 ! -----------------------------------------------------------
@@ -1224,7 +1204,7 @@ contains
 
     call ESMF_VMGetCurrent ( VM=vm, RC=STATUS )
     VERIFY_(STATUS)
-    
+
 ! Get my MAPL_Generic state
 !--------------------------
 
@@ -1251,11 +1231,7 @@ contains
 
     do N=1,NUM_ICE_CATEGORIES
        SUBINDEXO(N) = N
-       if(DO_DATAATM==0) then
-          SUBINDEXA(N) = N
-       else
-          SUBINDEXA(N) = N+1
-       endif 
+       SUBINDEXA(N) = N
     enddo
 
 ! Get children and their im/ex states from my generic state.
@@ -1265,7 +1241,7 @@ contains
                                 RC=STATUS )
     VERIFY_(STATUS)
 
-    if(DO_DATAATM==0) then
+    if(DO_DATA_ATM4OCN==0) then
        ! replay-mode stuff
        ! -----------------
        call MAPL_GetResource(MAPL, ReplayMode, 'REPLAY_MODE:', default="NoReplay", RC=STATUS )
@@ -1350,7 +1326,7 @@ contains
                    call RUN_OCEAN(Phase=2, RC=STATUS)
                    VERIFY_(STATUS)
                 end if
-                
+
                 ! Advance the Clock
                 ! -----------------
 
@@ -1439,7 +1415,7 @@ contains
           end if
 
           if (timeForRpl .and. gcm_internal_state%checkpointRequested) then
-             !ALT: this is done here, 
+             !ALT: this is done here,
              !     so that the tendensies are already either computed or cleared,
              !     and this guaranties identical results after "EXACT" replay(s).
              !     Also the clock had been rewound, and time stamping is correct.
@@ -1484,16 +1460,16 @@ contains
 
     call MAPL_TimerOn(MAPL,"--ATMOSPHERE"  )
 
-    if(DO_DATAATM/=0) then
+    if(DO_DATA_ATM4OCN/=0) then
       call MAPL_TimerOn(MAPL,"DATAATM"     )
     else
       call MAPL_TimerOn(MAPL,"AGCM"        )
     endif
-   
+
     call ESMF_GridCompRun ( GCS(AGCM), importState=GIM(AGCM), exportState=GEX(AGCM), clock=clock, userRC=status )
     VERIFY_(STATUS)
 
-    if(DO_DATAATM/=0) then
+    if(DO_DATA_ATM4OCN/=0) then
       call MAPL_TimerOff(MAPL,"DATAATM"     )
     else
       call MAPL_TimerOff(MAPL,"AGCM"        )
@@ -1501,7 +1477,7 @@ contains
 
     call MAPL_TimerOff(MAPL,"--ATMOSPHERE"  )
 
-    if(DO_DATAATM==0) then
+    if(DO_DATA_ATM4OCN==0) then
        ! Accumulate for digital filter
        ! -----------------------------
        call ESMF_GridCompRun ( GCS(ADFI), importState=GIM(ADFI), exportState=GEX(ADFI), clock=clock, userRC=status )
@@ -1510,7 +1486,7 @@ contains
 
     call RUN_OCEAN(RC=STATUS)
     VERIFY_(STATUS)
-    
+
 
      call MAPL_TimerOff(MAPL,"RUN"  )
      call MAPL_TimerOff(MAPL,"TOTAL")
@@ -1555,7 +1531,7 @@ contains
        call MAPL_CopyFriendliness(GIM(OGCM),'SI',expSKIN,'SSKINI', RC=STATUS)
        VERIFY_(STATUS)
 
-       if (DO_CICE_THERMO /= 0) then  
+       if (DO_CICE_THERMO /= 0) then
           call MAPL_CopyFriendliness(GIM(OGCM),'FRACICE',expSKIN,'FR', RC=STATUS)
           VERIFY_(STATUS)
           call MAPL_CopyFriendliness(GIM(OGCM),'VOLICE',expSKIN,'VOLICE', RC=STATUS)
@@ -1570,8 +1546,8 @@ contains
           VERIFY_(STATUS)
           call MAPL_CopyFriendliness(GIM(OGCM),'MPOND',expSKIN,'VOLPOND', RC=STATUS)
           VERIFY_(STATUS)
-       endif 
-       
+       endif
+
 ! Do the routing between the atm and ocean's decompositions of the exchage grid
 !------------------------------------------------------------------------------
        call DO_A2O(GIM(OGCM),'HI'     ,expSKIN,'HSKINI' , RC=STATUS)
@@ -1584,7 +1560,7 @@ contains
           VERIFY_(STATUS)
        endif
 
-       if (DO_CICE_THERMO /= 0) then  
+       if (DO_CICE_THERMO /= 0) then
           call DO_A2O_SUBTILES_R4R4(GIM(OGCM),'TI'     , SUBINDEXO, &
                expSKIN  ,'TSKINI' , SUBINDEXO, RC=STATUS)
           VERIFY_(STATUS)
@@ -1613,19 +1589,19 @@ contains
           VERIFY_(STATUS)
        endif
 
-       if (DO_CICE_THERMO /= 0) then  
+       if (DO_CICE_THERMO /= 0) then
           call DO_A2O(GIM(OGCM),'TAUXW'  ,expSKIN,'TAUXW'  , RC=STATUS); VERIFY_(STATUS)
           call DO_A2O(GIM(OGCM),'TAUYW'  ,expSKIN,'TAUYW'  , RC=STATUS); VERIFY_(STATUS)
        else
           call DO_A2O(GIM(OGCM),'TAUXW'  ,expSKIN,'TAUXO'  , RC=STATUS); VERIFY_(STATUS)
           call DO_A2O(GIM(OGCM),'TAUYW'  ,expSKIN,'TAUYO'  , RC=STATUS); VERIFY_(STATUS)
        endif
-       
+
        call DO_A2O(GIM(OGCM),'TAUXI'  ,expSKIN,'TAUXI'  , RC=STATUS)
        VERIFY_(STATUS)
        call DO_A2O(GIM(OGCM),'TAUYI'  ,expSKIN,'TAUYI'  , RC=STATUS)
        VERIFY_(STATUS)
-       
+
        call DO_A2O(GIM(OGCM),'PENPAR' ,expSKIN,'PENPAR' , RC=STATUS)
        VERIFY_(STATUS)
        call DO_A2O(GIM(OGCM),'PENPAF' ,expSKIN,'PENPAF' , RC=STATUS)
@@ -1662,11 +1638,11 @@ contains
        VERIFY_(STATUS)
 
        if(DO_OBIO/=0) then
-          call OBIO_A2O(DO_DATAATM, RC)
+          call OBIO_A2O(DO_DATA_ATM4OCN, RC)
        endif
 
        call MAPL_TimerOff(MAPL,"--A2O"  )
-       
+
 !--
 ! OGCM exports to SURFACE imports
 
@@ -1695,7 +1671,7 @@ contains
        call DO_O2A(expSKIN, 'SSKINI'   , GIM(OGCM), 'SI'    , RC=STATUS)
        VERIFY_(STATUS)
 
-       if (DO_CICE_THERMO /= 0) then  
+       if (DO_CICE_THERMO /= 0) then
           call DO_O2A_SUBTILES_R4R4(expSKIN  , 'TSKINI'     , SUBINDEXO,  &
                GIM(OGCM), 'TI'         , SUBINDEXO, RC=STATUS)
           VERIFY_(STATUS)
@@ -1722,7 +1698,7 @@ contains
           call DO_O2A_SUBTILES_R8R4(expSKIN  , 'VOLPOND'     , SUBINDEXO,  &
                GIM(OGCM), 'MPOND'       , SUBINDEXO, RC=STATUS)
           VERIFY_(STATUS)
-       endif  
+       endif
 
        call DO_O2A(impSKIN, 'UW'       , GEX(OGCM), 'UW'    , RC=STATUS)
        VERIFY_(STATUS)
@@ -1767,9 +1743,9 @@ contains
 
    end subroutine RUN_OCEAN
 
-   subroutine OBIO_A2O(DO_DATAATM, RC)
+   subroutine OBIO_A2O(DO_DATA_ATM4OCN, RC)
 
-     integer,                    intent(IN   ) ::  DO_DATAATM
+     integer,                    intent(IN   ) ::  DO_DATA_ATM4OCN
      integer, optional,          intent(  OUT) ::  RC
 
      integer                                   :: STATUS
@@ -1787,7 +1763,12 @@ contains
      call DO_A2O_UGD(GIM(OGCM), 'DUSD', expSKIN, 'DUSD', RC=STATUS)
      VERIFY_(STATUS)
 
-     if(DO_DATAATM==0) then
+     call DO_A2O_UGD(GIM(OGCM), 'DRBAND', expSKIN, 'DRBAND', RC=STATUS)
+     VERIFY_(STATUS)
+     call DO_A2O_UGD(GIM(OGCM), 'DFBAND', expSKIN, 'DFBAND', RC=STATUS)
+     VERIFY_(STATUS)
+
+     if(DO_DATA_ATM4OCN==0) then
        call DO_A2O_UGD(GIM(OGCM), 'BCDP', expSKIN, 'BCDP', RC=STATUS)
        VERIFY_(STATUS)
        call DO_A2O_UGD(GIM(OGCM), 'BCWT', expSKIN, 'BCWT', RC=STATUS)
@@ -1795,15 +1776,6 @@ contains
        call DO_A2O_UGD(GIM(OGCM), 'OCDP', expSKIN, 'OCDP', RC=STATUS)
        VERIFY_(STATUS)
        call DO_A2O_UGD(GIM(OGCM), 'OCWT', expSKIN, 'OCWT', RC=STATUS)
-       VERIFY_(STATUS)
-
-       call DO_A2O_UGD(GIM(OGCM), 'DRBAND',   expSKIN, 'DRBAND',   RC=STATUS)
-       VERIFY_(STATUS)
-       call DO_A2O_UGD(GIM(OGCM), 'DFBAND',   expSKIN, 'DFBAND',   RC=STATUS)
-       VERIFY_(STATUS)
-       call DO_A2O_UGD(GIM(OGCM), 'FSWBAND',   expSKIN, 'FSWBAND',   RC=STATUS)
-       VERIFY_(STATUS)
-       call DO_A2O_UGD(GIM(OGCM), 'FSWBANDNA', expSKIN, 'FSWBANDNA', RC=STATUS)
        VERIFY_(STATUS)
      endif
 
@@ -1830,7 +1802,7 @@ contains
      call ESMF_VMBarrier(VM, rc=status)
      VERIFY_(STATUS)
      if (associated(ptrO) .and. associated(ptrA)) then
-        call MAPL_LocStreamTransform( ptrO, XFORM_A2O, ptrA, RC=STATUS ) 
+        call MAPL_LocStreamTransform( ptrO, XFORM_A2O, ptrA, RC=STATUS )
         VERIFY_(STATUS)
      end if
      call ESMF_VMBarrier(VM, rc=status)
@@ -1861,7 +1833,7 @@ contains
      VERIFY_(STATUS)
      if (associated(ptrO) .and. associated(ptrA)) then
         do N = 1, size(ptrA,2)
-           call MAPL_LocStreamTransform( ptrO(:,N), XFORM_A2O, ptrA(:,N), RC=STATUS ) 
+           call MAPL_LocStreamTransform( ptrO(:,N), XFORM_A2O, ptrA(:,N), RC=STATUS )
            VERIFY_(STATUS)
         end do
      end if
@@ -1892,7 +1864,7 @@ contains
      call ESMF_VMBarrier(VM, rc=status)
      VERIFY_(STATUS)
      if (associated(ptrO) .and. associated(ptrA)) then
-        call MAPL_LocStreamTransform( ptrA, XFORM_O2A, ptrO, RC=STATUS ) 
+        call MAPL_LocStreamTransform( ptrA, XFORM_O2A, ptrO, RC=STATUS )
         VERIFY_(STATUS)
      end if
      call ESMF_VMBarrier(VM, rc=status)
@@ -1915,7 +1887,7 @@ contains
 
      real,                       pointer :: ptrA(:,:) => null()
      real,                       pointer :: ptrO(:,:) => null()
-     integer                             :: N, DIMSO, DIMSA  
+     integer                             :: N, DIMSO, DIMSA
 
      DIMSO = size(SUBINDEXO)
      DIMSA = size(SUBINDEXA)
@@ -1930,7 +1902,7 @@ contains
      if (associated(ptrO) .and. associated(ptrA)) then
         do N=1,DIMSO
          call MAPL_LocStreamTransform( ptrO(:,SUBINDEXO(N)), XFORM_A2O, &
-                                       ptrA(:,SUBINDEXA(N)), RC=STATUS ) 
+                                       ptrA(:,SUBINDEXA(N)), RC=STATUS )
          VERIFY_(STATUS)
         enddo
      end if
@@ -1954,7 +1926,7 @@ contains
 
      real(kind=ESMF_KIND_R8),    pointer :: ptrA(:,:) => null()
      real,                       pointer :: ptrO(:,:) => null()
-     integer                             :: N, DIMSO, DIMSA  
+     integer                             :: N, DIMSO, DIMSA
 
      DIMSO = size(SUBINDEXO)
      DIMSA = size(SUBINDEXA)
@@ -1969,7 +1941,7 @@ contains
      if (associated(ptrO) .and. associated(ptrA)) then
         do N=1,DIMSO
          call MAPL_LocStreamTransform( ptrO(:,SUBINDEXO(N)), XFORM_A2O, &
-                                       ptrA(:,SUBINDEXA(N)), RC=STATUS ) 
+                                       ptrA(:,SUBINDEXA(N)), RC=STATUS )
          VERIFY_(STATUS)
         enddo
      end if
@@ -1995,8 +1967,8 @@ contains
 
      real(kind=ESMF_KIND_R8),    pointer :: ptrA(:,:,:) => null()
      real,                       pointer :: ptrO(:,:,:) => null()
-     integer                             :: N, K, DIMSO, DIMSA  
-    
+     integer                             :: N, K, DIMSO, DIMSA
+
 
      DIMSO = size(SUBINDEXO)
      DIMSA = size(SUBINDEXA)
@@ -2012,7 +1984,7 @@ contains
         do N=1,DIMSO
            do K=1,DIMS
              call MAPL_LocStreamTransform( ptrO(:,K,SUBINDEXO(N)), XFORM_A2O, &
-                                           ptrA(:,K,SUBINDEXA(N)), RC=STATUS ) 
+                                           ptrA(:,K,SUBINDEXA(N)), RC=STATUS )
              VERIFY_(STATUS)
            enddo
         enddo
@@ -2037,7 +2009,7 @@ contains
 
      real,                       pointer :: ptrA(:,:) => null()
      real,                       pointer :: ptrO(:,:) => null()
-     integer                             :: N, DIMSO, DIMSA  
+     integer                             :: N, DIMSO, DIMSA
 
      DIMSO = size(SUBINDEXO)
      DIMSA = size(SUBINDEXA)
@@ -2052,7 +2024,7 @@ contains
      if (associated(ptrO) .and. associated(ptrA)) then
         do N=1,DIMSO
            call MAPL_LocStreamTransform( ptrA(:, SUBINDEXA(N)), XFORM_O2A, &
-                                         ptrO(:, SUBINDEXO(N)), RC=STATUS ) 
+                                         ptrO(:, SUBINDEXO(N)), RC=STATUS )
            VERIFY_(STATUS)
         enddo
      end if
@@ -2076,7 +2048,7 @@ contains
 
      real(kind=ESMF_KIND_R8),    pointer :: ptrA(:,:) => null()
      real,                       pointer :: ptrO(:,:) => null()
-     integer                             :: N, DIMSO, DIMSA  
+     integer                             :: N, DIMSO, DIMSA
 
      DIMSO = size(SUBINDEXO)
      DIMSA = size(SUBINDEXA)
@@ -2091,7 +2063,7 @@ contains
      if (associated(ptrO) .and. associated(ptrA)) then
         do N=1,DIMSO
            call MAPL_LocStreamTransform( ptrA(:, SUBINDEXA(N)), XFORM_O2A, &
-                                         ptrO(:, SUBINDEXO(N)), RC=STATUS ) 
+                                         ptrO(:, SUBINDEXO(N)), RC=STATUS )
            VERIFY_(STATUS)
         enddo
      end if
@@ -2117,7 +2089,7 @@ contains
 
      real(kind=ESMF_KIND_R8),    pointer :: ptrA(:,:,:) => null()
      real,                       pointer :: ptrO(:,:,:) => null()
-     integer                             :: N, K, DIMSO, DIMSA  
+     integer                             :: N, K, DIMSO, DIMSA
 
      DIMSO = size(SUBINDEXO)
      DIMSA = size(SUBINDEXA)
@@ -2133,7 +2105,7 @@ contains
         do N=1,DIMSO
           do K=1,DIMS
             call MAPL_LocStreamTransform( ptrA(:,K,SUBINDEXA(N)), XFORM_O2A, &
-                                          ptrO(:,K,SUBINDEXO(N)), RC=STATUS ) 
+                                          ptrO(:,K,SUBINDEXO(N)), RC=STATUS )
             VERIFY_(STATUS)
           enddo
         enddo
