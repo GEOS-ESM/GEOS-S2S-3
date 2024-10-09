@@ -5,6 +5,7 @@
 #Stuff to do: Test without -f ...
 
 limit stacksize unlimited
+setenv I_MPI_DAPL_UD enable
 
 ####################################################################### 
 #                  Forecast and run Ocean Observer
@@ -56,17 +57,15 @@ cp -f salt_sponge.nc $SCRDIR/INPUT/
 ln -s temp_sponge.nc $SCRDIR/INPUT/temp_sponge_coeff.nc
 ln -s salt_sponge.nc $SCRDIR/INPUT/salt_sponge_coeff.nc
 
-if ($IN_LINE == False) then
 # Start scheduler for the observers
 #----------------------------------
-echo 'IN_LINE is ' ${IN_LINE}
-echo 'Preparing multiple jobs'
 pkill python # Make sure obs scheduler is not running 
-rm -f $SCRDIR/OCN_OBS_????????_??
+rm -f $SCRDIR/OCN_OBS_????????_??             
 rm -f $SCRDIR/BADOBS
 source ${EXPDIR}/ocean_das_config
 echo 'BEFORE ocean_observer.py omf'
-${UMD_LETKFSCRIPTS}/ocean_observer_comb.py omf ${ANADIR} True $DA_seq &
+#${EXPDIR}/ocean_observer.py           omf ${ANADIR} True $DA_seq &
+${UMD_LETKFSCRIPTS}/ocean_observer.py omf ${ANADIR} True $DA_seq &
 set OBSSTATUS = $status
 echo $OBSSTATUS 'AFTER  ocean_observer.py omf'
 if( $OBSSTATUS != 0 ) then
@@ -74,7 +73,19 @@ if( $OBSSTATUS != 0 ) then
    scancel ${SLURM_JOB_ID}
    exit(1)
 endif
-endif
+
+
+#if( -e hostfile ) then
+#  /bin/rm -f hostfile
+#endif
+#scontrol show hostnames | tail -n +2 > hostfile
+#
+#set nodes = `cat hostfile`
+#set nodelist1 = ''
+#foreach node ( $nodes )
+#   set nodelist1 = ${nodelist1}`echo -n ${node},`
+#end
+#   set nodelists = `echo ${nodelist1} | rev | cut -c 2- | rev`
 
 # Start the Forecast
 #-------------------
@@ -101,29 +112,8 @@ else
 endif
 echo GEOSgcm Run Status: $rc
 
-if ($IN_LINE == True) then
-echo 'IN_LINE is ' ${IN_LINE}
-echo 'Sending all observers'
-##############################################
-# After the model finishes, run all the observers
-##############################################
-#pkill python # Make sure obs scheduler is not running 
-rm -f $SCRDIR/OCN_OBS_????????_??             
-rm -f $SCRDIR/BADOBS
-source ${EXPDIR}/ocean_das_config
-echo 'BEFORE ocean_observer.py omf'
-#  False assumes forecast is already writen
-#${UMD_LETKFSCRIPTS}/ocean_observer.py omf ${ANADIR} True $DA_seq &
-#${UMD_LETKFSCRIPTS}/ocean_observer.py omf ${ANADIR} False $DA_seq &
-${UMD_LETKFSCRIPTS}/ocean_observer_comb.py omf ${ANADIR} False $DA_seq
-set OBSSTATUS = $status
-echo $OBSSTATUS 'AFTER  ocean_observer.py omf'
-if( $OBSSTATUS != 0 ) then
-   echo "BAD OMF OBSERVER IN oda_run.j"
-   scancel ${SLURM_JOB_ID}
-   exit(1)
-endif
-endif
+#   ERIC DEBUG 5/8/20
+#exit
 
 #######################################################################
 #                  Rewind and run the Ocean DAS
@@ -141,13 +131,8 @@ more cap_restart
 pwd
 echo 'HERE IS CAP_RESTART2'
 
-if ($IN_LINE == False) then
-echo 'IN_LINE is ' ${IN_LINE}
-echo 'WAIT'
 pkill python                                         # Stop the scheduler ... a bit dangerous since it will kill everything python ...  
 ${UMD_LETKFUTILS}/wait4observer.py                   # Need to make sure the observers are done before starting the letkf               
-endif
-
 echo "${yyyy}${mm}${dd} ${hh}0000" > cap_restart     # Rewind cap_restart                                                               
 echo 'HERE IS CAP_RESTART3'
 more cap_restart
@@ -163,7 +148,7 @@ ${UMD_LETKFSCRIPTS}/ocean_das.csh ${yyyy} ${mm} ${dd} ${hh}  >& ocean_das_${yyyy
 
 
 cp -f ocean_das_${yyyy}${mm}${dd}${hh}.out ${EXPDIR}/ocean_das/${ANADIR}/
-
+    
 ##################################################################################                                                                
 #                  Retrospective Forecast and run Ocean Observer to collect oma's
 ##################################################################################                                                                
@@ -175,28 +160,17 @@ mv -f $SCRDIR/*.ocn_inst_6hr_glo_T1440x1080_z50.*.nc4 $SCRDIR/fcst_hist/
 mv -f $SCRDIR/*.ocn_inst_6hr_glo_L1440x721_z50.*.nc4  $SCRDIR/fcst_hist/
 mv -f $SCRDIR/*.ocn_inst_6hr_glo_L1440x721_slv.*.nc4  $SCRDIR/fcst_hist/
 mv -f $SCRDIR/*.ice_inst_6hr_glo_L1440x721_slv.*.nc4  $SCRDIR/fcst_hist/
-
-if ($IN_LINE == False) then
 pkill python         # Make sure obs scheduler is not running 
-endif
-
 rm -f $SCRDIR/OCN_OBS_????????_??             
-
-if ($IN_LINE == False) then
-echo 'IN_LINE is ' ${IN_LINE}
-echo 'Preparing multiple jobs in OMA'
-################################
 #  output OMA's
-################################
 if( $ODAS_OUTPUT_OMA == True )then
-    ${UMD_LETKFSCRIPTS}/ocean_observer_comb.py oma ${ANADIR} True $DA_seq &
+    ${UMD_LETKFSCRIPTS}/ocean_observer.py oma ${ANADIR} True $DA_seq &
     set OBSSTATUS = $status
     if( $OBSSTATUS == 1 ) then
       echo "BAD OMA OBSERVER IN oda_run.j"
       scancel ${SLURM_JOB_ID}
       exit(1)
     endif
-endif
 endif
 
 # Add offset to sea-level
@@ -279,26 +253,9 @@ else
     exit
 endif
 echo GEOSgcm Run Status: $rc
-
-################################
-#  output OMA's
-################################
 if( $ODAS_OUTPUT_OMA == True )then
-   if ($IN_LINE == False) then
-      echo 'IN_LINE is ' ${IN_LINE}
-      echo 'WAIT'
-      pkill python
-      ${UMD_LETKFUTILS}/wait4observer.py
-   endif
-   if ($IN_LINE == True) then
-#  False assumes forecast is already writen
-    ${UMD_LETKFSCRIPTS}/ocean_observer_comb.py oma ${ANADIR} False $DA_seq 
-    set OBSSTATUS = $status
-    if( $OBSSTATUS == 1 ) then
-      echo "BAD OMA OBSERVER IN oda_run.j"
-      scancel ${SLURM_JOB_ID}
-      exit(1)
-    endif   
+    pkill python
+    ${UMD_LETKFUTILS}/wait4observer.py 
 endif
 
 if( ! -e ${EXPDIR}/hindcast_restarts ) /bin/mkdir ${EXPDIR}/hindcast_restarts
@@ -407,4 +364,5 @@ rm  -f $SCRDIR/ocnobs_????????_??.o
 rm  -f ${EXPDIR}/ocean_das/oana-*/ocean_observer_*/*.x
 rm  -f ${EXPDIR}/ocean_das/oana-*/*.grd
 rm -rf ${EXPDIR}/ocean_das/oana-*/recenter
+
 

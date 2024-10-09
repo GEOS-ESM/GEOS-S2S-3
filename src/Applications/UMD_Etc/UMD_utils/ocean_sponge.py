@@ -3,12 +3,6 @@ import sys
 import glob
 import datetime
 from merra2_sbc import get_sst_sic_sss
-#   Bin's recipe 4119 (/home/bzhao/V3_Recipes)
-#sys.path.append('/usr/local/other/SLES11/mpi4py-1.3/lib/python/')
-#sys.path.append('/discover/swdev/mathomp4/mpi4py/3.0.1/ifort_18.0.3.222-mpt_2.17/lib/python2.7/site-packages/')
-#sys.path.append('/discover/swdev/gmao_SIteam/other/SLES12.3/mpi4py/3.0.3/ifort_18.0.5.274-intelmpi_19.1.0.166/lib/python2.7/site-packages/')
-sys.path.append('/discover/swdev/gmao_SIteam/other/SLES12.3/mpi4py/3.1.5-py3.11/ifort_18.0.5.274-intelmpi_2021.2.0-SLES12/lib/python3.11/site-packages/')
-
 from mpi4py import MPI
 
 num_procs = MPI.COMM_WORLD.Get_size()

@@ -7,7 +7,6 @@ import numpy as np
 import glob
 import sys
 import utils
-#sys.path.append('/usr/local/other/SLES11/mpi4py-1.3/lib/python/')
 from mpi4py import MPI
 #Ne=int(sys.argv[1])
 

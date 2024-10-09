@@ -12,14 +12,13 @@
 # 
 # /////////////////////////////////////////////////////////////////////////
 # Date: May 2015
-# Update: IN_LINE setup Sept 2024 Veronica Ruiz Xomchuk
 
 import glob
 import sys
 import time
 import os
 
-def get_command(Ne, fname, PATH_TO_OBSERVER, ANADIR, GROUP, QOS, seq=1, inovation_type='omf', in_line='False', CONSTRAINT='[sky|cas]'):
+def get_command(Ne, fname, PATH_TO_OBSERVER, ANADIR, GROUP, QOS, seq=1, inovation_type='omf'):
 
     # ANADIR = oana-yyyymmdd_seq
 
@@ -29,19 +28,14 @@ def get_command(Ne, fname, PATH_TO_OBSERVER, ANADIR, GROUP, QOS, seq=1, inovatio
     hh = fname[-9:-7]
 
     job_name = 'ocnobs_'+yyyy+mm+dd+'_'+hh
-    if in_line=='False':
-        print(f'IN_LINE is {in_line}')
-        print('Generating job command')
-        command='sbatch --time=1:00:00 -n '+str(Ne)+' --constraint='+CONSTRAINT+' --ntasks-per-node=27 --job-name='+job_name+\
+    command='sbatch --time=1:00:00 -n '+str(Ne)+' --ntasks-per-node=27 --job-name='+job_name+\
+                ' --qos=gmaofcst'+\
                 ' -o '+job_name+'.o '+\
                 ' -e '+job_name+'.e '+\
-                ' -A '+GROUP+' --partition=compute '+PATH_TO_OBSERVER+'/ocean_observer_timed.csh '+\
+                ' -A '+GROUP+' --partition=compute '+PATH_TO_OBSERVER+'/ocean_observer.csh '+\
                 yyyy+' '+mm+' '+dd+' '+hh+' '+str(seq)+' '+inovation_type+' '+ANADIR
-    elif in_line=='True':
-        print(f'IN_LINE is {in_line}')
-        print('Send observer in node')
-        command= f'{PATH_TO_OBSERVER}/ocean_observer_timed.csh {yyyy} {mm} {dd} {hh} {seq} {inovation_type} {ANADIR} > {job_name}.o 2> {job_name}.e'
-    print ('in get_command:',command)
+
+
     return command, yyyy, mm, dd, hh
 
 inovation_type = sys.argv[1]  # 'omf' or 'oma'
@@ -59,8 +53,6 @@ OCN2D =  os.environ['OCN2D']
 OSCRDIR = os.environ['UMD_LETKFSCRDIR']
 SCRDIR =  os.environ['SCRDIR']
 PIDMAIN = os.environ['SLURM_JOB_ID'] # Sent here to kill model if need be
-IN_LINE = os.environ['IN_LINE']
-CONSTRAINT = os.environ['ODAS_CONSTR']
 
 f1=open('./ocean_observer.out', 'w+')
 nw=0
@@ -71,19 +63,22 @@ if WAIT=='True':
         nw+=1
         #new_list = glob.glob('*.'+geosgcm_ocn3dT.*.nc4')
         new_list = glob.glob('*.'+OCN3D+'.*.nc4')
-        new_list.sort() #print('in ocean_observer.py new_list is',new_list, '\n')
+        new_list.sort()
         if (len(new_list)>len(old_list)):
             f1.write('Sending observer on '+new_list[-1]+'\n')
             fname = new_list[-1]
-            command, yyyy, mm, dd, hh = get_command(Ne, fname, PATH_TO_OBSERVER, ANADIR, ODAS_group, ODAS_qos,
-                                                    seq=DA_seq,inovation_type=inovation_type, in_line=IN_LINE, CONSTRAINT=CONSTRAINT)
+            command, yyyy, mm, dd, hh = get_command(Ne, fname, PATH_TO_OBSERVER, ANADIR, ODAS_group, ODAS_qos, seq=DA_seq,inovation_type=inovation_type)
             f1.write(yyyy+mm+dd+hh)
             f1.write('========================='+'\n')
             f1.write('BEFORE1 ocean_observer.py in ocean_observer.csh'+'\n')
             f1.write(command+'\n')
-            os.system(command)   # submit observer job
-            #  now check to see if BADOBS exists, if yes crash it
-            if (os.path.exists(f'{SCRDIR}/BADOBS')):
+            os.system(command)   # submit the sbatch observer job
+#  now check to see if BADOBS exists, if yes crash it
+            command=SCRDIR+'/BADOBS'
+            file_exists = os.path.exists(str(command))
+            sfile_exists=str(file_exists)
+            f1.write ('value of file exists '+sfile_exists+'\n')
+            if (file_exists):
               f1.write('BADOBS Observer crash in ocean_observer.py'+'\n')
               WAIT='False'
               command='scancel '+str(PIDMAIN)
@@ -93,27 +88,29 @@ if WAIT=='True':
             f1.write('After exit ocean_observer.py in ocean_observer.csh'+'\n')
             n+=1
         else:
+#           f1.write('Waiting for new history ... '+str(nw)+'\r')
             time.sleep(1)
         old_list = new_list
         f1.flush()
 
 
 else:
-    flist = glob.glob('*.'+OCN2D+'.*.nc4') #
-    flist.sort()
+    flist = glob.glob('*.'+OCN2D+'.*.nc4') #('*.geosgcm_ocn2dT.*.nc4')
+    print(flist)
     for fname in flist:
         f1.write('Sending observer on '+fname+'\n')
-        command, yyyy, mm, dd, hh = get_command(Ne, fname, PATH_TO_OBSERVER, ANADIR, ODAS_group, ODAS_qos,
-                                                seq=DA_seq,inovation_type=inovation_type, in_line=IN_LINE)
-        print ('command is',command)
+        command, yyyy, mm, dd, hh = get_command(Ne, fname, PATH_TO_OBSERVER, ANADIR, seq=DA_seq,inovation_type=inovation_type)
         f1.write(yyyy+mm+dd+hh)
         f1.write('========================='+'\n')
         f1.write('BEFORE2 ocean_observer.py in ocean_observer.csh'+'\n')
         f1.write(command+'\n')
-        print ('in ocean_observer.py command',command,'\n')
-        os.system(command)   # submit observer job 
-        #  now check to see if BADOBS exists, if yes crash it
-        if (os.path.exists(f'{SCRDIR}/BADOBS')):
+        os.system(command)   # submit sbatch observer job 
+#  now check to see if BADOBS exists, if yes crash it
+        command=SCRDIR+'/BADOBS'
+        file_exists = os.path.exists(str(command))
+        sfile_exists=str(file_exists)
+        f1.write ('value of file exists '+sfile_exists+'\n')
+        if (file_exists):
            f1.write('BADOBS Observer crash in ocean_observer.py'+'\n')
            WAIT='False'
            command='scancel '+str(PIDMAIN)
@@ -124,4 +121,3 @@ else:
         n+=1
 
 f1.close()
-
