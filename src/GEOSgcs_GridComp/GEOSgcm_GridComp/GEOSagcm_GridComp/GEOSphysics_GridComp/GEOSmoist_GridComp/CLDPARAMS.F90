@@ -73,6 +73,7 @@
            real               :: DISP_FACTOR_LIQ       ! 63
            real               :: DISP_FACTOR_ICE       ! 63
            real               :: SCLM_SHW       ! 63
+           real               :: NO_CNV_AIC             
       endtype CLDPARAM_TYPE
 
   end module CLDPARAMS

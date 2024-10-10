@@ -37,6 +37,7 @@
            real               :: FDROP_SOOT            ! 30
            real               :: RASAL_SLOPE
            real               :: CCNFRAC
+           real               :: NO_CNV_AIC
       endtype RASPARAM_TYPE
 
   end module RASPARAMS

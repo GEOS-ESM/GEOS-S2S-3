@@ -89,6 +89,8 @@ module cldmacro
    real :: disp_factor_liq
    real :: disp_factor_ice
    real :: sclm_shw
+   real ::  NO_CNV_AIC
+
 
    real, parameter :: T_ICE_MAX    = MAPL_TICE  ! -7.0+MAPL_TICE
    real, parameter :: RHO_W        = 1.0e3      ! Density of liquid water in kg/m^3
@@ -337,6 +339,7 @@ contains
       DISP_FACTOR_LIQ   = CLDPARAMS%DISP_FACTOR_LIQ
       DISP_FACTOR_ICE   = CLDPARAMS%DISP_FACTOR_ICE
       sclm_shw =  CLDPARAMS%SCLM_SHW
+      NO_CNV_AIC        = CLDPARAMS%NO_CNV_AIC
       
       turnrhcrit_upper = CLDPARAMS%TURNRHCRIT_UP
         sloperhcrit= CLDPARAMS%SLOPERHCRIT
@@ -1771,21 +1774,32 @@ contains
 
 
 
-
-      ! Check that N and Q are consistent 
-      if  ( ( (1.0-fQi)*DCF .gt. 0.0) .and. (CNVNDROP .le. 0.0)) then 
-         CNVNDROP =   (1.0-fQi)*DCF/( 1.333 * MAPL_PI *RL_cub*997.0)  
-      end if
-
-      if  ((fQi*DCF .gt. 0.0) .and. (CNVNICE .le. 0.0)) then 
-         CNVNICE =   fQi*DCF/( 1.333 * MAPL_PI *RI_cub*500.0)         
-      end if
-
-      fact  = 1.333 * MAPL_PI *RL*RL*RL*997.0*disp_factor_liq
-      NL= max(NL + CNVNDROP*iMASS*DT +  (DCLFshlw*iMASS*DT/fact) , 0.0)  !number source DONIF
+      if (NO_CNV_AIC .gt. 0.0) then ! disable aerosol-cloud-interactions Donif 2024
+        
+        fQi=  ICE_FRACTION(TE)
+        CNVNDROP =   ((1.0-fQi)*TEND)/(1.333 * MAPL_PI *RL*RL*RL*997.0*disp_factor_liq)  
+        CNVNICE =   (fQi*TEND)/( 1.333 * MAPL_PI *RI*RI*RI*800.0*disp_factor_ice) 
+        
+        NL= max(NL + CNVNDROP*iMASS*DT, 0.0) !number source DONIF
+        NI = max(NI   +   CNVNICE*iMASS*DT, 0.0)
+           
+      else
       
-      fact  =   1.333 * MAPL_PI *RI*RI*RI*800.0*disp_factor_ice
-      NI = max(NI   +   CNVNICE*iMASS*DT + (fQi*TEND+ DCIFshlw*iMASS*DT/fact), 0.0)
+          ! Check that N and Q are consistent 
+          if  ( ( (1.0-fQi)*DCF .gt. 0.0) .and. (CNVNDROP .le. 0.0)) then 
+             CNVNDROP =   (1.0-fQi)*DCF/( 1.333 * MAPL_PI *RL_cub*997.0)  
+          end if
+
+          if  ((fQi*DCF .gt. 0.0) .and. (CNVNICE .le. 0.0)) then 
+             CNVNICE =   fQi*DCF/( 1.333 * MAPL_PI *RI_cub*500.0)         
+          end if
+
+          fact  = 1.333 * MAPL_PI *RL*RL*RL*997.0*disp_factor_liq
+          NL= max(NL + CNVNDROP*iMASS*DT +  (DCLFshlw*iMASS*DT/fact) , 0.0)  !number source DONIF
+
+          fact  =   1.333 * MAPL_PI *RI*RI*RI*800.0*disp_factor_ice
+          NI = max(NI   +   CNVNICE*iMASS*DT + (fQi*TEND+ DCIFshlw*iMASS*DT/fact), 0.0)
+       end if   
 
 
 

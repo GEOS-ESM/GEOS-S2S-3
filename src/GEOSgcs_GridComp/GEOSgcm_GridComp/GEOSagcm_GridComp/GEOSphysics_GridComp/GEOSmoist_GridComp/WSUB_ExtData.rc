@@ -11,6 +11,8 @@ PrimaryExports%%
 # -------------|-------|-------|--------|----------------------|--------|--------|-------------|----------|
 
 WSUB_NATURE    'm2 s2'     Y         N               0                 0.0      1.0     w_var_masked      ExtData/g5gcm/moist/L72/Wvar_positive_05hrdeg_2006%m2.nc4
+NCPL_CLIM       'm-3'      Y         N               0                 0.0      1.0     NCPL_VOL          /discover/nobackup/dbarahon/S2Sanalysis/Nclim/L72/Nclim_2005%m2.nc4
+NCPI_CLIM       'm-3'      Y         N               0                 0.0      1.0     NCPI_VOL          /discover/nobackup/dbarahon/S2Sanalysis/Nclim/L72/Nclim_2005%m2.nc4
 %%
 
 DerivedExports%%

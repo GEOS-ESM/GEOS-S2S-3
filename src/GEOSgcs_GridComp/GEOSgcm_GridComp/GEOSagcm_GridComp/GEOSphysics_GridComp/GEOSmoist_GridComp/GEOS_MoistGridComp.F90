@@ -108,6 +108,8 @@ module GEOS_MoistGridCompMod
   character(LEN=ESMF_MAXSTR):: CONVPAR_OPTION  ! GF, RAS, BOTH
   logical :: DOING_GF
 !-srf-gf-scheme
+ 
+  integer :: USE_ND_CLIM, USE_NI_CLIM
 
   private
 
@@ -170,6 +172,7 @@ contains
     
     character(len=ESMF_MAXSTR) :: FRIENDLIES
     character(len=ESMF_MAXSTR) :: CLDMICRO
+    character(LEN=ESMF_MAXSTR):: AERO_PROVIDER 
     logical                    :: LCLDMICRO
 
     !=============================================================================
@@ -244,7 +247,12 @@ contains
 
 
 
-
+    call ESMF_ConfigGetAttribute( CF, USE_ND_CLIM, Label='USE_ND_CLIM:',   default=0,        RC=STATUS)
+    VERIFY_(STATUS)
+    call ESMF_ConfigGetAttribute( CF, USE_NI_CLIM, Label='USE_NI_CLIM:',   default=0,        RC=STATUS)
+    VERIFY_(STATUS)
+        
+    
     if(adjustl(CLDMICRO)=="2MOMENT") then
       FRIENDLIES = 'DYNAMICS:TURBULENCE'
     else
@@ -639,6 +647,29 @@ contains
          RC=STATUS  )
     VERIFY_(STATUS)
 
+    IF (USE_ND_CLIM .gt. 0) then
+        call MAPL_AddImportSpec ( GC,                                          & !USe the nature run to force cirrus
+             SHORT_NAME = 'NCPL_CLIM',                                 &
+             LONG_NAME  = 'Grid_averaged Cloud NCPL climatology',     &
+             UNITS      = 'm-3',                                    &
+             RESTART    = MAPL_RestartSkip,                            &
+             DIMS       = MAPL_DimsHorzVert,                           &
+             VLOCATION  = MAPL_VLocationCenter,             RC=STATUS  )
+         VERIFY_(STATUS)
+     end if 
+    
+     IF (USE_NI_CLIM .gt. 0) then  
+         call MAPL_AddImportSpec ( GC,                                          & !USe the nature run to force cirrus
+             SHORT_NAME = 'NCPI_CLIM',                                 &
+             LONG_NAME  = 'Grid_averaged Cloud NCPI climatology',     &
+             UNITS      = 'm-3',                                    &
+             RESTART    = MAPL_RestartSkip,                            &
+             DIMS       = MAPL_DimsHorzVert,                           &
+             VLOCATION  = MAPL_VLocationCenter,             RC=STATUS  )
+         VERIFY_(STATUS)
+     end if    
+
+     
     if ( IQVAINC /=0 ) then
        ! The following import is only for offline purposes
        ! NOTE: This is only used in offline applications so when adding new 
@@ -4504,7 +4535,7 @@ contains
 
     ! Inititialize cloud microphysics (Options: 1MOMENT or 2MOMENT)
     !--------------------------------------------------------------
-    call MAPL_GetResource(MAPL, CLDMICRO, 'CLDMICRO:', default="1MOMENT", RC=STATUS )
+    call MAPL_GetResource(MAPL, CLDMICRO, 'CLDMICRO:', default="2MOMENT", RC=STATUS )
     VERIFY_(STATUS)
     LCLDMICRO = adjustl(CLDMICRO)=="1MOMENT" .or. adjustl(CLDMICRO)=="2MOMENT"
     ASSERT_( LCLDMICRO )
@@ -4894,7 +4925,7 @@ contains
       real, allocatable, dimension(:,:,:)  ::  FQAl, FQAI, QCNTOT, FQA
       real, dimension(IM,JM,LM)  ::  QTOT, QL_TOT, QI_TOT, CFX, QRAIN_CN, QSNOW_CN,  &
                                                  CNV_NDROP_X, CNV_NICE_X, CNV_MFD_X, CNV_DQLDT_X, &
-                                                 CNV_PRC3_X ,  CNV_UPDF_X , DELCF
+                                                 CNV_PRC3_X ,  CNV_UPDF_X , DELCF, AIRDEN
        
               
       real, dimension(IM,JM)  :: ZPBL
@@ -4904,8 +4935,11 @@ contains
 
       integer,  parameter :: ncolmicro = 1
       integer,  parameter :: nmods_gocart = 15
-      character(len=ESMF_MAXSTR) :: CLDMICRO !set two-moment microphysics 
+      character(len=ESMF_MAXSTR) :: CLDMICRO !set two-moment microphysics
+      character(LEN=ESMF_MAXSTR):: AERO_PROVIDER 
       logical                    :: LCLDMICRO
+      logical :: nccons,nicons
+      
 
 !!!!! 2-moment muphys declarations !!!!!!!!!!!!!!!!!!!!!!!!
 !!! mmicro_pcond real*8 scalars and arrays 
@@ -4942,7 +4976,7 @@ contains
            sc_icer8, nhet_immr8, dnhet_immr8, nhet_depr8,  &  !DONIF     
            dust_immr8, dust_depr8,  dpre8, npre8, mnuccdor8, nnucctor8, &
            nnuccdor8, nnucccor8, nsacwior8, nsubior8, nprcior8, &
-           npraior8, npccnor8, npsacwsor8, nsubcor8, npraor8, nprc1or8, tlatauxr8
+           npraior8, npccnor8, npsacwsor8, nsubcor8, npraor8, nprc1or8, tlatauxr8, ncnstr8,  ninstr8
 
       real, dimension(1,1:LM)   ::  so4x, seasaltx, dustx, orgx, bcx                          
       real(ESMF_KIND_R8), dimension(1,1:LM,10)  ::    rndstr8,naconr8  !Assume maximum 5 dust bins
@@ -4950,7 +4984,7 @@ contains
       
       
       real(ESMF_KIND_R8), dimension(1)       :: prectr8, precir8
-      real(ESMF_KIND_R8)                     :: ncnstr8,  ninstr8, disp_liu, ui_scale, & 
+      real(ESMF_KIND_R8)                     :: disp_liu, ui_scale, & 
            dcrit, tfreez, qcvar8, ts_autice, dcsr8, qcvarr8, dep_scale, scale_ri, mtimesc
 
 
@@ -4983,7 +5017,7 @@ contains
       real, pointer, dimension(:,:)      :: TAUGWX, TAUGWY, TAUX, TAUY, TAUOROX, TAUOROY    
       
 
-      real, pointer, dimension(:,:, :)   :: OMEGA, RADLW, RADSW, WSUB_NATURE
+      real, pointer, dimension(:,:, :)   :: OMEGA, RADLW, RADSW, WSUB_NATURE, NCPI_CLIM, NCPL_CLIM
       real, pointer, dimension(:,:, :)      :: ALH   
 
       type (ESMF_Field)                  :: AERFIELD
@@ -5043,7 +5077,8 @@ contains
            LTS_LOW, LTS_UP, MIN_EXP, BKGTAU, DCRIT_, USE_AV_V, TS_AUTO_ICE, CCN_PARAM, IN_PARAM, &
 	   FDROP_DUST, FDROP_SOOT,  USE_NATURE_WSUB, SIGMA_NUC,  MIN_ALH, SCWST, DCS, HMOIST_950, & 
        HSMOIST_500, SINST, MAX_EXP, MAX_CAPE, MIN_CAPE, DUST_INFAC, ORG_INFAC, BC_INFAC, SS_INFAC, &
-       DEPSCALE, MAPL, RRTMG_IRRAD, RRTMG_SORAD, MTIME, SWCIRRUS, MINCDNC, TMAXBASELQ, TMAXCFCORR 
+       DEPSCALE, MAPL, RRTMG_IRRAD, RRTMG_SORAD, MTIME, SWCIRRUS, MINCDNC, TMAXBASELQ, TMAXCFCORR, &
+       ND_CST, NI_CST
         
     
 !!! MODIFIED : remove when done testing shallow
@@ -5469,7 +5504,7 @@ contains
 
       ! Inititialize cloud microphysics (Options: 1MOMENT or 2MOMENT)
       !--------------------------------------------------------------
-      call MAPL_GetResource(STATE, CLDMICRO, 'CLDMICRO:', default="1MOMENT", RC=STATUS )
+      call MAPL_GetResource(STATE, CLDMICRO, 'CLDMICRO:', default="2MOMENT", RC=STATUS )
       VERIFY_(STATUS)
       LCLDMICRO = adjustl(CLDMICRO)=="1MOMENT" .or. adjustl(CLDMICRO)=="2MOMENT"
       ASSERT_( LCLDMICRO )
@@ -5528,6 +5563,15 @@ contains
     
       call MAPL_GetResource(STATE, CLDPARAMS%DISP_FACTOR_LIQ,         'DISP_FACTOR_LIQ:',     DEFAULT= 1.0,   RC=STATUS) ! Scales the droplet/ice crystal number in convective detrainment 
       call MAPL_GetResource(STATE, CLDPARAMS%DISP_FACTOR_ICE,         'DISP_FACTOR_ICE:',     DEFAULT= 1.0,   RC=STATUS) ! Scales the droplet/ice crystal number in convective detrainment 
+           ! disable aerosol-cloud interactions
+      call MAPL_GetResource(STATE, CLDPARAMS%NO_CNV_AIC,       'NO_CNV_AIC:',        DEFAULT= 0.0,   RC=STATUS)  !greater than zero uses single moment for convective micro 
+      call MAPL_GetResource(STATE, RASPARAMS%NO_CNV_AIC,       'NO_CNV_AIC:',        DEFAULT= 0.0,   RC=STATUS)   
+      call MAPL_GetResource(STATE, ND_CST,       'ND_CST:',        DEFAULT= -1.0,   RC=STATUS) !greater than zero sets that number for ncpl
+      call MAPL_GetResource(STATE, NI_CST,       'NI_CST:',        DEFAULT= -1.0,   RC=STATUS) !greater than zero sets that number for ncpi
+      
+            
+      call ESMF_ConfigGetAttribute( CF, AERO_PROVIDER, Label='AERO_PROVIDER:', RC=STATUS) ! Note: Default set in GEOS_GcmGridComp.F90
+         VERIFY_(STATUS)
       
       
 !!!!!!!!!!!!!!!!!
@@ -5673,7 +5717,13 @@ contains
       call MAPL_GetPointer(IMPORT, TAUOROX, 'TAUOROX'     , RC=STATUS); VERIFY_(STATUS)
       call MAPL_GetPointer(IMPORT, TAUOROY, 'TAUOROY'     , RC=STATUS); VERIFY_(STATUS)  
       call MAPL_GetPointer(IMPORT, WSUB_NATURE,  'WSUB_NATURE'     , RC=STATUS); VERIFY_(STATUS)
-
+      if (USE_ND_CLIM .gt. 0) then 
+      	call MAPL_GetPointer(IMPORT, NCPL_CLIM,  'NCPL_CLIM'     , RC=STATUS); VERIFY_(STATUS)
+      end if
+      if (USE_NI_CLIM .gt. 0) then
+     	 call MAPL_GetPointer(IMPORT, NCPI_CLIM,  'NCPI_CLIM'     , RC=STATUS); VERIFY_(STATUS)
+      end if   
+      
       call MAPL_GetPointer(IMPORT, PLE,     'PLE'     , RC=STATUS); VERIFY_(STATUS)
       call MAPL_GetPointer(IMPORT, PREF,    'PREF'    , RC=STATUS); VERIFY_(STATUS)
       call MAPL_GetPointer(IMPORT, KH,      'KH'      , RC=STATUS); VERIFY_(STATUS)
@@ -6657,6 +6707,8 @@ contains
       DQS      = GEOS_DQSAT(TEMP, PLO, qsat=QSS)
 
       QSSFC    = GEOS_QSAT( TS , CNV_PLE(:,:,LM) )
+      
+      AIRDEN =100.*PLO*r_air/TEMP !density times conversion factor
 
 !--srf-gf-scheme
       if(associated(DTDTCN)) DTDTCN=TEMP
@@ -6682,6 +6734,11 @@ contains
 
       IRAS       = nint(LONS*100)
       JRAS       = nint(LATS*100)
+
+
+      
+      if (USE_ND_CLIM .gt. 0) NCPL =  NCPL_CLIM/AIRDEN
+      if (USE_NI_CLIM .gt. 0) NCPI =  NCPI_CLIM/AIRDEN
 
 
 
@@ -6847,7 +6904,8 @@ contains
       KE0 = 0.5*( U1**2 + V1**2 )
 
 
-      if(adjustl(CLDMICRO)=="2MOMENT") then
+
+   if ((adjustl(CLDMICRO)=="2MOMENT") .and. (ADJUSTL(AERO_PROVIDER) /= 'None')) then
 
       do k = 1, LM
           do j = 1, JM
@@ -6979,9 +7037,20 @@ contains
               deallocate(aero_aci_modes, __STAT__)
           end if
       else
-          ! options: 
-          !     *) set aerosol concentrations to 0.0, i.e., no aerosol
-          !     *) raise an exception if aerosol is required!
+      
+       !no aerosol is provided or single moment micro. 
+                  
+       
+         CLDPARAMS%NO_CNV_AIC = 1.0 ! no aerosols in convective core
+         RASPARAMS%NO_CNV_AIC = 1.0
+         
+         !Also set SC_ICE to some reasonable value. 
+         SC_ICE = 1.0   
+         !ND_CST  =  100.e6
+         !NI_CST =  0.1e6  
+         USE_ND_CLIM =  1 
+         USE_NI_CLIM = 1   
+          
       end if
 
 
@@ -9071,7 +9140,13 @@ contains
              
       end if 
 	
-	 do J=1,JM
+    
+    
+	 
+     if (ADJUSTL(AERO_PROVIDER) /= 'None') then 
+!	  
+
+     do J=1,JM
             do I=1,IM
 
                	     ccn_diag  = 0.0
@@ -9165,7 +9240,6 @@ contains
                ! ========================Activate the aerosols ============================================ 
 	   
 	       
-!	       
  !               do K = KMIN_TROP(I, J), LM-1 !limit to troposphere and no activation at the surface
     
                 ! find vertical velocity variance 
@@ -9284,13 +9358,19 @@ contains
                BCARBON(I, J, 1:LM)=bcx(1, 1:LM)
 	           ORG(I, J, 1:LM)=orgx(1, 1:LM)
 	           SEASALT(I, J, 1:LM)=seasaltx(1, 1:LM)
-
-
 	       
             enddo
          enddo
 
     
+         end if !===========aero_provider
+         
+         if ((USE_ND_CLIM .gt. 0) .or. (USE_NI_CLIM .gt. 0)) then
+         	CLDPARAMS%NO_CNV_AIC =  1.
+         	RASPARAMS%NO_CNV_AIC =  1.
+         END IF
+         
+         IF (USE_NI_CLIM .gt. 0) SC_ICE =  1.   
 	
          !=============================================End cloud particle nucleation=====================================
          !===============================================================================================================
@@ -9456,7 +9536,9 @@ contains
          QCNTOT = QLCN+QICN
          QTOT   =  QCNTOT+ QLLS+QILS
          QL_TOT  = QLCN+QLLS 
-         QI_TOT  = QICN+QILS   
+         QI_TOT  = QICN+QILS  
+         if (USE_ND_CLIM .gt. 0) NCPL =  NCPL_CLIM/AIRDEN 
+         if (USE_NI_CLIM .gt. 0) NCPI =  NCPI_CLIM/AIRDEN
 
          where (QTOT .gt. 0.0)
             FQA= min(max(QCNTOT/QTOT, 0.0), 1.0)    
@@ -9609,8 +9691,10 @@ end if
                end where
 
                nbincontactdust = 1
-
-
+	   
+       
+              if (ADJUSTL(AERO_PROVIDER) /= 'None') then 
+    
                DO K=kbmin, LM
                   AeroAux = AeroProps(I, J, K)
                   ! Get dust properties for contact ice nucleation 
@@ -9630,6 +9714,12 @@ end if
                   rnsootr8 (1, K)  = sum(AeroAux_b%dpg(1:naux))/naux
                END DO
 
+               else
+                  naconr8 = 0.0
+                  rndstr8 = 1.e-9
+                  nsootr8 = 0.0
+                  rnsootr8 = 1.0e-9
+               end if 
 
                pdelr8(1,1:LM)  = PLE(I,J,1:LM) - PLE(I,J,0:LM-1)  
                rpdelr8      = 1./pdelr8 
@@ -9652,9 +9742,35 @@ end if
 !               kbmin = KCBL(I, J)
                omegr8(1,1:LM)=WSUB(I, J, 1:LM)
                
+               !!!!!constant and climatological ND, NI options
                
-
-                 dcrit = DCRIT_
+                if (ND_CST .gt. 0.0) then 
+                   nccons = .true.
+                   ncnstr8 = ND_CST! 100.0e6 
+                end if 
+               
+                if (NI_CST .gt. 0.0) then 
+                	nicons = .true.
+                    ninstr8 = NI_CST !0.1e6   !This is in_cloud concentration (m-3). Only when constant cloud and ice number are set.                         
+                end if
+                
+                if (USE_ND_CLIM .gt. 0) then 
+                  nccons = .true.
+                  where(cldfr8(1,1:LM) .gt. 0.)
+                    ncnstr8(1,1:LM) = max(NCPL_CLIM(I,J,1:LM), 0.0)/cldfr8(1,1:LM)/AIRDEN(I,J,1:LM) 
+                  end where 
+                end if 
+                
+                if (USE_NI_CLIM .gt. 0) then                   
+                  nicons = .true.
+                  where(cldfr8(1,1:LM) .gt. 0.)
+                    ninstr8(1,1:LM) = max(NCPI_CLIM(I,J,1:LM), 0.0)/cldfr8(1,1:LM)/AIRDEN(I,J,1:LM)                   
+                  end where 
+                end if 
+			!!!!!!!!
+                 
+                 
+               dcrit = DCRIT_
                
                              
                if ((FRLAND(I, J) .lt. 0.1) .and. (LTS(I, J) .gt. CLDPARAMS%MIN_LTS-1.0)) then 
@@ -9662,8 +9778,7 @@ end if
                end if 
                
                    
-               ninstr8 = 0.1e6   !This is in_cloud concentration (m-3). Only when constant cloud and ice number are set. 
-               ncnstr8 = 100.0e6  
+              
                if (MTIME .le. 0.0) MTIME  = DT_MOIST
                mtimesc=MTIME
 
@@ -9741,7 +9856,7 @@ end if
                     nsootr8, rnsootr8, ui_scale, dcrit, mtimesc, &
                     nnuccdor8, nnucccor8, nsacwior8, nsubior8, nprcior8, &
                     npraior8, npccnor8, npsacwsor8, nsubcor8, npraor8, nprc1or8, tlatauxr8,  nbincontactdust, &
-                    ts_autice, kbmin, rflx, sflx, dep_scale)
+                    ts_autice, kbmin, rflx, sflx, dep_scale, nccons, nicons)
 
 
                !Update state after microphysisc
@@ -9839,6 +9954,10 @@ end if
             enddo !I
          enddo !J
          !============================================Finish 2-moment micro implementation===========================
+         
+         if (USE_ND_CLIM .gt. 0) NCPL =  NCPL_CLIM/AIRDEN 
+         if (USE_NI_CLIM .gt. 0) NCPI =  NCPI_CLIM/AIRDEN
+
 
 
     !update water tracers
@@ -9972,6 +10091,11 @@ do K= 1, LM
 
          !=================================================================================
          !    Units conversion for diagnostics
+
+
+         
+         if (USE_ND_CLIM .gt. 0) NCPL =  NCPL_CLIM/AIRDEN 
+         if (USE_NI_CLIM .gt. 0) NCPI =  NCPI_CLIM/AIRDEN
 
 
          CFX =100.*PLO*r_air/TEMP !density times conversion factor
