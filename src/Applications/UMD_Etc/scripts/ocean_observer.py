@@ -35,12 +35,12 @@ def get_command(Ne, fname, PATH_TO_OBSERVER, ANADIR, GROUP, QOS, seq=1, inovatio
         command='sbatch --time=1:00:00 -n '+str(Ne)+' --constraint='+CONSTRAINT+' --ntasks-per-node=27 --job-name='+job_name+\
                 ' -o '+job_name+'.o '+\
                 ' -e '+job_name+'.e '+\
-                ' -A '+GROUP+' --partition=compute '+PATH_TO_OBSERVER+'/ocean_observer_timed.csh '+\
+                ' -A '+GROUP+' --partition=compute '+PATH_TO_OBSERVER+'/ocean_observer.csh '+\
                 yyyy+' '+mm+' '+dd+' '+hh+' '+str(seq)+' '+inovation_type+' '+ANADIR
     elif in_line=='True':
         print(f'IN_LINE is {in_line}')
         print('Send observer in node')
-        command= f'{PATH_TO_OBSERVER}/ocean_observer_timed.csh {yyyy} {mm} {dd} {hh} {seq} {inovation_type} {ANADIR} > {job_name}.o 2> {job_name}.e'
+        command= f'{PATH_TO_OBSERVER}/ocean_observer.csh {yyyy} {mm} {dd} {hh} {seq} {inovation_type} {ANADIR} > {job_name}.o 2> {job_name}.e'
     print ('in get_command:',command)
     return command, yyyy, mm, dd, hh
 
