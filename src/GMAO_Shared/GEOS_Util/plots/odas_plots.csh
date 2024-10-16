@@ -17,7 +17,7 @@ set hour    = ${9}
 set GEOSUTIL = ${10}
 
 set PLOTDIR = $GEOSUTIL/odas_plots
-
+source $EXPDIR/ocean_das_config
 echo 'here' $EXPDIR  $GEOSUTIL $PLOTDIR
 
 #  new plotting of OMF/OMA stats from ERIC 2/12/21
