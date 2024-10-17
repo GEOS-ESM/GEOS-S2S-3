@@ -879,7 +879,7 @@ end
 $GEOSUTIL/post/gcmpost.script -source $EXPDIR -movefiles
 
 >>>withODAS<<<#  new plotting of OMF/OMA stats from ERIC 3/19/21
->>>withODAS<<<$GEOSUTIL/plots/oda_plots.csh $EXPDIR $nyears $nmonths $ndays $nhours $year $month $day $hour $GEOSUTIL/plots
+>>>withODAS<<<$GEOSUTIL/plots/odas_plots.csh $EXPDIR $nyears $nmonths $ndays $nhours $year $month $day $hour $GEOSUTIL/plots
  
 if( $FSEGMENT != 00000000 ) then
      set REPLAY_BEG_DATE = `grep BEG_REPDATE: $HOMDIR/CAP.rc | cut -d':' -f2`

@@ -189,7 +189,7 @@ echo 'Preparing multiple jobs in OMA'
 #  output OMA's
 ################################
 if( $ODAS_OUTPUT_OMA == True )then
-    ${UMD_LETKFSCRIPTS}/ocean_observer_comb.py oma ${ANADIR} True $DA_seq &
+    ${UMD_LETKFSCRIPTS}/ocean_observer.py oma ${ANADIR} True $DA_seq &
     set OBSSTATUS = $status
     if( $OBSSTATUS == 1 ) then
       echo "BAD OMA OBSERVER IN oda_run.j"

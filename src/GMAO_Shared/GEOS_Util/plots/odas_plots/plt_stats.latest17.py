@@ -1,8 +1,5 @@
 #! /usr/bin/env python
-import matplotlib
-matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-import matplotlib.cm as cm
 import sys 
 import glob
 import numpy as np
@@ -14,15 +11,12 @@ obsname = sys.argv[1]
 region  = sys.argv[2]
 lev1    = sys.argv[3]
 lev2    = sys.argv[4]
-outname = sys.argv[5]   # eg. 'Tprof_1981.png'
 
-lev1 = float(lev1)
-lev2 = float(lev2)
-# obstype: SST, SSS, ADT, Tprof, Sprof, Ice Fraction
+# obstype: SST, SSS, ADT, Tprof, S prof, Ice Fraction
 
 
-#obsid_dict = {5525:'SST', 5522:'SSS', 5351:'ADT', 3073: 'Tprof', 5521: 'Sprof', 6000:'Ice Fraction'} 
-obsid_dict = {'SST':5525, 'SSS':5522, 'ADT': 5351,'Tprof': 3073, 'Sprof':5521, 'Ice Fraction': 6000} 
+#obsid_dict = {5525:'SST', 5522:'SSS', 5351:'ADT', 3073: 'Tprof', 5521: 'S prof', 6000:'Ice Fraction'} 
+obsid_dict = {'SST':5525, 'SSS':5522, 'ADT': 5351,'Tprof': 3073, 'S prof':5521, 'Ice Fraction': 6000} 
 
 def smooth(x,window_len=11,window='flat'):
     """smooth the data using a window with requested size.                                                                                                                                           
@@ -78,7 +72,7 @@ def smooth(x,window_len=11,window='flat'):
         tmpy=np.convolve(w/w.sum(),s,mode='same')
         y=tmpy[window_len-1:-window_len+1]
 
-        print ()
+        print()
 
     if window in ['std']:
         y = std_filter(x,n_std=float(window_len))
@@ -122,25 +116,10 @@ class OdaStats():
         self.omf=ncfile.variables['omf'][:]  
         self.fcst=self.obs-self.omf
         try:
-            self.OBSIDa=ncfile.variables['OBSIDa'][:]
-            self.lona=ncfile.variables['lona'][:]
-            self.lata=ncfile.variables['lata'][:]
-            self.leva=ncfile.variables['leva'][:]
-            self.obsa=ncfile.variables['obsa'][:]
-            self.sigoa=ncfile.variables['sigoa'][:]
             self.oma=ncfile.variables['oma'][:]  
-            self.fcsta=self.obsa-self.oma
         except:
-            self.OBSIDa=np.nan*self.OBSID
-            self.lona=np.nan*self.lon
-            self.lata=np.nan*self.lat
-            self.leva=np.nan*self.lev
-            self.obsa=np.nan*self.obsa
-            self.sigoa=np.nan*self.sigoa
             self.oma=np.nan*self.omf
-            self.fcsta=np.nan*self.fcst
         self.std_omf=ncfile.variables['std_omf'][:]  
-        print(fname,fname[-30:-26],fname[-26:-24],fname[-24:-22])
         self.yyyymmdd=fname[-30:-26]+'-'+fname[-26:-24]+'-'+fname[-24:-22] #fname[-27:-23]+'-'+fname[-23:-21]+'-'+fname[-21:-19]
         self.time=int(fname[-30:-22])
         self.date=datetime.datetime(int(fname[-30:-26]), int(fname[-26:-24]), int(fname[-24:-22]), int(fname[-21:-19]))
@@ -148,7 +127,7 @@ class OdaStats():
     def mae(self, obstype=3073, region='glb'):
         self.IDS=np.unique(self.OBSID)
         ids = obstype
-        print('obstype is ',obstype)
+        
 
 #       J=np.where (np.abs(self.oma)>100.)
 #       J=np.where (np.abs(self.oma)<1.e-11)
@@ -159,68 +138,54 @@ class OdaStats():
 #       K=np.where (np.abs(self.omf)<1.e-11)
 #       print 'BAD OMF', self.OBSID[K], self.omf[K],self.lat[K],self.lon[K],self.date
 
-        if region=='natl':
+        if region=='glb':
             if obsname=='Tprof' :
 #             toobig=10.0
               toobig=5.0
-            if obsname=='Sprof':
+            if obsname=='S prof':
               toobig=5.0
             if obsname=='ADT':
               toobig=1.0
-            if obsname=='SST':
-              toobig=5.0
-            I = np.where( (self.OBSID==ids) & (np.abs(self.lev)<lev2) & (self.fcst!=0.0) & (self.lat > 30.0) & (self.lon > -90.) & (self.lon < 0.) & (np.abs(self.omf)<toobig) )
-            II = np.where( (self.OBSIDa==ids) & (np.abs(self.leva)<lev2) & (self.fcsta!=0.0) & (self.lata > 30.0) & (self.lona > -90.) & (self.lona < 0.) & (np.abs(self.oma)<toobig) )
-        if region=='glb':
-            if obsname=='Tprof' :
-              toobig=5.0
-            if obsname=='SST' :
-              toobig=5.0
-            if obsname=='Sprof':
-              toobig=5.0
-            if obsname=='ADT':
-              toobig=1.0
-            I = np.where( (self.OBSID==ids) & (np.abs(self.lev)<lev2) & (self.fcst!=0.0) & (np.abs(self.lat)<90.0) & (np.abs(self.omf)<toobig) )
-            II = np.where( (self.OBSIDa==ids) & (np.abs(self.leva)<lev2) & (self.fcsta!=0.0) & (np.abs(self.lata)<90.0) & (np.abs(self.oma)<toobig))
+#           I = np.where( (self.OBSID==ids) & (np.abs(self.lev)<300.0) & (self.fcst!=0.0) & (np.abs(self.lat)<90.0) & (np.abs(self.omf)<5.0) & (np.abs(self.oma)<5.0))
+            I = np.where( (self.OBSID==ids) & (np.abs(self.lev)<float(lev2)) & (self.fcst!=0.0) & (np.abs(self.lat)<90.0) & (np.abs(self.omf)<toobig) & (np.abs(self.oma)<toobig))
+#           I = np.where( (self.OBSID==ids) & (np.abs(self.lev)<300.0) & (self.fcst!=0.0) & (np.abs(self.lat)<90.0) & (np.abs(self.sigo)>100.) & np.abs(self.omf<10.) )
+#           I = np.where( (self.OBSID==ids) & (np.abs(self.lev)<300.0) & (self.fcst!=0.0) & (np.abs(self.lat)<90.0) & (np.abs(self.omf)<100.) & (np.abs(self.oma)<100.) )
         if region=='trp':
-            if obsname=='SST' :
-              toobig=10.0
             if obsname=='Tprof' :
               toobig=10.0
-            if obsname=='Sprof':
+            if obsname=='S prof':
               toobig=5.0
             if obsname=='ADT':
               toobig=1.0
-            I = np.where( (self.OBSID==ids) & (np.abs(self.lev)<lev2) & (self.fcst!=0.0) & (np.abs(self.lat)<30.0) & (self.omf<toobig))
-            II = np.where( (self.OBSIDa==ids) & (np.abs(self.leva)<lev2) & (self.fcsta!=0.0) & (np.abs(self.lata)<30.0) & (np.abs(self.oma)<toobig))
+            if obsname=='SSS':
+              toobig=1.0
+#           I = np.where( (self.OBSID==ids) & (np.abs(self.lev)<lev2) & (self.fcst!=0.0) & (np.abs(self.lat)<30.0) & (np.abs(self.omf)<toobig) & (np.abs(self.oma)<toobig))
+            I = np.where( (self.OBSID==ids) & (np.abs(self.lev)<float(lev2)) & (self.fcst!=0.0) & (np.abs(self.lat)<30.0) & (self.omf<toobig))
+#           I = np.where( (self.OBSID==ids) & (np.abs(self.lev)<300.0) & (self.fcst!=0.0) & (np.abs(self.lat)<30.0) & (np.abs(self.omf)<10.0) )
+#           I = np.where( (self.OBSID==ids) & (np.abs(self.lev)<10.0) & (self.fcst!=0.0) & (np.abs(self.lat)<30.0) & (np.abs(self.omf)<10.0) )
         if region=='north':        
             if obsname=='Tprof' :
               toobig=10.0
-            if obsname=='SST' :
-              toobig=5.0
-            if obsname=='Sprof':
+            if obsname=='S prof':
               toobig=5.0
             if obsname=='ADT':
               toobig=1.0
             I = np.where( (self.OBSID==ids) & (np.abs(self.lev)<lev2) & (self.fcst!=0.0) & (self.lat>30.0) & (np.abs(self.omf)<10.0) )
-            II = np.where( (self.OBSIDa==ids) & (np.abs(self.leva)<lev2) & (self.fcsta!=0.0) & (self.lata>30.0) & (np.abs(self.oma)<10.0) )
         if region=='south':        
             if obsname=='Tprof' :
               toobig=10.0
-            if obsname=='SST' :
-              toobig=5.0
-            if obsname=='Sprof':
+            if obsname=='S prof':
               toobig=5.0
             if obsname=='ADT':
               toobig=1.0
             I = np.where( (self.OBSID==ids) & (np.abs(self.lev)<lev2) & (self.fcst!=0.0) & (self.lat<-30.0) & (np.abs(self.omf)<10.0) )
-            II = np.where( (self.OBSIDa==ids) & (np.abs(self.leva)<lev2) & (self.fcsta!=0.0) & (self.lata<-30.0) & (np.abs(self.oma)<10.0) )
 
-        print('number of obs is',len(self.omf[I]),len(self.oma[II]))
+#       if np.mean(np.abs(self.oma[I]))>100.: 
+#        	print np.mean(self.omf[I])
         self.mae_omf = np.mean(np.abs(self.omf[I]))
-        self.mae_oma = np.mean(np.abs(self.oma[II]))
+        self.mae_oma = np.mean(np.abs(self.oma[I]))
         self.bias_omf = np.mean(self.omf[I])
-        self.bias_oma = np.mean(self.oma[II])
+        self.bias_oma = np.mean(self.oma[I])
         self.nobs =np.shape(I)[1]
 
         return self.date, self.mae_omf, self.mae_oma, self.bias_omf, self.bias_oma, self.nobs
@@ -229,21 +194,23 @@ class OdaStats():
 
 #yyyy = '198[5-6]'
 #yyyy = '201[6-7]'
-#yyyy = '200[1-6]'
-#yyyy = '199[0-3]'
-yyyy = '1982'
+#yyyy = '201[7-8]'
+#yyyy = '201[8-9]'
+yyyy = '2022'
+#yyyy = '2013'
+#yyyy = '2013'
+#yyyy = '2018'
 #yyyy = '2012'
 #year = '????'
 mm   = '??'
 dd   = '??'
 hh   = '12'
-#hh   = '06'
 
-#obsid_dict = {5525:'SST', 5522:'SSS', 5351:'ADT', 3073: 'Tprof', 5521: 'Sprof', 6000:'Ice Fraction'} 
-obsid_dict = {'SST':5525, 'SSS':5522, 'ADT': 5351,'Tprof': 3073, 'Sprof':5521, 'Ice Fraction': 6000} 
+#obsid_dict = {5525:'SST', 5522:'SSS', 5351:'ADT', 3073: 'Tprof', 5521: 'S prof', 6000:'Ice Fraction'} 
+obsid_dict = {'SST':5525, 'SSS':5522, 'ADT': 5351,'Tprof': 3073, 'S prof':5521, 'Ice Fraction': 6000} 
 #obstype     = obsid_dict['SST']
 obstype     = obsid_dict[obsname]
-print (obstype)
+print(obstype)
 plot_type   = 'time_series'
 #region      = 'glb'
 #lev1        = 0
@@ -252,26 +219,43 @@ COLORS      = ['r','b','g','k','m']
 #window_len  = 40 # make bigger for longer runs
 window_len  = 1
 #expname     = ['S2S-3','S2S-2']
-#expname     = ['TEST']
+#expname     = ['S2S-2','eh013']
+expname     = ['S2S-2','eh026']
 #expname     = ['eh016','odas_V3_2']
 description = ['PROFILES ONLY'] # dashed is re-forecast
-if ((obsname == 'Tprof') | (obsname == 'Sprof')):
+if ((obsname == 'Tprof') | (obsname == 'S prof')):
 	title       = obsname+' '+region+' '+str(lev1)+'-'+str(lev2)+'m (dashed line is re-forecast)'
 else:
 	title       = obsname+' '+region+' (dashed line is re-forecast)'
-print (title)
+print(title)
 #sys.exit()
 
-#PATH=['/gpfsm/dnb42/projects/p17/ehackert/geos5/exp/eh019/ocean_das/oana-*','/gpfsm/dnb02/projects/p23/bzhao/sio20/ocean_das/oana-*']
-#PATH=['/gpfsm/dnb42/projects/p17/ehackert/geos5/exp/process_omf/tmp/oana-*']
+#PATH=[ '/gpfsm/dnb42/projects/p17/rkovach/geos5/exp/rk019/ocean_das/oana-*',
+#       '/gpfsm/dnb42/projects/p17/rkovach/geos5/exp/rk019/ocean_das_sst/oana-*',
+#       '/gpfsm/dnb42/projects/p17/rkovach/geos5/exp/rk020/ocean_das/oana-*',
+#       '/gpfsm/dnb42/projects/p17/rkovach/geos5/exp/rk015/ocean_das/oana-*']
 
-PATH=['/gpfsm/dnb42/projects/p17/ehackert/geos5/exp/process_omf/tmp/oana-*']
-expname  = ['A_test']
+#PATH=['/gpfsm/dnb42/projects/p17/rkovach/geos5/exp/rk022/ocean_das/oana-*',
+#'/gpfsm/dnb42/projects/p17/rkovach/geos5/exp/rk023/ocean_das/oana-*',
+#'/gpfsm/dnb42/projects/p17/rkovach/geos5/exp/rk024/ocean_das/oana-*',
+#'/gpfsm/dnb42/projects/p17/rkovach/geos5/exp/rk025/ocean_das/oana-*',]
+#expname     = ['rk022','rk023','rk024','rk025']
+#PATH=['/gpfsm/dnb42/projects/p17/ehackert/geos5/exp/eh017/ocean_das/oana-*','/gpfsm/dnb42/projects/p17/production/geos5/exp/S2S-2_1_ANA_001/ocean_das/oana-*']
+#PATH=['/gpfsm/dnb42/projects/p17/production/geos5/exp/S2S-2_1_ANA_001/ocean_das/oana-*','/gpfsm/dnb42/projects/p17/ehackert/geos5/exp/eh013/ocean_das/oana-*']
+PATH=['/gpfsm/dnb42/projects/p17/ehackert/geos5/exp/eh025/ocean_das/oana-*','/gpfsm/dnb06/projects/p161/ehackert/ose003/ocean_das/oana-*']
+#PATH=['/gpfsm/dnb42/projects/p17/ehackert/geos5/exp/eh016/ocean_das/oana-*','/gpfsm/dnb42/projects/p17/ychang/odas_V3_2/ocean_das/oana-*']
+#PATH=['/gpfsm/dnb42/projects/p17/production/geos5/exp/S2S-2_1_ANA_001/ocean_das/oana-*']
+#PATH=['/gpfsm/dnb42/projects/p17/ychang/odas_V3/ocean_das/oana-*']
+#expname     = ['S2S-3','S2S-2']
+#expname     = ['S2S-2','eh013']
+#expname     = ['eh026']
+expname     = ['eh025','ose003']
+#expname     = ['eh016','odas_V3_2']
+#expname     = ['S2S-2']
+#expname     = ['ODAS_V3']
 
-#PATH=['/discover/nobackup/projects/gmao/merra2-ocean/GiOCEAN_e1/ocean_das/oana-*']
-#expname  = ['GiOCEAN']
 
-cnt_leg = range(len(PATH))
+cnt_leg = list(range(len(PATH)))
 cnt_exp = 0
 for path in PATH:
 
@@ -279,7 +263,7 @@ for path in PATH:
     flist = glob.glob(path2files)
     flist.sort()
 
-    print (flist)
+    #print flist
     #print path2files
     #print path+'/ocean_observer_*/obs-'+yyyy+mm+dd+'_'+hh+'.nc'
     #raw_input('<>?')
@@ -316,24 +300,18 @@ for path in PATH:
         
 
         #MAE
-#       if (obsname=='Tprof'):
-#         ax1.set_ylim(0.5,1.5)
-        if (obsname=='Sprof'):
-#         ax1.set_ylim(0.1,0.2)
-          if (region=='trp'):
-             ax1.set_ylim(0.0,0.02)
-          if (region=='glb'):
-             ax1.set_ylim(0.1,0.5)
-        if (obsname=='ADT'):
+        if (obsname=='Tprof'):
+          ax1.set_ylim(0.5,1.5)
+        if (obsname=='S prof'):
+          ax1.set_ylim(0.1,0.3)
+#       if (obsname=='ADT'):
 #         ax1.set_ylim(0.030,0.055)
 #tropics
-          if (region=='trp'):
-#	ax1.set_ylim(0.020,0.06)
-                ax1.set_ylim(0.01,0.02)
+#         if (region=='trp'):
+		#ax1.set_ylim(0.040,0.06)
 #global
-          if (region=='glb'):
+#         if (region=='glb'):
 #	        ax1.set_ylim(0.060,0.085)
-                ax1.set_ylim(0.040,0.085)
         ax1.plot_date(ymdh[:], smooth(mae_omf[:],window_len=window_len),'-',color=COLORS[cnt_exp],lw=2,alpha=0.5,label=expname[cnt_exp])
         ax1.plot_date(ymdh[:], smooth(mae_oma[:],window_len=window_len),'--',color=COLORS[cnt_exp],lw=2,alpha=0.5)
         #ax2.plot_date(ymdh, nobs,'-',color=COLORS[cnt_exp],lw=1,alpha=0.1) # Obs Count
@@ -342,14 +320,13 @@ for path in PATH:
         plt.draw()
 
         #BIAS
-#       if (obsname=='Tprof'):
-#         ax3.set_ylim(-0.5,0.5)
-        if (obsname=='Sprof'):
-          ax3.set_ylim(-0.02,0.02)
-#         ax3.set_ylim(-0.3,0.3)
+        if (obsname=='Tprof'):
+          ax3.set_ylim(-0.5,0.5)
+        if (obsname=='S prof'):
+          ax3.set_ylim(-0.1,0.1)
         if (obsname=='ADT'):
           ax3.set_ylim(-0.03,0.03)
-        print ('bias:',np.mean(bias_omf),' std:',np.std(bias_omf) )
+        print('bias:',np.mean(bias_omf),' std:',np.std(bias_omf)) 
         ax3.plot_date(ymdh, smooth(bias_omf,window_len=window_len),'-',color=COLORS[cnt_exp],lw=2,alpha=0.5)
         ax3.plot_date(ymdh, smooth(bias_oma,window_len=window_len),'--',color=COLORS[cnt_exp],lw=2,alpha=0.5)
         ax3.grid(True)
@@ -370,9 +347,9 @@ ax3.set_title('BIAS (Mean of the OMF)',size=12,fontweight='bold')
 ax1.legend(bbox_to_anchor=(0.90,1.32))
 fig.autofmt_xdate()
 
-plt.savefig(outname)
-#plt.savefig('stats.eps',format='eps',dpi=1000)
-#plt.show()
+plt.savefig('stats.png')
+plt.savefig('stats.eps',format='eps',dpi=1000)
+plt.show()
 
 '''
 lon(nobs) ;
