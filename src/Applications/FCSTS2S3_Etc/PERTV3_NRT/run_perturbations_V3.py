@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-# questions: veronica.i.ruizxomchuk@nasa.gov
+# Code to generate perturbed initialization files for S2S3
+# Requires configuration file: perturbation_config.yaml
+# Questions: veronica.i.ruizxomchuk@nasa.gov
 # 04/2024
 
 import argparse
@@ -148,9 +150,6 @@ def perturb_atmo(AtmoDIR, RESDIR, ananame, pdate, Atmfile, daylim=60, members=5,
      - Frac and Sep are obtained from a file and computed elsewhere.
      - Included a negative portion if balanced is chosen: 
         perturbed[variable] = file[variable]{pdate} - frac * (file[variable]{pd1} - file[variable]{pd2})
-    Questions:
-    1. There is no need for ens200, .... ens204 subdirs, it could be named more consistently like in ocean (i.e. #_*). 
-    (Stays as is, as other code may need it to be this way)
     """
     logging.info('\nStarting ATMO section')
     Sep, Fac = get_seps_facs(Atmfile)
@@ -225,7 +224,7 @@ def perturb_ocean(OcnDIR, RESDIR, ananame, pdate, Ocnfile, daylim=60, members=10
         Ocnfile   : Path to the file containing Sep, Facs for the experiment. String or Path object.
         balanced  : Bool. If False (default True), only positive side is computed (see Notes).
     Output:
-        Saves perturbation files in OcnDIR/perts_scaleT_{ananame}_V3_{pertdate}_21z'
+        Saves perturbation files in OcnDIR/output/'
     Note: 
      - Perturbs all variables in files
      - Formulation is:
