@@ -1,0 +1,6 @@
+# To generate perturbations:
+1. modify perturbation_config.yaml
+2. make sure alpha files are in AtmPertsV3 and OcnPertsV3
+3. load python 3
+4. ./run_perturbations_V3.py YYYYMMDD
+
