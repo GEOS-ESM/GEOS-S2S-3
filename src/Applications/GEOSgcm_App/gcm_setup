@@ -2770,8 +2770,10 @@ endif
 
 if ( -e $CLONEDIR/field_table ) then
    set OGCM = TRUE
+   set AODAS = TRUE
 else
    set OGCM = FALSE
+   set AODAS = FALSE
 endif
 
 if ( -e $CLONEDIR/fvcore_layout.rc ) then
@@ -2854,6 +2856,7 @@ cat >> $FILES_TO_PROCESS << EOF
 HOMDIR/fvcore_layout.rc
 EOF
 endif
+
 
 if($AODAS == "TRUE") then
 cat >> $FILES_TO_PROCESS << EOF

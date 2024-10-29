@@ -249,7 +249,7 @@ CONTAINS
       REAL RASAL1, RASAL2, RASAL2i, CO_T, RASNCL,FRICLAMBDA,SDQVT1,SDQV2 
       REAL LAMBDA_FAC,STRAPPING,ACRITFAC,HMINTRIGGER,LLDISAGGXP
       REAL LAMBMX_FAC, DIAMMN_MIN,RDTLEXPON, CLI_CRIT,SDQV3, MAXDALLOWED_D, MAXDALLOWED_S, MAXDALLOWED_E
-      REAL RHMN, RHMX, CLDMICRO, FDROP_DUST, FDROP_SOOT, RASAL_SLOPE, CCNFRAC
+      REAL RHMN, RHMX, CLDMICRO, FDROP_DUST, FDROP_SOOT, RASAL_SLOPE, CCNFRAC, NO_CNV_AIC
       INTEGER KSTRAP
 
       real cld_radius, areal_frac, spect_mflx, cvw_cbase
@@ -395,6 +395,8 @@ CONTAINS
       FDROP_SOOT    = RASPARAMS%FDROP_SOOT
       CCNFRAC       = RASPARAMS%CCNFRAC
       
+
+      NO_CNV_AIC    = RASPARAMS%NO_CNV_AIC ! no aerosol-cloud interactions
 
       IF ( STRAPPING <= 0.0 ) THEN
          DYNA_STRAPPING = .TRUE.
@@ -977,7 +979,7 @@ CONTAINS
 
 
             !=====================================================================
-            if (CLDMICRO .gt. 0.0) then  !AER_CLOUD MIcrophysics considering activation and nucleation 
+            if ((CLDMICRO .gt. 0.0) .and. (NO_CNV_AIC .le. 0.0)) then  !AER_CLOUD MIcrophysics considering activation and nucleation 
                !recompute vertical velocity
 
                Tparcel = TE_A
