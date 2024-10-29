@@ -99,7 +99,7 @@ module GEOS_SurfaceGridCompMod
 
   character(len=ESMF_MAXSTR), pointer :: GCNames(:)
   integer                    :: CHILD_MASK(NUM_CHILDREN)
-  integer :: DO_OBIO, DO_CO2SC
+  integer :: DO_OBIO, DO_DATA_ATM4OCN
   logical :: DO_GOSWIM
 
   type T_Routing
@@ -217,9 +217,6 @@ module GEOS_SurfaceGridCompMod
     call MAPL_GetResource ( MAPL, DO_OBIO,        Label="USE_OCEANOBIOGEOCHEM:",DEFAULT=0, RC=STATUS)
     VERIFY_(STATUS)
 
-    call MAPL_GetResource ( MAPL, DO_CO2SC,        Label="USE_CO2SC:",DEFAULT=0, RC=STATUS)
-    VERIFY_(STATUS)
-
     call MAPL_GetResource ( MAPL, catchswim,        Label="N_CONST_LAND4SNWALB:",DEFAULT=0, RC=STATUS)
     VERIFY_(STATUS)
     call MAPL_GetResource ( MAPL, landicegoswim,        Label="N_CONST_LANDICE4SNWALB:",DEFAULT=0, RC=STATUS)
@@ -230,6 +227,9 @@ module GEOS_SurfaceGridCompMod
        do_goswim=.false.
     endif
     
+    ! Are we running DataAtm?
+    !------------------------
+    call MAPL_GetResource ( MAPL, DO_DATA_ATM4OCN, Label="USE_DATA_ATM4OCN:" , DEFAULT=0, RC=STATUS)
 
 ! Set the Run entry point
 ! -----------------------
@@ -558,7 +558,7 @@ module GEOS_SurfaceGridCompMod
                                                        RC=STATUS  )
     VERIFY_(STATUS)
 
-    if((DO_OBIO/=0).OR. (DO_CO2SC /= 0)) then
+    if(DO_OBIO/=0) then
 
        call MAPL_AddImportSpec(GC,                              &
             SHORT_NAME         = 'CO2SC',                             &
@@ -589,25 +589,6 @@ module GEOS_SurfaceGridCompMod
             RC=STATUS  )
        VERIFY_(STATUS)
 
-       call MAPL_AddImportSpec(GC,                              &
-            SHORT_NAME         = 'FSWBAND',                           &
-            LONG_NAME          = 'net_surface_downward_shortwave_flux_per_band_in_air', &
-            UNITS              = 'W m-2',                             &
-            DIMS               = MAPL_DimsHorzOnly,                   &
-            UNGRIDDED_DIMS     = (/NB_CHOU/),                         &
-            VLOCATION          = MAPL_VLocationNone,                  &
-            RC=STATUS  )
-       VERIFY_(STATUS)
-
-       call MAPL_AddImportSpec(GC,                              &
-            SHORT_NAME         = 'FSWBANDNA',                         &
-            LONG_NAME          = 'net_surface_downward_shortwave_flux_per_band_in_air_assuming_no_aerosol', &
-            UNITS              = 'W m-2',                             &
-            DIMS               = MAPL_DimsHorzOnly,                   &
-            UNGRIDDED_DIMS     = (/NB_CHOU/),                         &
-            VLOCATION          = MAPL_VLocationNone,                  &
-            RC=STATUS  )
-       VERIFY_(STATUS)
     endif
 
     if (DO_GOSWIM) then
@@ -632,6 +613,17 @@ module GEOS_SurfaceGridCompMod
          DIMS       = MAPL_DimsHorzOnly,                           &
          VLOCATION  = MAPL_VLocationNone,               RC=STATUS  )
     VERIFY_(STATUS)
+
+    if (DO_DATA_ATM4OCN /= 0) then
+       call MAPL_AddImportSpec ( gc,                               &
+         SHORT_NAME = 'DISCHARGE',                                 &
+         LONG_NAME  = 'river_discharge_at_ocean_points',           &
+         UNITS      = 'kg m-2 s-1',                                &
+         RESTART    = MAPL_RestartSkip,                            &
+         DIMS       = MAPL_DimsHorzOnly,                           &
+         VLOCATION  = MAPL_VLocationNone,               RC=STATUS  )
+       VERIFY_(STATUS)
+    end if
 
 !  !EXPORT STATE:
 
@@ -4767,9 +4759,8 @@ module GEOS_SurfaceGridCompMod
     real, pointer, dimension(:,:,:) :: SSSD      => NULL()
     real, pointer, dimension(:,:,:) :: DRBAND    => NULL()
     real, pointer, dimension(:,:,:) :: DFBAND    => NULL()
-    real, pointer, dimension(:,:,:) :: FSWBAND   => NULL()
-    real, pointer, dimension(:,:,:) :: FSWBANDNA => NULL()
     real, pointer, dimension(:,:)   :: DTSDT     => NULL()
+    real, pointer, dimension(:,:)   :: DISCHARGE_IM    => NULL()
 
 ! Pointers to internals
 
@@ -5071,8 +5062,6 @@ module GEOS_SurfaceGridCompMod
     real, pointer, dimension(:,:) :: SSSDTILE      => NULL()
     real, pointer, dimension(:,:) :: DRBANDTILE    => NULL()
     real, pointer, dimension(:,:) :: DFBANDTILE    => NULL()
-    real, pointer, dimension(:,:) :: FSWBANDTILE   => NULL()
-    real, pointer, dimension(:,:) :: FSWBANDNATILE => NULL()
     real, pointer, dimension(:)   :: DTSDTTILE     => NULL()
 
 ! These are tile versions of internals
@@ -5424,12 +5413,10 @@ module GEOS_SurfaceGridCompMod
 
     NUM_AERO_DP = 0
 
-    if((DO_OBIO/=0)  .OR. (DO_CO2SC /= 0)) then
+    if(DO_OBIO/=0) then
        call MAPL_GetPointer(IMPORT, CO2SC     , 'CO2SC'    , RC=STATUS); VERIFY_(STATUS)
        call MAPL_GetPointer(IMPORT, DRBAND    , 'DROBIO'   , RC=STATUS); VERIFY_(STATUS)
        call MAPL_GetPointer(IMPORT, DFBAND    , 'DFOBIO'   , RC=STATUS); VERIFY_(STATUS)
-       call MAPL_GetPointer(IMPORT, FSWBAND   , 'FSWBAND'  , RC=STATUS); VERIFY_(STATUS)
-       call MAPL_GetPointer(IMPORT, FSWBANDNA , 'FSWBANDNA', RC=STATUS); VERIFY_(STATUS)      
     endif
  
     ! Get contents of AERO_DP bundle, put them in an ungridded dimension
@@ -5513,146 +5500,150 @@ module GEOS_SurfaceGridCompMod
 
        end do
 
-       if (N_DUDP /= NUM_DUDP) STOP 'NUM_DUDP mismatch with AERO_DP'
-       if (N_DUSV /= NUM_DUSV) STOP 'NUM_DUSV mismatch with AERO_DP'
-       if (N_DUWT /= NUM_DUWT) STOP 'NUM_DUWT mismatch with AERO_DP'
-       if (N_DUSD /= NUM_DUSD) STOP 'NUM_DUSD mismatch with AERO_DP'
-       if (N_BCDP /= NUM_BCDP) STOP 'NUM_BCDP mismatch with AERO_DP'
-       if (N_BCSV /= NUM_BCSV) STOP 'NUM_BCSV mismatch with AERO_DP'
-       if (N_BCWT /= NUM_BCWT) STOP 'NUM_BCWT mismatch with AERO_DP'
-       if (N_BCSD /= NUM_BCSD) STOP 'NUM_BCSD mismatch with AERO_DP'
-       if (N_OCDP /= NUM_OCDP) STOP 'NUM_OCDP mismatch with AERO_DP'
-       if (N_OCSV /= NUM_OCSV) STOP 'NUM_OCSV mismatch with AERO_DP'
-       if (N_OCWT /= NUM_OCWT) STOP 'NUM_OCWT mismatch with AERO_DP'
-       if (N_OCSD /= NUM_OCSD) STOP 'NUM_OCSD mismatch with AERO_DP'
-       if (N_SUDP /= NUM_SUDP) STOP 'NUM_SUDP mismatch with AERO_DP'
-       if (N_SUSV /= NUM_SUSV) STOP 'NUM_SUSV mismatch with AERO_DP'
-       if (N_SUWT /= NUM_SUWT) STOP 'NUM_SUWT mismatch with AERO_DP'
-       if (N_SUSD /= NUM_SUSD) STOP 'NUM_SUSD mismatch with AERO_DP'
-       if (N_SSDP /= NUM_SSDP) STOP 'NUM_SSDP mismatch with AERO_DP'
-       if (N_SSSV /= NUM_SSSV) STOP 'NUM_SSSV mismatch with AERO_DP'
-       if (N_SSWT /= NUM_SSWT) STOP 'NUM_SSWT mismatch with AERO_DP'
-       if (N_SSSD /= NUM_SSSD) STOP 'NUM_SSSD mismatch with AERO_DP'
+!first part of the if condition checks if a certian group is present in the bundle
+!the second part checks if the number of constituents in the given group is consistent with the AERO_DP
+!       if (MAPL_am_I_root()) print*, 'N_DUDP, NUM_DUDP', N_DUDP, NUM_DUDP
+       if (N_DUDP /= 0 .and. N_DUDP /= NUM_DUDP) STOP 'NUM_DUDP mismatch with AERO_DP'
+       if (N_DUSV /= 0 .and. N_DUSV /= NUM_DUSV) STOP 'NUM_DUSV mismatch with AERO_DP'
+       if (N_DUWT /= 0 .and. N_DUWT /= NUM_DUWT) STOP 'NUM_DUWT mismatch with AERO_DP'
+       if (N_DUSD /= 0 .and. N_DUSD /= NUM_DUSD) STOP 'NUM_DUSD mismatch with AERO_DP'
+       if (N_BCDP /= 0 .and. N_BCDP /= NUM_BCDP) STOP 'NUM_BCDP mismatch with AERO_DP'
+       if (N_BCSV /= 0 .and. N_BCSV /= NUM_BCSV) STOP 'NUM_BCSV mismatch with AERO_DP'
+       if (N_BCWT /= 0 .and. N_BCWT /= NUM_BCWT) STOP 'NUM_BCWT mismatch with AERO_DP'
+       if (N_BCSD /= 0 .and. N_BCSD /= NUM_BCSD) STOP 'NUM_BCSD mismatch with AERO_DP'
+       if (N_OCDP /= 0 .and. N_OCDP /= NUM_OCDP) STOP 'NUM_OCDP mismatch with AERO_DP'
+       if (N_OCSV /= 0 .and. N_OCSV /= NUM_OCSV) STOP 'NUM_OCSV mismatch with AERO_DP'
+       if (N_OCWT /= 0 .and. N_OCWT /= NUM_OCWT) STOP 'NUM_OCWT mismatch with AERO_DP'
+       if (N_OCSD /= 0 .and. N_OCSD /= NUM_OCSD) STOP 'NUM_OCSD mismatch with AERO_DP'
+       if (N_SUDP /= 0 .and. N_SUDP /= NUM_SUDP) STOP 'NUM_SUDP mismatch with AERO_DP'
+       if (N_SUSV /= 0 .and. N_SUSV /= NUM_SUSV) STOP 'NUM_SUSV mismatch with AERO_DP'
+       if (N_SUWT /= 0 .and. N_SUWT /= NUM_SUWT) STOP 'NUM_SUWT mismatch with AERO_DP'
+       if (N_SUSD /= 0 .and. N_SUSD /= NUM_SUSD) STOP 'NUM_SUSD mismatch with AERO_DP'
+       if (N_SSDP /= 0 .and. N_SSDP /= NUM_SSDP) STOP 'NUM_SSDP mismatch with AERO_DP'
+       if (N_SSSV /= 0 .and. N_SSSV /= NUM_SSSV) STOP 'NUM_SSSV mismatch with AERO_DP'
+       if (N_SSWT /= 0 .and. N_SSWT /= NUM_SSWT) STOP 'NUM_SSWT mismatch with AERO_DP'
+       if (N_SSSD /= 0 .and. N_SSSD /= NUM_SSSD) STOP 'NUM_SSSD mismatch with AERO_DP'
 
-       if ( NUM_DUDP /= 0 ) then
+   !---------- Dust ----------
+       if ( N_DUDP /= 0 ) then
            K = N_DUDP1
            allocate( DUDP(IM,JM,NUM_DUDP), STAT=STATUS ); VERIFY_(STATUS)
            DUDP(:,:,1:NUM_DUDP) = AERO_DP(:,:,K:K+NUM_DUDP-1)
        endif
 
-       if ( NUM_DUSV /= 0 ) then
+       if ( N_DUSV /= 0 ) then
            K = N_DUSV1
            allocate( DUSV(IM,JM,NUM_DUSV), STAT=STATUS ); VERIFY_(STATUS)
            DUSV(:,:,1:NUM_DUSV) = AERO_DP(:,:,K:K+NUM_DUSV-1)
        endif
 
-       if ( NUM_DUWT /= 0 ) then
+       if ( N_DUWT /= 0 ) then
            K = N_DUWT1
            allocate( DUWT(IM,JM,NUM_DUWT), STAT=STATUS ); VERIFY_(STATUS)
            DUWT(:,:,1:NUM_DUWT) = AERO_DP(:,:,K:K+NUM_DUWT-1)
        endif
 
-       if ( NUM_DUSD /= 0 ) then
+       if ( N_DUSD /= 0 ) then
            K = N_DUSD1
            allocate( DUSD(IM,JM,NUM_DUSD), STAT=STATUS ); VERIFY_(STATUS)
            DUSD(:,:,1:NUM_DUSD) = AERO_DP(:,:,K:K+NUM_DUSD-1)
        endif
 
    !---------- Black Carbon ----------
-       if ( NUM_BCDP /= 0 ) then
+       if ( N_BCDP /= 0 ) then
            K = N_BCDP1
            allocate( BCDP(IM,JM,NUM_BCDP), STAT=STATUS ); VERIFY_(STATUS)
            BCDP(:,:,1:NUM_BCDP) = AERO_DP(:,:,K:K+NUM_BCDP-1)
        endif
 
-       if ( NUM_BCSV /= 0 ) then
+       if ( N_BCSV /= 0 ) then
            K = N_BCSV1
            allocate( BCSV(IM,JM,NUM_BCSV), STAT=STATUS ); VERIFY_(STATUS)
            BCSV(:,:,1:NUM_BCSV) = AERO_DP(:,:,K:K+NUM_BCSV-1)
        endif
 
-       if ( NUM_BCWT /= 0 ) then
+       if ( N_BCWT /= 0 ) then
            K = N_BCWT1
            allocate( BCWT(IM,JM,NUM_BCWT), STAT=STATUS ); VERIFY_(STATUS)
            BCWT(:,:,1:NUM_BCWT) = AERO_DP(:,:,K:K+NUM_BCWT-1)
        endif
 
-       if ( NUM_BCSD /= 0 ) then
+       if ( N_BCSD /= 0 ) then
            K = N_BCSD1
            allocate( BCSD(IM,JM,NUM_BCSD), STAT=STATUS ); VERIFY_(STATUS)
            BCSD(:,:,1:NUM_BCSD) = AERO_DP(:,:,K:K+NUM_BCSD-1)
        endif
 
    !---------- Organic Carbon ----------
-       if ( NUM_OCDP /= 0 ) then
+       if ( N_OCDP /= 0 ) then
            K = N_OCDP1
            allocate( OCDP(IM,JM,NUM_OCDP), STAT=STATUS ); VERIFY_(STATUS)
            OCDP(:,:,1:NUM_OCDP) = AERO_DP(:,:,K:K+NUM_OCDP-1)
        endif
 
-       if ( NUM_OCSV /= 0 ) then
+       if ( N_OCSV /= 0 ) then
            K = N_OCSV1
            allocate( OCSV(IM,JM,NUM_OCSV), STAT=STATUS ); VERIFY_(STATUS)
            OCSV(:,:,1:NUM_OCSV) = AERO_DP(:,:,K:K+NUM_OCSV-1)
        endif
 
-       if ( NUM_OCWT /= 0 ) then
+       if ( N_OCWT /= 0 ) then
            K = N_OCWT1
            allocate( OCWT(IM,JM,NUM_OCWT), STAT=STATUS ); VERIFY_(STATUS)
            OCWT(:,:,1:NUM_OCWT) = AERO_DP(:,:,K:K+NUM_OCWT-1)
        endif
 
-       if ( NUM_OCSD /= 0 ) then
+       if ( N_OCSD /= 0 ) then
            K = N_OCSD1
            allocate( OCSD(IM,JM,NUM_OCSD), STAT=STATUS ); VERIFY_(STATUS)
            OCSD(:,:,1:NUM_OCSD) = AERO_DP(:,:,K:K+NUM_OCSD-1)
        endif
 
    !---------- Sulfate (aerosol component only; SO4) ----------
-       if ( NUM_SUDP /= 0 ) then
+       if ( N_SUDP /= 0 ) then
            K = N_SUDP1
            allocate( SUDP(IM,JM,NUM_SUDP), STAT=STATUS ); VERIFY_(STATUS)
            SUDP(:,:,1:NUM_SUDP) = AERO_DP(:,:,K:K+NUM_SUDP-1)
        endif
 
-       if ( NUM_SUSV /= 0 ) then
+       if ( N_SUSV /= 0 ) then
            K = N_SUSV1
            allocate( SUSV(IM,JM,NUM_SUSV), STAT=STATUS ); VERIFY_(STATUS)
            SUSV(:,:,1:NUM_SUSV) = AERO_DP(:,:,K:K+NUM_SUSV-1)
        endif
 
-       if ( NUM_SUWT /= 0 ) then
+       if ( N_SUWT /= 0 ) then
            K = N_SUWT1
            allocate( SUWT(IM,JM,NUM_SUWT), STAT=STATUS ); VERIFY_(STATUS)
            SUWT(:,:,1:NUM_SUWT) = AERO_DP(:,:,K:K+NUM_SUWT-1)
        endif
 
-       if ( NUM_SUSD /= 0 ) then
+       if ( N_SUSD /= 0 ) then
            K = N_SUSD1
            allocate( SUSD(IM,JM,NUM_SUSD), STAT=STATUS ); VERIFY_(STATUS)
            SUSD(:,:,1:NUM_SUSD) = AERO_DP(:,:,K:K+NUM_SUSD-1)
        endif
 
    !---------- Sea Salt ----------
-       if ( NUM_SSDP /= 0 ) then
+       if ( N_SSDP /= 0 ) then
            K = N_SSDP1
            allocate( SSDP(IM,JM,NUM_SSDP), STAT=STATUS ); VERIFY_(STATUS)
            SSDP(:,:,1:NUM_SSDP) = AERO_DP(:,:,K:K+NUM_SSDP-1)
        endif
 
-       if ( NUM_SSSV /= 0 ) then
+       if ( N_SSSV /= 0 ) then
            K = N_SSSV1
            allocate( SSSV(IM,JM,NUM_SSSV), STAT=STATUS ); VERIFY_(STATUS)
            SSSV(:,:,1:NUM_SSSV) = AERO_DP(:,:,K:K+NUM_SSSV-1)
        endif
 
-       if ( NUM_SSWT /= 0 ) then
+       if ( N_SSWT /= 0 ) then
            K = N_SSWT1
            allocate( SSWT(IM,JM,NUM_SSWT), STAT=STATUS ); VERIFY_(STATUS)
            SSWT(:,:,1:NUM_SSWT) = AERO_DP(:,:,K:K+NUM_SSWT-1)
        endif
 
-       if ( NUM_SSSD /= 0 ) then
+       if ( N_SSSD /= 0 ) then
            K = N_SSSD1
            allocate( SSSD(IM,JM,NUM_SSSD), STAT=STATUS ); VERIFY_(STATUS)
            SSSD(:,:,1:NUM_SSSD) = AERO_DP(:,:,K:K+NUM_SSSD-1)
@@ -6314,23 +6305,17 @@ module GEOS_SurfaceGridCompMod
     allocate(SSSDTILE(NT,NUM_SSSD), STAT=STATUS)
     VERIFY_(STATUS)
 
-    if((DO_OBIO/=0) .OR. (DO_CO2SC /= 0)) then
+    if(DO_OBIO/=0) then
        allocate(CO2SCTILE(NT), STAT=STATUS)
        VERIFY_(STATUS)
        allocate(DRBANDTILE(  NT,NB_OBIO), STAT=STATUS)
        VERIFY_(STATUS)
        allocate(DFBANDTILE(  NT,NB_OBIO), STAT=STATUS)
        VERIFY_(STATUS)
-       allocate(FSWBANDTILE(  NT,NB_CHOU), STAT=STATUS)
-       VERIFY_(STATUS)
-       allocate(FSWBANDNATILE(NT,NB_CHOU), STAT=STATUS)
-       VERIFY_(STATUS)
     else
        nullify(  CO2SCTILE         )
        nullify(  DRBANDTILE        )
        nullify(  DFBANDTILE        )
-       nullify(  FSWBANDTILE       )
-       nullify(FSWBANDNATILE       )
     endif
 
     allocate(  DTSDTTILE(NT), STAT=STATUS)
@@ -6363,69 +6348,128 @@ module GEOS_SurfaceGridCompMod
     call MAPL_LocStreamTransform( LOCSTREAM, DTSDTTILE, DTSDT,   RC=STATUS); VERIFY_(STATUS)
 
     if (DO_GOSWIM) then
-       do K = 1, NUM_DUDP
-          call MAPL_LocStreamTransform(LOCSTREAM, DUDPTILE(:,K), DUDP(:,:,K), RC=STATUS); VERIFY_(STATUS)
-       end do
-       do K = 1, NUM_DUSV
-          call MAPL_LocStreamTransform(LOCSTREAM, DUSVTILE(:,K), DUSV(:,:,K), RC=STATUS); VERIFY_(STATUS)
-       end do
-       do K = 1, NUM_DUWT
-          call MAPL_LocStreamTransform(LOCSTREAM, DUWTTILE(:,K), DUWT(:,:,K), RC=STATUS); VERIFY_(STATUS)
-       end do
-       do K = 1, NUM_DUSD
-          call MAPL_LocStreamTransform(LOCSTREAM, DUSDTILE(:,K), DUSD(:,:,K), RC=STATUS); VERIFY_(STATUS)
-       end do
-       do K = 1, NUM_BCDP
-          call MAPL_LocStreamTransform(LOCSTREAM, BCDPTILE(:,K), BCDP(:,:,K), RC=STATUS); VERIFY_(STATUS)
-       end do
-       do K = 1, NUM_BCSV
-          call MAPL_LocStreamTransform(LOCSTREAM, BCSVTILE(:,K), BCSV(:,:,K), RC=STATUS); VERIFY_(STATUS)
-       end do
-       do K = 1, NUM_BCWT
-          call MAPL_LocStreamTransform(LOCSTREAM, BCWTTILE(:,K), BCWT(:,:,K), RC=STATUS); VERIFY_(STATUS)
-       end do
-       do K = 1, NUM_BCSD
-          call MAPL_LocStreamTransform(LOCSTREAM, BCSDTILE(:,K), BCSD(:,:,K), RC=STATUS); VERIFY_(STATUS)
-       end do
-       do K = 1, NUM_OCDP
-          call MAPL_LocStreamTransform(LOCSTREAM, OCDPTILE(:,K), OCDP(:,:,K), RC=STATUS); VERIFY_(STATUS)
-       end do
-       do K = 1, NUM_OCSV
-          call MAPL_LocStreamTransform(LOCSTREAM, OCSVTILE(:,K), OCSV(:,:,K), RC=STATUS); VERIFY_(STATUS)
-       end do
-       do K = 1, NUM_OCWT
-          call MAPL_LocStreamTransform(LOCSTREAM, OCWTTILE(:,K), OCWT(:,:,K), RC=STATUS); VERIFY_(STATUS)
-       end do
-       do K = 1, NUM_OCSD
-          call MAPL_LocStreamTransform(LOCSTREAM, OCSDTILE(:,K), OCSD(:,:,K), RC=STATUS); VERIFY_(STATUS)
-       end do
-       do K = 1, NUM_SUDP
-          call MAPL_LocStreamTransform(LOCSTREAM, SUDPTILE(:,K), SUDP(:,:,K), RC=STATUS); VERIFY_(STATUS)
-       end do
-       do K = 1, NUM_SUSV
-          call MAPL_LocStreamTransform(LOCSTREAM, SUSVTILE(:,K), SUSV(:,:,K), RC=STATUS); VERIFY_(STATUS)
-       end do
-       do K = 1, NUM_SUWT
-          call MAPL_LocStreamTransform(LOCSTREAM, SUWTTILE(:,K), SUWT(:,:,K), RC=STATUS); VERIFY_(STATUS)
-       end do
-       do K = 1, NUM_SUSD
-          call MAPL_LocStreamTransform(LOCSTREAM, SUSDTILE(:,K), SUSD(:,:,K), RC=STATUS); VERIFY_(STATUS)
-       end do
-       do K = 1, NUM_SSDP
-          call MAPL_LocStreamTransform(LOCSTREAM, SSDPTILE(:,K), SSDP(:,:,K), RC=STATUS); VERIFY_(STATUS)
-       end do
-       do K = 1, NUM_SSSV
-          call MAPL_LocStreamTransform(LOCSTREAM, SSSVTILE(:,K), SSSV(:,:,K), RC=STATUS); VERIFY_(STATUS)
-       end do
-       do K = 1, NUM_SSWT
-          call MAPL_LocStreamTransform(LOCSTREAM, SSWTTILE(:,K), SSWT(:,:,K), RC=STATUS); VERIFY_(STATUS)
-       end do
-       do K = 1, NUM_SSSD
-          call MAPL_LocStreamTransform(LOCSTREAM, SSSDTILE(:,K), SSSD(:,:,K), RC=STATUS); VERIFY_(STATUS)
-       end do
+       if (N_DUDP /= 0) then
+         do K = 1, NUM_DUDP
+            call MAPL_LocStreamTransform(LOCSTREAM, DUDPTILE(:,K), DUDP(:,:,K), RC=STATUS); VERIFY_(STATUS)
+         end do
+       endif
+
+       if (N_DUSV /= 0) then
+         do K = 1, NUM_DUSV
+            call MAPL_LocStreamTransform(LOCSTREAM, DUSVTILE(:,K), DUSV(:,:,K), RC=STATUS); VERIFY_(STATUS)
+         end do
+       endif
+
+       if (N_DUWT /= 0) then
+         do K = 1, NUM_DUWT
+            call MAPL_LocStreamTransform(LOCSTREAM, DUWTTILE(:,K), DUWT(:,:,K), RC=STATUS); VERIFY_(STATUS)
+         end do
+       endif
+
+       if (N_DUSD /= 0) then
+         do K = 1, NUM_DUSD
+           call MAPL_LocStreamTransform(LOCSTREAM, DUSDTILE(:,K), DUSD(:,:,K), RC=STATUS); VERIFY_(STATUS)
+         end do
+       endif
+
+       if (N_BCDP /= 0) then
+         do K = 1, NUM_BCDP
+            call MAPL_LocStreamTransform(LOCSTREAM, BCDPTILE(:,K), BCDP(:,:,K), RC=STATUS); VERIFY_(STATUS)
+         end do
+       endif
+
+       if (N_BCSV /= 0) then
+         do K = 1, NUM_BCSV
+            call MAPL_LocStreamTransform(LOCSTREAM, BCSVTILE(:,K), BCSV(:,:,K), RC=STATUS); VERIFY_(STATUS)
+         end do
+       endif
+
+       if (N_BCWT /= 0) then
+         do K = 1, NUM_BCWT
+            call MAPL_LocStreamTransform(LOCSTREAM, BCWTTILE(:,K), BCWT(:,:,K), RC=STATUS); VERIFY_(STATUS)
+         end do
+       endif
+
+       if (N_BCSD /= 0) then
+         do K = 1, NUM_BCSD
+            call MAPL_LocStreamTransform(LOCSTREAM, BCSDTILE(:,K), BCSD(:,:,K), RC=STATUS); VERIFY_(STATUS)
+         end do
+       endif
+
+       if (N_OCDP /= 0) then
+         do K = 1, NUM_OCDP
+            call MAPL_LocStreamTransform(LOCSTREAM, OCDPTILE(:,K), OCDP(:,:,K), RC=STATUS); VERIFY_(STATUS)
+         end do
+       endif
+
+       if (N_OCSV /= 0) then
+         do K = 1, NUM_OCSV
+            call MAPL_LocStreamTransform(LOCSTREAM, OCSVTILE(:,K), OCSV(:,:,K), RC=STATUS); VERIFY_(STATUS)
+         end do
+       endif
+
+       if (N_OCWT /= 0) then
+         do K = 1, NUM_OCWT
+            call MAPL_LocStreamTransform(LOCSTREAM, OCWTTILE(:,K), OCWT(:,:,K), RC=STATUS); VERIFY_(STATUS)
+         end do
+       endif
+
+       if (N_OCSD /= 0) then
+         do K = 1, NUM_OCSD
+            call MAPL_LocStreamTransform(LOCSTREAM, OCSDTILE(:,K), OCSD(:,:,K), RC=STATUS); VERIFY_(STATUS)
+         end do
+       endif
+
+       if (N_SUDP /= 0) then
+         do K = 1, NUM_SUDP
+            call MAPL_LocStreamTransform(LOCSTREAM, SUDPTILE(:,K), SUDP(:,:,K), RC=STATUS); VERIFY_(STATUS)
+         end do
+       endif
+
+       if (N_SUSV /= 0) then
+         do K = 1, NUM_SUSV
+            call MAPL_LocStreamTransform(LOCSTREAM, SUSVTILE(:,K), SUSV(:,:,K), RC=STATUS); VERIFY_(STATUS)
+         end do
+       endif
+
+       if (N_SUWT /= 0) then
+         do K = 1, NUM_SUWT
+            call MAPL_LocStreamTransform(LOCSTREAM, SUWTTILE(:,K), SUWT(:,:,K), RC=STATUS); VERIFY_(STATUS)
+         end do
+       endif
+
+       if (N_SUSD /= 0) then
+         do K = 1, NUM_SUSD
+            call MAPL_LocStreamTransform(LOCSTREAM, SUSDTILE(:,K), SUSD(:,:,K), RC=STATUS); VERIFY_(STATUS)
+         end do
+       endif
+
+       if (N_SSDP /= 0) then
+         do K = 1, NUM_SSDP
+            call MAPL_LocStreamTransform(LOCSTREAM, SSDPTILE(:,K), SSDP(:,:,K), RC=STATUS); VERIFY_(STATUS)
+         end do
+       endif
+
+       if (N_SSSV /= 0) then
+         do K = 1, NUM_SSSV
+            call MAPL_LocStreamTransform(LOCSTREAM, SSSVTILE(:,K), SSSV(:,:,K), RC=STATUS); VERIFY_(STATUS)
+         end do
+       endif
+
+       if (N_SSWT /= 0) then
+         do K = 1, NUM_SSWT
+            call MAPL_LocStreamTransform(LOCSTREAM, SSWTTILE(:,K), SSWT(:,:,K), RC=STATUS); VERIFY_(STATUS)
+         end do
+       endif
+
+       if (N_SSSD /= 0) then
+         do K = 1, NUM_SSSD
+            call MAPL_LocStreamTransform(LOCSTREAM, SSSDTILE(:,K), SSSD(:,:,K), RC=STATUS); VERIFY_(STATUS)
+         end do
+       endif
     end if
 
-    if((DO_OBIO/=0) .OR. (DO_CO2SC /= 0)) then
+    if(DO_OBIO/=0) then
 
        call MAPL_LocStreamTransform(LOCSTREAM, CO2SCTILE, CO2SC,    RC=STATUS); VERIFY_(STATUS)
 
@@ -6436,12 +6480,6 @@ module GEOS_SurfaceGridCompMod
           VERIFY_(STATUS)
        end do
 
-       do K = 1, NB_CHOU   
-          call MAPL_LocStreamTransform(LOCSTREAM, FSWBANDTILE(  :,K), FSWBAND(  :,:,K), RC=STATUS)
-          VERIFY_(STATUS)
-          call MAPL_LocStreamTransform(LOCSTREAM, FSWBANDNATILE(:,K), FSWBANDNA(:,:,K), RC=STATUS)
-          VERIFY_(STATUS)
-       end do
     endif
 
     ! option to interpolate effective wind vectors such that
@@ -6586,7 +6624,7 @@ module GEOS_SurfaceGridCompMod
 
 !ALT    call MKTILE(RUNOFF  ,RUNOFFTILE  ,NT,RC=STATUS); VERIFY_(STATUS)
 !ALT    call MKTILE(DISCHARGE,DISCHARGETILE,NT,RC=STATUS); VERIFY_(STATUS)
-    if (associated(SURF_INTERNAL_STATE%LocalRoutings)) then ! routing file exists
+    if (associated(SURF_INTERNAL_STATE%LocalRoutings) .or. DO_DATA_ATM4OCN /=0) then !routing file exists or we run DataAtm 
        allocate(DISCHARGETILE(NT),stat=STATUS); VERIFY_(STATUS)
        DISCHARGETILE=MAPL_Undef
        allocate(RUNOFFTILE(NT),stat=STATUS); VERIFY_(STATUS)
@@ -6702,9 +6740,19 @@ module GEOS_SurfaceGridCompMod
 
        ! Create discharge at exit tiles by routing runoff
 
-       call RouteRunoff(SURF_INTERNAL_STATE%LocalRoutings, RUNOFFTILE, DISCHARGETILE, RC=STATUS)
-       VERIFY_(STATUS)
-       
+       if (DO_DATA_ATM4OCN /= 0) then
+          call MAPL_GetPointer(IMPORT  , DISCHARGE_IM, 'DISCHARGE',  RC=STATUS); VERIFY_(STATUS)
+          call MAPL_LocStreamTransform( LOCSTREAM,  RUNOFFTILE, DISCHARGE_IM, RC=STATUS)
+          VERIFY_(STATUS)
+          ! it seems redundant to fill both DISCHARGETILE and RUNOFFTILE
+          ! but this is done in case we need to output RUNOFF
+          ! and not to change the existing code too much
+          DISCHARGETILE = RUNOFFTILE 
+       else
+          call RouteRunoff(SURF_INTERNAL_STATE%LocalRoutings, RUNOFFTILE, DISCHARGETILE, RC=STATUS)
+          VERIFY_(STATUS)
+       endif       
+
        !-------------------------------------------------------------------------------------
        !  Special treatment for doing ocean-coupled atmospheric replays to an analysis
        !  that used "corrected" precips.
@@ -7576,6 +7624,19 @@ module GEOS_SurfaceGridCompMod
        if(associated( QSTAR)) QSTAR = (EVAP       + DEVAP*DQS)/(RHOS*FAC)
     end if
 
+    if (DO_DATA_ATM4OCN /= 0) then
+       ! dataAtm operates only on "saltwater" tiles. 
+       ! we need to handle grid boxes withot any ocean
+       ! and avoid division by 0
+       where (CN == MAPL_Undef)
+          CM = 0.01
+          CT = 0.01
+          CQ = 0.01
+          CN = 0.01
+          D0 = 0.0
+       end where
+    end if
+
     FAC = sqrt(CN)/MAPL_KARMAN
     Z0  = max((DZ-D0),10.)/(exp(1.0/FAC)-1.0)
 
@@ -7796,8 +7857,6 @@ module GEOS_SurfaceGridCompMod
     if(associated(  SSSDTILE   )) deallocate(  SSSDTILE   )
     if(associated(  DRBANDTILE )) deallocate(  DRBANDTILE )
     if(associated(  DFBANDTILE )) deallocate(  DFBANDTILE )
-    if(associated(  FSWBANDTILE)) deallocate(  FSWBANDTILE)
-    if(associated(FSWBANDNATILE)) deallocate(FSWBANDNATILE)
 
     if(associated(     DTSDTTILE)) deallocate(      DTSDTTILE)
 
@@ -8106,12 +8165,10 @@ module GEOS_SurfaceGridCompMod
          call FILLIN_TILE(GIM(type), 'DISCHARGE',  DISCHARGETILE,  XFORM, RC=STATUS); VERIFY_(STATUS)
       end if
 
-      if((DO_OBIO/=0) .OR. (DO_CO2SC /= 0)) then 
+      if(DO_OBIO/=0) then 
          call FILLIN_TILE(GIM(type), 'CO2SC',     CO2SCTILE,     XFORM, RC=STATUS); VERIFY_(STATUS)
          call FILLIN_TILE(GIM(type), 'DRBAND',    DRBANDTILE,    XFORM, RC=STATUS); VERIFY_(STATUS)
          call FILLIN_TILE(GIM(type), 'DFBAND',    DFBANDTILE,    XFORM, RC=STATUS); VERIFY_(STATUS)
-         call FILLIN_TILE(GIM(type), 'FSWBAND',   FSWBANDTILE,   XFORM, RC=STATUS); VERIFY_(STATUS)
-         call FILLIN_TILE(GIM(type), 'FSWBANDNA', FSWBANDNATILE, XFORM, RC=STATUS); VERIFY_(STATUS)
       endif
       call FILLIN_TILE(GIM(type), 'ZTH',    ZTHTILE, XFORM, RC=STATUS); VERIFY_(STATUS)
 

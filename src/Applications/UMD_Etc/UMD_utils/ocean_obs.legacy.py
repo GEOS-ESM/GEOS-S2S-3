@@ -21,7 +21,6 @@
 # *                         SMOSSUB (SUbset Level 2)
 # *                         SMOSL3 (Level 3)
 # *                         AQUARIUS (Level 2)
-# *                         AQUARIUS V5 RIM5 V1 (Level 2)
 # *                         SMAP (Level 2)
 # *                         SMAPV4.1 (Level 2)
 # *                         SMAPV4.2 (Level 2)
@@ -61,35 +60,30 @@
 #
 # /////////////////////////////////////////////////////////////////////////
 # Date: Dec 2015
-#from memory_profiler import profile
-import xarray as xr
+
+import matplotlib
+matplotlib.use('agg')
 from netCDF4 import Dataset
 import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib.cm as cm
+import cartopy
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import sys
-from datetime import datetime, timedelta
+import datetime
 import os
-import subprocess
-import time
-import io
-import warnings
-warnings.simplefilter(action='ignore', category=FutureWarning)
-
-#SLES VERSION
-#SLN = os.popen("cat /etc/os-release | grep VERSION_ID | cut -d'=' -f2 | cut -d'.' -f1 | tr -d '\"'").read().strip()
+import ocean_obs_utils
+from ocean_obs_utils import cs2_reader
+cartopy.config['pre_existing_data_dir'] = '/discover/nobackup/projects/gmao/SIteam/CartopyDownloads'
 
 #   test of 50 layers Argo data for 2012 only
 OBSDIR='/discover/nobackup/projects/gmao/ssd/g5odas/production/GEOS5odas-5.00/RC/OBS/'
 LEV50INSITUOBSDIR='/discover/nobackup/projects/gmao/m2oasf/aogcm/g5odas/obs/assim/'
-ERICLEV50INSITUOBSDIR='/gpfsm/dnb78s2/projects/p26/ehackert/ODAS/OBS/V3_WITHHOLD_BY_WMO/'
+ERICLEV50INSITUOBSDIR='/discover/nobackup/projects/gmao/ssd/decadal/ehackert/obs/assim/'
 ADTOBSDIR='/discover/nobackup/projects/gmao/m2oasf/aogcm/g5odas/obs/assim/AVISO/V3/'
 SatSSSOBSDIR='/discover/nobackup/projects/gmao/m2oasf/aogcm/g5odas/obs/assim/'
-SatSSSSMOSOBSDIR='/discover/nobackup/lren1/pre_proc/NRT/SMOS/L2_SMOS_SSS_7.0/'
 SYNOBSDIR='/discover/nobackup/projects/gmao/m2oasf/aogcm/g5odas/obs/assim/SYN_7.0/'
-WOA18='/discover/nobackup/lren1/pre_proc/NRT/WOA/'
 
 #   artificially ramp up smos error
 smosrampuperr=1.
@@ -111,6 +105,7 @@ prefix_dict = {
 # SSH: 5 cm
 
 T_prof_sigo = 0.25   # deg C
+#S_prof_sigo = 0.18  # psu
 S_prof_sigo = 0.025  # psu
 
 xsigo_s    = 1.0 #1.0
@@ -125,6 +120,7 @@ try:
     EXP_NDAYS = float(os.environ['ODAS_NDAYS'])
 except:
     EXP_NDAYS = 0.125 # Default value for the observation window [yyyymmdd_hh-EXP_NDAY
+    #EXP_NDAYS = 20.125 # Default value for the observation window [yyyymmdd_hh-EXP_NDAY
 
 logit_transform = False
 use_obs_old = False
@@ -143,20 +139,20 @@ try:
     SCRDIR = os.environ['SCRDIR']
     EXPDIR = os.environ['EXPDIR']
     EXPID = os.environ['EXPID']
+    #logit_transform = os.environ['ODAS_logit_transform']
+    #if (logit_transform=='True'):
+    #    logit_transform = True
+    #else:
+    #    logit_transform = False
 except:
     print('Environement variables not set, reverting to default:')
+
 
 print('NDAYS=',EXP_NDAYS)
 print('T_prof_sigo=',T_prof_sigo)
 print('S_prof_sigo=',S_prof_sigo)
 print('ADT_sigo=',ADT_sigo)
 print('SSS_sigo=',SSS_sigo)
-
-TSE_TMPDIR = os.environ['TSE_TMPDIR']
-TMPDIR = os.environ['LOCAL_TMPDIR']
-BOMB_ON_SIGO = os.environ['BOMB_ON_SIGO']
-print(f'TSE save: {TSE_TMPDIR}')
-print(f'Node save: {TMPDIR}')
 
 # Obs id as defined in the UMD_oletkf
 obsid_dict = {
@@ -173,149 +169,427 @@ obsid_dict = {
 def inv_logit(p):
     return np.exp(p) / (1 + np.exp(p))
 
-def da_window(yyyy, mm, dd, hh, NDAYS):
-    date = datetime.strptime(f'{yyyy}{mm}{dd}{hh}', '%Y%m%d%H')
-    sd = int((date - timedelta(days=NDAYS)).strftime('%Y%m%d%H'))
-    ed = int((date + timedelta(days=NDAYS)).strftime('%Y%m%d%H'))
-    return sd,ed
+def da_window(yyyy, mm, dd, hh, NDAYS, OBSDATE, QCPRF):
+    """
+    This function exctract the observations that are in [yyyymmdd_hh-NDAYS, yyyymmdd_hh+NDAYS]
+    Args:
+        yyyy (int)     : 4 digit year
+          mm (int)     : 2 digit month
+          dd (int)     : 2 digit day
+          hh (int)     : 2 digit hour
+          NDAYS (float): Used to define the size of the assimilation window centered at yyyymmddhh [yyyymmddhh-NDAYS, yyyymmddhh+NDAYS].
+          OBSDATE (int): Observation date in a YYYYMMDDHH format
+          QCPRF (int)  : Quality control flag 1=good, 0=bad
 
-def flatten(da, mask=None):
-    if mask is not None:
-        da = da.where(mask)
-    if 'N_LEVS' in da.dims:
-        da = da.stack(flatten=('N_PROF', 'N_LEVS'))
-    else: 
-        da = da.rename({'N_PROF':'flatten'})
-    return da.dropna(dim = 'flatten').values
+    Returns:
+        Array of indices that corresponds to the observations that are within the window and a QCPRF flag of 1
+    """
 
-def standard_obs_reader(fname, vartype, yyyy, mm, dd, hh, EXP_NDAYS, TSE_TMPDIR):
-    print('\nIN standard_obs_reader for',vartype)
-    print(fname)
-    intermediate = f'{TSE_TMPDIR}/extracted_{yyyy}{mm}{dd}{hh}_{os.path.basename(fname)}.nc'
-    if os.path.isfile(intermediate):
-        print(f'Intermediate file {intermediate} found, loading obs')
-    else:
-        keep = ['N_LEVS', 'DEPTH', vartype, 'QC_LEV', 'QC_PRF', 'LON', 'LAT', 'DATE_TIME', 'OBS_ERROR', 'INST_ID']
-        obs = xr.open_dataset(fname, chunks='auto') # solution to memory issue in Milan
-        obs = obs[keep]
-        print('obs ini shape:', obs[vartype].shape)
+    #Lower bound for obs time
+    obs_date_min=datetime.datetime(int(yyyy), int(mm), int(dd), int(hh))-datetime.timedelta(days=NDAYS)
+    yyyyo=str(obs_date_min.year)
+    mmo=str(obs_date_min.month).zfill(2)
+    ddo=str(obs_date_min.day).zfill(2)
+    hho=str(obs_date_min.hour).zfill(2)
 
-        # Hammer solution to memory issue in Milan:
-        ################################################
-        max_mem = 30000000
-        print(f'Chunk sizes: {[ (s, obs[vartype].chunksizes.get(s)[0]) for s in obs[vartype].chunksizes]}')
-        chunk_in_memory = np.prod([v[0] for v in obs[vartype].chunksizes.values()])
-        if chunk_in_memory > max_mem:
-            print('reducing auto chunks')
-            if obs.dims['N_LEVS']>1:
-                nlev_chunk = min(50, obs.dims['N_LEVS'])
-                npro_chunk = int(max_mem/nlev_chunk)
-                obs = obs.chunk({'N_PROF': npro_chunk, 'N_LEVS': nlev_chunk})
-            else:
-                obs = obs.chunk({'N_PROF':max_mem})
-            print("New chunks:", [ (s, obs[vartype].chunksizes.get(s)[0]) for s in obs[vartype].chunksizes])
-        ################################################
-        if obs.dims['N_LEVS']> 50:
-            obs = obs.isel(N_LEVS=slice(0, 50))
-            print('obs reduced n_levels shape:', obs.DEPTH.shape)
-        else:
-            obs = obs.squeeze()
-        sd, ed = da_window(yyyy, mm, dd, hh, EXP_NDAYS)
-        print('time window:', (sd,ed))
-        time_mask = (obs.DATE_TIME>=sd) & (obs.DATE_TIME <= ed)
-        time_mask = time_mask.compute()
-        obs = obs.where(time_mask, drop=True)
-        print('obs reduced time window shape:', obs[vartype].shape)
-        qc_mask = (obs.QC_PRF == 1).compute()
-        obs = obs.where(qc_mask, drop=True)
-        print('obs reduced QCPRF shape:', obs[vartype].shape)
-        if obs[vartype].shape[0] == 0:
-            return xr.zeros_like(obs)
-        intermediate = f'{TSE_TMPDIR}/extracted_{yyyy}{mm}{dd}{hh}_{os.path.basename(fname)}.nc'
-        print(f'Computing intermediate file: {intermediate}')
-        obs = obs.compute()
-        obs.to_netcdf(intermediate)
-        del obs
-    obs = xr.open_dataset(intermediate)
-    return obs
+    #Upper bound for obs time
+    obs_date_max=datetime.datetime(int(yyyy), int(mm), int(dd), int(hh))+datetime.timedelta(days=NDAYS)
+    yyyye=str(obs_date_max.year)
+    mme=str(obs_date_max.month).zfill(2)
+    dde=str(obs_date_max.day).zfill(2)
+    hhe=str(obs_date_max.hour).zfill(2)
 
-def M2_sst_reader(yyyy, mm, dd, hh, path2scratch):
-    vartype='sst'
-    print('\nIN M2_sst_reader')
-    expid = path2scratch.split('/')[-2]
+    try:
+        return list(np.squeeze(np.where( (OBSDATE>=int(yyyyo+mmo+ddo+hho)) & (OBSDATE<=int(yyyye+mme+dde+hhe))  & (QCPRF==1) )))
+    except:
+        return []
+
+def readnc(fname, varname):
+    ncfile=Dataset(fname)
+    VAR=np.squeeze(ncfile.variables[varname][:])
+#   print('in readnc ',VAR)
+    ncfile.close()
+    #VAR[np.abs(VAR)>999.9]=0.0
+    return VAR
+
+def standard_obs_reader(fname, vartype):
+    print('IN standard_obs_reader',fname)
+    ncfile    = Dataset(fname)
+    ncfile.set_auto_mask(False)
+    N_LEVS    = len(ncfile.dimensions['N_LEVS'])
+    N_LEVS    = min(N_LEVS, 50)                               # Assumes profiles have been superobed to 50 levels
+    DEPTH     = ncfile.variables['DEPTH'][:]
+    VAR       = ncfile.variables[vartype][:]
+    QC_LEV    = ncfile.variables['QC_LEV'][:]
+    QC_PRF    = ncfile.variables['QC_PRF'][:]
+    LON       = ncfile.variables['LON'][:]
+    LAT       = ncfile.variables['LAT'][:]
+    DATE_TIME = ncfile.variables['DATE_TIME'][:]
+    OBS_ERROR = ncfile.variables['OBS_ERROR'][:]
+    INST_ID   = ncfile.variables['INST_ID'][:]
+    ncfile.close()
+
+    print(np.shape(LON), np.shape(VAR))
+
+    return N_LEVS, DEPTH, VAR, QC_LEV, QC_PRF, LON, LAT, DATE_TIME, OBS_ERROR, INST_ID
+
+def l2_smossub_reader(fname, vartype,platform='SMOSSUB'):
+    print('IN l2_smossub_reader')
+    ncfile    = Dataset(fname)
+    ncfile.set_auto_mask(False)
+    N_LEVS    = len(ncfile.dimensions['N_LEVS'])
+    N_LEVS    = min(N_LEVS, 50)                               # Assumes profiles have been superobed to 50 levels
+    DEPTH     = ncfile.variables['DEPTH'][:]
+    VAR       = ncfile.variables[vartype][:]
+    QC_LEV    = ncfile.variables['QC_LEV'][:]
+    QC_PRF    = ncfile.variables['QC_PRF'][:]
+    LON       = ncfile.variables['LON'][:]
+    LAT       = ncfile.variables['LAT'][:]
+    DATE_TIME = ncfile.variables['DATE_TIME'][:]
+    OBS_ERROR = ncfile.variables['OBS_ERROR'][:]
+    INST_ID   = ncfile.variables['INST_ID'][:]
+    ncfile.close()
+
+    print(np.shape(LON), np.shape(VAR))
+
+    return N_LEVS, DEPTH, VAR, QC_LEV, QC_PRF, LON, LAT, DATE_TIME, OBS_ERROR, INST_ID
+
+def M2_sst_reader(yyyy, mm, dd, hh, path2scratch, path2expdir, path2expid):
+
+    # Reads MERRA-2 sst from path_to_scratch
+    LON = []
+    LAT = []
+    VAR = []
+    DATE_TIME = []
+    INST_ID = []
+    QC_FLAG = []
+    QC_PRF = []
+    NPTS = []
+    DEPTH = []
+    QC_LEV = []
+    OBS_ERROR = []
+    DATA_ID = []
+    N_PROF = []
+
+
     fname=path2scratch+'/sst_'+yyyy+mm+dd+'_'+hh+'00z.nc'
     fname2=path2scratch+'/AICE_'+yyyy+mm+dd+'_'+hh+'00z.nc'
-    fname3=path2scratch+'/'+expid+'.ice_inst_6hr_glo_T1440x1080_slv.'+yyyy+mm+dd+'_1200z.nc4'
+#   this change is for ERIC only 12/13/22
+    fname3=path2scratch+'/'+path2expid+'.ice_inst_6hr_glo_T1440x1080_slv.'+yyyy+mm+dd+'_1200z.nc4'
+#   fname3=path2scratch+'/'+path2expid+'.geosgcm_seaice2.'+yyyy+mm+dd+'_1200z.nc4'
+#   ddm1 = str(int(dd)-1).zfill(2)
+#   fname3=path2scratch+'/'+path2expid+'.geosgcm_seaice.'+yyyy+mm+ddm1+'_1200z.nc4'
+#   fname3=path2scratch+'/'+path2expid+'.geosgcm_seaice2.'+yyyy+mm+dd+'_1200z.nc4'
+    print(fname)
+    print(fname2)
+    print(fname3)
     if (os.path.exists(fname)):
-        print(fname)
-        print(fname2)
-        print(fname3)
-        obs = xr.open_dataset(fname, chunks='auto') # solution to memory issue in Milan
+        ncf = Dataset(fname, 'r')
+        sst = (np.squeeze(ncf.variables['sst'][:]))
+        omask = (np.squeeze(ncf.variables['mask'][:]))
+        ncf.close()
+        print('in M2_sst_reader past data read')
+
         if (os.path.exists(fname2)):
-            sic = xr.open_dataset(fname2, chunks='auto')['AICE']
-            print('dims:', sic.dims)
+            ncf = Dataset(fname2, 'r')
+            sic = (np.squeeze(ncf.variables['AICE'][:]))
+            ncf.close()
             print('in M2_sst_reader past AICE data read')
             print('length of sic',sic.shape)
         else:
             print('MISSING AICE FILE',fname2)
             sys.exit(1)
+
         if (os.path.exists(fname3)):
-            sicmod = xr.open_dataset(fname3, chunks='auto')['AICE']
-            sicmod =sicmod.rename({'Ydim':'lat', 'Xdim':'lon'}).squeeze()
-            print('dims:', sicmod.dims)
+            ncf = Dataset(fname3, 'r')
+            sicmod = (np.squeeze(ncf.variables['AICE'][:]))
+            ncf.close()
             print('in M2_sst_reader past AICE model data read')
             print('length of sicmod',sicmod.shape)
         else:
             print('MISSING AICE MODEL FILE',fname3)
-            sys.exit(1)        
-        
-        print('length of sic',sic.shape,sicmod.shape,obs[vartype].shape)
-        
-        gridfile=path2scratch+'/grid_spec.nc'
-        print('grid file:',gridfile)
-        grid = xr.open_dataset(gridfile, chunks='auto')
+            sys.exit(1)
+
+        #read mom's grid
+        fname=path2scratch+'/grid_spec.nc'
+        print('grid file:',fname)
+        ncf = Dataset(fname, 'r')
+        xt = ncf.variables['x_T'][:]
+        yt = ncf.variables['y_T'][:]
+        ncf.close()
+
+        #Inline vars
+        xt=xt[:]
+        yt=yt[:]
+        sst=sst[:]
+        sic=sic[:]
+        sicmod=sicmod[:]
+        omask=omask[:]
+        print('length of sic',sic.shape,sicmod.shape,sst.shape)
+
         #Get rid of land values
-        obs[vartype] = obs[vartype].where(obs['mask']==1.)
-        obs = obs.drop_vars('mask')
-        print(f'Flattened shape after mask: {obs[vartype].count().values}')
+        I=np.where(omask==1.0)
+        xt=xt[I]
+        yt=yt[I]
+        sst=sst[I]
+        sic=sic[I]
+        sicmod=sicmod[I]
+        print('length of sicmod',sicmod.shape,sic.shape,sst.shape)
+
         #Get rid of SST under ice
-        obs[vartype] = obs[vartype].where(sic==0.)
-        print(f'Flattened shape after sic: {obs[vartype].count().values}')
+        I=np.where(sic==0.0)
+        xt=xt[I]
+        yt=yt[I]
+        sst=sst[I]
+        sic=sic[I]
+        sicmod=sicmod[I]
+
         #Get rid of SST under model ice
-        obs[vartype] = obs[vartype].where(sicmod==0.)
-        print(f'Flattened shape after sicmod: {obs[vartype].count().values}')
-        #add other vars
-        obs['LAT'] = (obs[vartype].dims, grid['y_T'].values)
-        obs['LON'] = (obs[vartype].dims, grid['x_T'].values)
-        obs['LON'] = obs['LON'].where(obs['LON']>=-180, obs['LON']+360)
-        obs = obs.drop_vars(['lons', 'lats', 'time'])
-        # for var in ['sst', 'LON', 'LAT']:
-        obs = obs.stack(N_PROF=[...]).reset_index('N_PROF')
-        obs = obs.drop_vars(['lon', 'lat'])
-        # obs.LON[obs.LON<-180.0]=obs.LON[obs.LON<-180.0]+360.0
-        obs['DEPTH'] = xr.ones_like(obs[vartype])
-        obs['DATE_TIME'] = int(yyyy+mm+dd+hh)*xr.ones_like(obs[vartype])
-        obs['INST_ID'] = 516*xr.ones_like(obs[vartype])
-        obs['OBS_ERROR'] = .2*xr.ones_like(obs[vartype])
-        obs['QC_LEV'] = xr.ones_like(obs[vartype])
-        obs['QC_PRF'] = xr.ones_like(obs[vartype])
-        skip = 4       
-        obs = obs.isel(N_PROF = slice(None, None, skip))
-        print(f'Flattened shape after skip: {obs[vartype].count().values}')
-        obs = obs.dropna(dim="N_PROF", how="any")
-        obs = obs.compute()
-        del grid, sic, sicmod
-    else:
-        print(f'{fname} not found')
-        return None
-    return obs
+        I=np.where(sicmod==0.0)
+        xt=xt[I]
+        yt=yt[I]
+        sst=sst[I]
+        print('length of sst is ',len(sst))
+
+        xt[xt<-180.0]=xt[xt<-180.0]+360.0
+
+        #subsample
+        skip=4
+#       skip=8
+#       skip=16
+        xt=xt[0::skip]
+        yt=yt[0::skip]
+        sst=sst[0::skip]
+
+        N=len(sst)
+        LON = xt
+        LAT = yt
+        VAR = sst
+        yyyymmddhh = yyyy+mm+dd+hh
+        DATE_TIME = int(yyyymmddhh)*np.ones(N)
+        INST_ID = 516*np.ones(N)
+        QC_FLAG = np.ones(N)
+        QC_PRF = np.ones(N)
+        DATA_ID = np.ones(N)
+        N_PROF = np.ones(N)
+
+        NPTS = np.ones(N)
+        DEPTH = np.ones( (N,1) )
+        QC_LEV = np.ones( (N,1) )
+#       OBS_ERROR = 0.5*np.ones( (N,1) )
+#       OBS_ERROR = 0.05*np.ones( (N,1) )
+        OBS_ERROR = 0.20*np.ones( (N,1) )
+
+        VAR = np.reshape(VAR, (len(VAR),1))
+
+    N_LEVS = 1
+
+    return N_LEVS, DEPTH, VAR, QC_LEV, QC_PRF, LON, LAT, DATE_TIME, OBS_ERROR, INST_ID
+
+def l2_gmi_reader(yyyy, mm, dd, hh, NDAYS=0.125):
+
+    import read_l2_gmi_rss
+
+    LON = []
+    LAT = []
+    VAR = []
+    DATE_TIME = []
+    INST_ID = []
+    QC_FLAG = []
+    QC_PRF = []
+    NPTS = []
+    DEPTH = []
+    QC_LEV = []
+    OBS_ERROR = []
+    DATA_ID = []
+    N_PROF = []
+    obs_cnt = 0
+    cnt = 0
+
+    lat, lon, time_, sst, qc, sigo_ = read_l2_gmi_rss.gather_l2_gmi_rss(int(yyyy), int(mm), int(dd), int(hh), NDAYS = NDAYS, plot = False )
+
+    obs_cnt = obs_cnt + np.shape(sst)[0]
+
+    N=len(sst)
+    LON = np.append( LON, lon[:] )
+    LAT = np.append( LAT, lat[:] )
+    VAR = np.append( VAR, sst[:] )
+    yyyymmddhh = yyyy+mm+dd+hh
+    DATE_TIME = np.append( DATE_TIME, int(yyyymmddhh)*np.ones(N) )
+    INST_ID = np.append( INST_ID, 516*np.ones(N) )
+    QC_FLAG = np.append( QC_FLAG, np.ones(N) )
+    QC_PRF = np.append( QC_PRF, np.ones(N) )
+    DATA_ID = np.append( DATA_ID, np.ones(N) )
+    N_PROF = np.append( N_PROF, np.ones(N) )
+
+    NPTS = np.append( NPTS, np.ones(N) )
+    DEPTH = np.append( DEPTH, np.ones( (N,1) ) )
+    QC_LEV = np.append( QC_LEV, np.ones( (N,1) ) )
+    OBS_ERROR = np.append( OBS_ERROR, 0.5*np.ones( (N,1) ) )
+
+    cnt+=N
+    N_LEVS = 1
+
+    VAR = np.reshape(VAR, (len(VAR),1))
+
+    return N_LEVS, DEPTH, VAR, QC_LEV, QC_PRF, LON, LAT, DATE_TIME, OBS_ERROR, INST_ID
+
+def l2_sst_reader(yyyy, mm, dd, hh, platform='NOAA16', NDAYS=0.125):
+
+    # Select L2 files
+    date_end   = datetime.datetime(int(yyyy), int(mm), int(dd), int(hh)) + datetime.timedelta(days=NDAYS)
+    doy_end = (date_end - datetime.datetime(int(date_end.year), 1, 1)).days + 1
+
+    date_start   = datetime.datetime(int(yyyy), int(mm), int(dd), int(hh)) - datetime.timedelta(days=NDAYS)
+    doy_start = (date_start - datetime.datetime(int(date_start.year), 1, 1)).days + 1
+
+    prefix = prefix_dict[platform] #='0000-STAR-L2P_GHRSST-SSTskin-AVHRR16_G-ACSPO_V2.40-v02.0-fv01.0.nc'
+
+    Nhrs=int(NDAYS*24*2.0)
+    print('Nhrs:',Nhrs)
+    list_of_dates = list(range(Nhrs))
+    list_of_files = list(range(Nhrs))
+    for n in range(Nhrs):
+        if n == 0:
+            list_of_dates[0] = date_start
+        else:
+            list_of_dates[n] = list_of_dates[n-1] + datetime.timedelta(hours=1)
+
+        doy   = (list_of_dates[n] - datetime.datetime(int(list_of_dates[n].year), 1, 1)).days + 1
+        year  = str(list_of_dates[n].year)
+        month = str(list_of_dates[n].month).zfill(2)
+        day   = str(list_of_dates[n].day).zfill(2)
+        hour  = str(list_of_dates[n].hour).zfill(2)
+        list_of_files[n] = NESDISDIR+'/'+platform+'/'+str(list_of_dates[n].year)+'/'+str(doy).zfill(3)+'/'+year+month+day+hour+prefix
+
+    LON = []
+    LAT = []
+    VAR = []
+    DATE_TIME = []
+    INST_ID = []
+    QC_FLAG = []
+    QC_PRF = []
+    NPTS = []
+    DEPTH = []
+    QC_LEV = []
+    OBS_ERROR = []
+    DATA_ID = []
+    N_PROF = []
+    obs_cnt = 0
+    cnt = 0
+    for fname in list_of_files:
+        ncf = Dataset(fname, 'r')
+        #!!!!!!!!!!!!!!!!!!!!!!!!!
+        #Need to also read bias and std
+        #!!!!!!!!!!!!!!!!!!!!!!!!!
+        sst = (np.squeeze(ncf.variables['sea_surface_temperature'][:]))-273.15
+        qc  = (np.squeeze(ncf.variables['quality_level'][:]))
+        lon = np.squeeze(ncf.variables['lon'][:])
+        lat = np.squeeze(ncf.variables['lat'][:])
+        yyyymmddhh = ncf.time_coverage_start[0:8]+ncf.time_coverage_start[9:11]
+        ncf.close()
+
+        sst[qc<5]=np.nan
+        sst=sst.flatten()
+        I=np.where(np.isfinite(sst))
+        sst=sst[I]
+
+        lon = lon.flatten()
+        lon=lon[I]
+
+        lat = lat.flatten()
+        lat=lat[I]
+
+        obs_cnt = obs_cnt + np.shape(sst)[0]
+
+        N=len(sst)
+        LON = np.append( LON, lon[:] )
+        LAT = np.append( LAT, lat[:] )
+        VAR = np.append( VAR, sst[:] )
+        DATE_TIME = np.append( DATE_TIME, int(yyyymmddhh)*np.ones(N) )
+        INST_ID = np.append( INST_ID, 516*np.ones(N) )
+        QC_FLAG = np.append( QC_FLAG, np.ones(N) )
+        QC_PRF = np.append( QC_PRF, np.ones(N) )
+        DATA_ID = np.append( DATA_ID, np.ones(N) )
+        N_PROF = np.append( N_PROF, np.ones(N) )
+
+        NPTS = np.append( NPTS, np.ones(N) )
+        DEPTH = np.append( DEPTH, np.ones( (N,1) ) )
+        QC_LEV = np.append( QC_LEV, np.ones( (N,1) ) )
+        OBS_ERROR = np.append( OBS_ERROR, 0.5*np.ones( (N,1) ) )
+
+        cnt+=N
+    N_LEVS = 1
+
+    VAR = np.reshape(VAR, (len(VAR),1))
+
+    return N_LEVS, DEPTH, VAR, QC_LEV, QC_PRF, LON, LAT, DATE_TIME, OBS_ERROR, INST_ID
+
+def oib_reader(yyyy, mm, dd, hh, platform='AIR-BORN', NDAYS=3.0):
+
+    fname = OIBDIR+'IDCSI4_'+yyyy+mm+dd+'.txt'
+
+    LON = []
+    LAT = []
+    VAR = []
+    DATE_TIME = []
+    INST_ID = []
+    QC_FLAG = []
+    QC_PRF = []
+    NPTS = []
+    DEPTH = []
+    QC_LEV = []
+    OBS_ERROR = []
+    DATA_ID = []
+    N_PROF = []
+    obs_cnt = 0
+    cnt = 0
+
+    if (hh!='12'):
+        return N_LEVS, DEPTH, VAR, QC_LEV, QC_PRF, LON, LAT, DATE_TIME, OBS_ERROR, INST_ID
+
+    f = open(fname, 'r')
+    for line in f:
+        try:
+            columns = line.split()
+            lat=float(columns[0][0:-2])
+            lon=float(columns[1][0:-2])
+            sit=float(columns[2][0:-2])    # Thickness
+            sigo=float(columns[3][0:-2])   # Thickness error
+            LON=np.append(LON, lon)
+            LAT=np.append(LAT, lat)
+            VAR=np.append(VAR, sit)
+            OBS_ERROR=np.append(OBS_ERROR, sigo)
+
+        except:
+            pass
+
+    #plt.plot(LON, ocean_obs_utils.smooth(VAR,window_len=200),'-r')
+    #plt.plot(LON, VAR,'--k',alpha=0.2)
+    #plt.savefig('OIB.png')
+
+    VAR = ocean_obs_utils.smooth(VAR,window_len=200)
+
+    f.close()
+    VAR = np.reshape(VAR, (len(VAR),1))
+    yyyymmddhh=yyyy+mm+dd+hh
+    DATE_TIME = int(yyyymmddhh)*np.ones(np.shape(LON))
+    DEPTH = 15.0*np.ones(np.shape(VAR))
+    N_LEVS=1
+    QC_LEV = 1.0*np.ones(np.shape(VAR))
+    QC_PRF = 1.0*np.ones(np.shape(LON))
+    INST_ID = 1.0*np.ones(np.shape(INST_ID))
+
+    print(np.shape(LON), np.shape(VAR))
+
+    return N_LEVS, DEPTH, VAR, QC_LEV, QC_PRF, LON, LAT, DATE_TIME, OBS_ERROR, INST_ID
 
 class Obs:
     """
     """
     def __init__(self, yyyy, mm, dd, hh, fname, id_obs, vartype='TEMP', xsigo=1.0, descriptor='', platform = '', color='r', markersize=5, NDAYS=EXP_NDAYS):
         """ This function exctract the observations that are within the assimilation window
-        Arg
+        Args:
             yyyy (int)     : 4 digit year
               mm (int)     : 2 digit month
               dd (int)     : 2 digit day
@@ -327,133 +601,459 @@ class Obs:
               descriptor   : String describing the instance of the object (ex: T-Argo, Jason-1-ADT, ...)
               NDAYS (float): Used to define the size of the assimilation window centered at yyyymmddhh [yyyymmddhh-NDAYS, yyyymmddhh+NDAYS].
     """
-        # LOADING
-        print('\n:::::::::::::::::::',descriptor, platform)
-        if (platform == 'M2-SST'):
-            obs = M2_sst_reader(yyyy, mm, dd, hh, path2scratch=SCRDIR)
-            if obs == None:
+
+        print('platform is', platform)
+
+        if ( (platform == 'NOAA16') | (platform == 'METOPA') ):
+            print('L2-SST')
+            try:
+                N_LEVS, DEPTH, VAR, QC_LEV, QC_PRF, LON, LAT, DATE_TIME, OBS_ERROR = l2_sst_reader(yyyy, mm, dd, hh, platform=platform, NDAYS=EXP_NDAYS)
+            except:
                 self.no_obs(descriptor = descriptor, platform = platform, color = color, size = markersize, present=False)
+                print('Failed looking up ',self.descriptor)
                 return
-        elif not os.path.exists(fname):
-            self.no_obs(descriptor = descriptor, platform = platform, color = color, size = markersize, present=False)
-            print(f'No file {fname}')
-            return
+        elif (platform == 'GMI'):
+            #try:
+            N_LEVS, DEPTH, VAR, QC_LEV, QC_PRF, LON, LAT, DATE_TIME, OBS_ERROR = l2_gmi_reader(yyyy, mm, dd, hh, NDAYS=EXP_NDAYS)
+            #except:
+            #    self.no_obs(descriptor = descriptor, platform = platform, color = color, size = markersize, present=False)
+            #    print('Failed looking up ',self.descriptor)
+            #    return
+        elif (platform == 'AIR-BORN'):
+            try:
+                N_LEVS, DEPTH, VAR, QC_LEV, QC_PRF, LON, LAT, DATE_TIME, OBS_ERROR = oib_reader(yyyy, mm, dd, hh, NDAYS=EXP_NDAYS)
+            except:
+                self.no_obs(descriptor = descriptor, platform = platform, color = color, size = markersize, present=False)
+                print('Failed looking up ',self.descriptor)
+                return
+        elif (platform == 'SMOSSUB'):
+            try:
+                print('GOT HERE SMOSSUB')
+                N_LEVS, DEPTH, VAR, QC_LEV, QC_PRF, LON, LAT, DATE_TIME, OBS_ERROR, INST_ID = l2_smossub_reader(fname, vartype, platform=platform) # Reads smos observation format
+            except:
+                self.no_obs(descriptor = descriptor, platform = platform, color = color, size = markersize, present=False)
+                print('Failed looking up ',self.descriptor)
+                return
+        elif (platform == 'CS2-HICE'):
+            try:
+                N_LEVS, DEPTH, VAR, QC_LEV, QC_PRF, LON, LAT, DATE_TIME, OBS_ERROR = cs2_reader(yyyy, mm, dd, hh, NDAYS=EXP_NDAYS)
+            except:
+                self.no_obs(descriptor = descriptor, platform = platform, color = color, size = markersize, present=False)
+                print('Failed looking up ',self.descriptor)
+                return
+        elif (platform == 'M2-SST'):
+            print('in M2-SST')
+            N_LEVS, DEPTH, VAR, QC_LEV, QC_PRF, LON, LAT, DATE_TIME, OBS_ERROR, INST_ID = M2_sst_reader(yyyy, mm, dd, hh, path2scratch=SCRDIR, path2expdir=EXPDIR, path2expid=EXPID)
         else:
-            obs = standard_obs_reader(fname, vartype, yyyy, mm, dd, hh, EXP_NDAYS, TSE_TMPDIR)
-        if obs[vartype].shape[0]==0:
+            if not(os.path.exists(fname)):
+                self.no_obs(descriptor = descriptor, platform = platform, color = color, size = markersize, present=False)
+                #self.typ   = []
+                #self.lon   = []
+                #self.lat   = []
+                #self.depth = []
+                #self.value = []
+                #self.oerr  = []
+                #self.descriptor = descriptor
+                #self.platform = platform
+                #self.color=color
+                #self.size=markersize
+                #self.present=False
+                return
+            N_LEVS, DEPTH, VAR, QC_LEV, QC_PRF, LON, LAT, DATE_TIME, OBS_ERROR, INST_ID = standard_obs_reader(fname, vartype) # Reads standard iodas observation format
+
+        print(':::::::::::::::::::',descriptor)
+        I=da_window(yyyy, mm, dd, hh, NDAYS, DATE_TIME, QC_PRF)
+        if (descriptor=='AVHRR18 L2 SST'):
+            print('L2 SST')
+            I=da_window(yyyy, mm, dd, hh, NDAYS, np.floor_divide(DATE_TIME,10000), QC_PRF)
+
+        if (len(I)==0): # File present but no obs within window
             self.no_obs(descriptor = descriptor, platform = platform, color = color, size = markersize, present=False)
-            print(f'No obs for time window in {fname}')
             return
-        print(f'Time window shape: {obs[vartype].count().values}')
-        # DEALING WITH ICE
+
+#   here for all insitu data
+        LON=LON[I]
+        LAT=LAT[I]
+        VAR=VAR[I,0:N_LEVS]
+        DEPTH=DEPTH[I,0:N_LEVS]
+        QC_LEV=QC_LEV[I,0:N_LEVS]
+        OBS_ERROR=OBS_ERROR[I,0:N_LEVS]
+        INST_ID=INST_ID[I]
+
+        lon=np.zeros(np.shape(VAR))
+        lat=np.zeros(np.shape(VAR))
+        instid=np.zeros(np.shape(VAR))
+        for prof in range(np.shape(VAR)[0]):
+            lon[prof,:]=LON[prof]
+            lat[prof,:]=LAT[prof]
+            instid[prof,:]=INST_ID[prof]
+        lon=lon.flatten()
+        lat=lat.flatten()
+        depth=DEPTH.flatten()
+        value=VAR.flatten()
+        instid=instid.flatten()
+
+        # Compute sigo's for insitu profiles
         if ( (id_obs==obsid_dict['id_t_obs']) | (id_obs==obsid_dict['id_s_obs']) ): # Profiles
-            afile = f'{SCRDIR}/rawM2sic_{int(yyyy)}{int(mm):02d}{int(dd):02d}.nc'
-            AICE = xr.open_dataset(afile)
-            dTdZ = xr.zeros_like(obs[vartype])
-            dTdZ[:,:-1] = (np.abs(obs[vartype].diff('N_LEVS'))/obs.DEPTH.diff('N_LEVS')).values
-            dTdZ[:,-1] = dTdZ[:,-2]
-            LON = obs['LON'].values
-            LAT = obs['LAT'].values
-            if descriptor in ['CTD-S', 'CTD-T', 'XBT-T', 'Argo-S', 'Argo-T']:
-                for indexp in range(obs.dims['N_PROF']):
-                    lon, lat = LON[indexp], LAT[indexp]
-                    lonminidx = np.argmin(np.abs(AICE['lonout'] - lon).values)
-                    latminidx = np.argmin(np.abs(AICE['latout'] - lat).values)
-                    if AICE['AICE'][latminidx, lonminidx]>.1:
-                        print(('Eliminate ice',lon,lat,indexp,AICE['AICE'][latminidx,lonminidx].values), descriptor)
-                        obs['QC_LEV'][indexp,:]=0
-                        dTdZ[indexp,0]=np.nan
-            dTdZ = dTdZ.where(dTdZ>=1e-3, 1e-3)
-            obs['OBS_ERROR'][:]=2.0*dTdZ
-        
-        # MASKING
-        mask = (obs['QC_LEV'] == 1) #* (obs['OBS_ERROR'] <100.)
-        print(f'Flattened shape after profile QC: {obs[vartype].where(mask).count().values}')
-        
+#           print('compute profile sigos ',np.shape(VAR),range(np.shape(VAR)[0]),range(N_LEVS-1))
+            dTdZ=np.zeros(np.shape(VAR))
+            for indexp in range(np.shape(VAR)[0]):
+#     first get the real depth of this profile
+                nlevprof=0
+                for indexz in range(np.shape(VAR)[1]):
+                    if(DEPTH[indexp,indexz]<=100000.):   #Assume obs depth < 100000m
+                        nlevprof=nlevprof+1
+
+#                   print('Real depth of profile ',nlevprof)
+                for indexz in range(0,nlevprof-1):
+                    dTdZ[indexp, indexz] = np.abs(( VAR[indexp, indexz] - VAR[indexp, indexz+1] )/( DEPTH[indexp, indexz] - DEPTH[indexp, indexz+1] ))
+
+                dTdZ[indexp, nlevprof-1]=dTdZ[indexp, nlevprof-2] # make the bottom gradient equal to one up
+
+                if (descriptor == 'CTD-S' or descriptor == 'CTD-T' ):
+#   now eliminate CTD under the ice
+#                       print('SCRDIR IS', SCRDIR)
+                    fname=SCRDIR+'/rawM2sic_'+yyyy+mm+dd+'.nc'
+                    AICE = readnc(fname,'AICE')
+                    AICE.x = readnc(fname,'lonout')
+                    AICE.y = readnc(fname,'latout')
+#                       print(AICE.y)
+#                       print(np.shape(AICE))
+#                find the index of the obs
+                    iax = np.shape(AICE.x)
+                    iay = np.shape(AICE.y)
+#                       print(iax,iay)
+                    lonminstore=1000.
+                    latminstore=1000.
+                    for ilon in range(1440):
+#                        print(AICE.x[ilon], LON[indexp])
+                        lonmin = np.abs(AICE.x[ilon] - LON[indexp])
+                        # print('lonmin',lonmin,lonminstore,AICE.x[ilon],LON[indexp]
+                        if (lonmin < lonminstore):
+                            ilon1 = ilon
+                            lonminstore = lonmin
+                    for ilat in range(720):
+                        latmin = np.abs(AICE.y[ilat] - LAT[indexp])
+                        if (latmin < latminstore):
+                            ilat1 = ilat
+                            latminstore = latmin
+#                       print('found',ilon1,ilat1,LON[indexp],LAT[indexp],indexp
+                    if (AICE[ilat1,ilon1]>0.1):   # it's ice
+#                            print('eliminate ice CTD',ilon1,ilat1,LON[indexp],LAT[indexp],indexp,AICE[ilat1,ilon1])
+                        print('eliminate ice CTD',LON[indexp],LAT[indexp],indexp,AICE[ilat1,ilon1])
+#                            for ilev in range(N_LEVS):
+#                                if(depth[ilev] < 60.):
+#                                   QC_LEV[indexp,ilev]=0
+#                                   dTdZ[indexp,ilev]=9999.
+#                                   print('removing data at',depth[ilev],ilev,indexp)
+                        QC_LEV[indexp,0:N_LEVS]=0
+                        dTdZ[indexp,0:N_LEVS]=9999.
+#   12/15/22 ERIC
+                if (descriptor == 'XBT-T'):
+#   now eliminate XBT under the ice
+#                       print('SCRDIR IS', SCRDIR)
+                    fname=SCRDIR+'/rawM2sic_'+yyyy+mm+dd+'.nc'
+                    AICE = readnc(fname,'AICE')
+                    AICE.x = readnc(fname,'lonout')
+                    AICE.y = readnc(fname,'latout')
+#                       print(AICE.y)
+#                       print(np.shape(AICE))
+#                find the index of the obs
+                    iax = np.shape(AICE.x)
+                    iay = np.shape(AICE.y)
+#                       print(iax,iay)
+                    lonminstore=1000.
+                    latminstore=1000.
+                    for ilon in range(1440):
+#                        print(AICE.x[ilon], LON[indexp])
+                        lonmin = np.abs(AICE.x[ilon] - LON[indexp])
+                        # print('lonmin',lonmin,lonminstore,AICE.x[ilon],LON[indexp])
+                        if (lonmin < lonminstore):
+                            ilon1 = ilon
+                            lonminstore = lonmin
+                    for ilat in range(720):
+                        latmin = np.abs(AICE.y[ilat] - LAT[indexp])
+                        if (latmin < latminstore):
+                            ilat1 = ilat
+                            latminstore = latmin
+#                       print('found',ilon1,ilat1,LON[indexp],LAT[indexp],indexp)
+                    if (AICE[ilat1,ilon1]>0.1):   # it's ice
+                        print('eliminate ice XBT',LON[indexp],LAT[indexp],indexp,AICE[ilat1,ilon1])
+                        QC_LEV[indexp,0:N_LEVS]=0
+                        dTdZ[indexp,0:N_LEVS]=9999.
+                if (descriptor == 'Argo-S' or descriptor == 'Argo-T' ):
+#   now eliminate Argo under the ice
+#                       print('SCRDIR IS', SCRDIR)
+                    fname=SCRDIR+'/rawM2sic_'+yyyy+mm+dd+'.nc'
+                    AICE = readnc(fname,'AICE')
+                    AICE.x = readnc(fname,'lonout')
+                    AICE.y = readnc(fname,'latout')
+#                       print(AICE.y)
+#                       print(np.shape(AICE))
+#                find the index of the obs
+                    iax = np.shape(AICE.x)
+                    iay = np.shape(AICE.y)
+#                       print(iax,iay)
+                    lonminstore=1000.
+                    latminstore=1000.
+                    for ilon in range(1440):
+#                        print(AICE.x[ilon], LON[indexp])
+                        lonmin = np.abs(AICE.x[ilon] - LON[indexp])
+                        # print('lonmin',lonmin,lonminstore,AICE.x[ilon],LON[indexp])
+                        if (lonmin < lonminstore):
+                            ilon1 = ilon
+                            lonminstore = lonmin
+                    for ilat in range(720):
+                        latmin = np.abs(AICE.y[ilat] - LAT[indexp])
+                        if (latmin < latminstore):
+                            ilat1 = ilat
+                            latminstore = latmin
+#                       print('found',ilon1,ilat1,LON[indexp],LAT[indexp],indexp)
+                    if (AICE[ilat1,ilon1]>0.1):   # it's ice
+#                            print('eliminate ice Argo',ilon1,ilat1,LON[indexp],LAT[indexp],indexp,AICE[ilat1,ilon1])
+                        print('eliminate ice Argo',LON[indexp],LAT[indexp],indexp,AICE[ilat1,ilon1])
+#                            for ilev in range(N_LEVS):
+#                                if(depth[ilev] < 60.):
+#                                   QC_LEV[indexp,ilev]=0
+#                                   dTdZ[indexp,ilev]=9999.
+#                                   print('removing data at',depth[ilev],ilev,indexp)
+                        QC_LEV[indexp,0:N_LEVS]=0
+                        dTdZ[indexp,0:N_LEVS]=9999.
+            dTdZ[dTdZ<1e-3]=1e-3
+            OBS_ERROR[:]=2.0*dTdZ[:]
+
+        # Make sure bad obs are out
+        I=np.where(QC_LEV.flatten()==1)
+
+        lon=lon[I]
+        lat=lat[I]
+        depth=depth[I]
+        value=value[I]
+        instid=instid[I]
+        typ=id_obs*np.ones(np.shape(value))
+        sigo=np.squeeze(OBS_ERROR.flatten()[I])#[I])
+
+#   ERIC31021 now get rid of obviously bad data
+        I=np.where(np.abs(value)<100.)
+        lon=lon[I]
+        lat=lat[I]
+        depth=depth[I]
+        value=value[I]
+ #      obs_error=obs_error[I]
+        typ=id_obs*np.ones(np.shape(value))
+        sigo=np.squeeze(sigo.flatten()[I])#[I])
+        instid=np.squeeze(instid.flatten()[I])#[I])
+#   ERIC102722 now get rid of obviously bad data
+        I=np.where(np.abs(sigo)<100.)
+        lon=lon[I]
+        lat=lat[I]
+        depth=depth[I]
+        value=value[I]
+ #      obs_error=obs_error[I]
+        typ=id_obs*np.ones(np.shape(value))
+        sigo=np.squeeze(sigo.flatten()[I])#[I])
+        instid=np.squeeze(instid.flatten()[I])#[I])
+
+#       print('here',np.shape(sigo), np.shape(value))
+        #raw_input('<>?')
+
+#   7/28/22 added to eliminate Tz reporting as Argo Sz 
         if (id_obs==obsid_dict['id_s_obs']):
-            print('Setting S profile mask')
-            mask = mask * (obs[vartype] >= 29) * (obs[vartype] <= 40)
-        elif (id_obs==obsid_dict['id_t_obs']):
-            print('Setting T profile mask')
-            mask = mask * (obs[vartype] > -2.)
-        elif (id_obs==obsid_dict['id_sst_obs']):    #'SST'
-            print('Setting SST oerr')
+                I=(np.where((value >= 29) & (value <= 40)))
+                lon=lon[I]
+                lat=lat[I]
+                depth=depth[I]
+                value=value[I]
+                typ=id_obs*np.ones(np.shape(value))
+                sigo=np.squeeze(sigo.flatten()[I])#[I])
+                instid=np.squeeze(instid.flatten()[I])#[I])
+
+#   12/14/22 added to eliminate Tz reporting < -2C 
+#       if (id_obs==obsid_dict['id_s_obs']):
+#               I=(np.where(value < -2.))
+#               lon=lon[I]
+#               lat=lat[I]
+#               depth=depth[I]
+#               value=value[I]
+#               typ=id_obs*np.ones(np.shape(value))
+#               sigo=np.squeeze(sigo.flatten()[I])#[I])
+#               instid=np.squeeze(instid.flatten()[I])#[I])
+
+#   Yehui: 01/10/2023 
+#   12/14/22 added to eliminate Tz reporting < -2C
+        if (id_obs==obsid_dict['id_t_obs']):
+                I=(np.where(value > -2.))
+                lon=lon[I]
+                lat=lat[I]
+                depth=depth[I]
+                value=value[I]
+                typ=id_obs*np.ones(np.shape(value))
+                sigo=np.squeeze(sigo.flatten()[I])#[I])
+                instid=np.squeeze(instid.flatten()[I])#[I])
+ 
+        if (id_obs==obsid_dict['id_sst_obs']):    #'SST'
             oerr_min=1e-2
-            obs['OBS_ERROR'] = obs['OBS_ERROR'].where(obs['OBS_ERROR']>oerr_min, oerr_min)
-        elif (id_obs==obsid_dict['id_sss_obs']):
-            if (descriptor=='SMAP_L2_SSS' or descriptor=='SMOS_L2_SSS' or descriptor=='Aquarius_L2_SSS' or descriptor=='SMOS_RC_L2_SSS'):
-                print(descriptor)
-                print('Setting SSS oerr mask')
-                obs['OBS_ERROR'] = obs['OBS_ERROR']*smosrampuperr
-                oerr_min=0.1
-                mask = mask * (obs[vartype] >= 29) * (obs[vartype] <= 40) * (obs['OBS_ERROR']>=oerr_min)
-            if (descriptor=='SMAP_L3_SSS' or descriptor=='SMOS_L3_SSS' or descriptor=='Aquarius_L3_SSS'):
-                print('L3')
+            sigo[sigo<oerr_min]=oerr_min
+            sigo[np.isnan(sigo)]=999.9
+
+        if (id_obs==obsid_dict['id_sss_obs']):    #'SSS'
+#           print('hi e', descriptor)
+
+#    double the SMOS error to see if that tames the increment some 2/1/19
+#           smosrampuperr=2.
+            if (descriptor=='SMOS_L2_SSS'):
+                OBS_ERROR=OBS_ERROR*smosrampuperr
+
+#   mask out where sss > 40
+                I=(np.where((value >= 29) & (value <= 40)))
+#              I=np.where(value<40)
+                lon=lon[I]
+                lat=lat[I]
+                depth=depth[I]
+                value=value[I]
+#              obs_error=obs_error[I]
+                typ=id_obs*np.ones(np.shape(value))
+                sigo=np.squeeze(sigo.flatten()[I])#[I])
+                instid=np.squeeze(instid.flatten()[I])#[I])
+
+            if (descriptor=='SMAP_L2_SSS' or descriptor=='SMOS_L2_SSS' or descriptor=='Aquarius_L2_SSS'):
                 oerr_min=0.1   # 0.1 psu
-                obs['OBS_ERROR'] = obs['OBS_ERROR'].where(obs['OBS_ERROR']>oerr_min, oerr_min)
-                #Impose large sigos in the high latitudes from 
-                # https://aquarius.umaine.edu/docs/aqsci2015_meissner_2.pdf page 17
-                # error map (from v4.0 data) linear from 30-60 max=0.5
-                sigo_scale = xr.ones_like(obs['OBS_ERROR'])
-                sigo_scale = sigo_scale*0.4*((np.abs(obs['LAT'])-30.)/30.0)
-                sigo_scale = sigo_scale.where(sigo_scale<0.4, 0.4)
-                sigo_scale = sigo_scale.where(sigo_scale>0.0, 0.0)
-                obs['OBS_ERROR'] = sigo_scale + obs['OBS_ERROR']
+                sigo=np.squeeze(OBS_ERROR.flatten()[I])#[I])
 
-        elif id_obs==obsid_dict['id_eta_obs']: #'ADT'
-            print('Setting ADT oerr mask')
-            mask = mask * (np.abs(obs[vartype]) < 10.)
-            print(f'Flattened shape after ADT<10: {obs[vartype].where(mask).count().values}')
-            mask = mask * (obs['LAT']>-50)
-            print(f'Flattened shape after ADT LAT -50: {obs[vartype].where(mask).count().values}')
-            mask = mask * (obs['OBS_ERROR']<999)
-            oerr_min=0.1   # 0.1 psu
-            obs['OBS_ERROR'] = obs['OBS_ERROR'].where(obs['OBS_ERROR']>oerr_min, oerr_min)
+            if (descriptor=='SMAP_L3_SSS' or descriptor=='SMOS_L3_SSS' or descriptor=='Aquarius_L3_SSS'):
+                oerr_min=0.1   # 0.1 psu
+                sigo[sigo<oerr_min]=oerr_min
+                sigo[np.isnan(sigo)]=999.9
+#              print('here eric',sigo[0:30])
+
+#              Impose large sigos in the high latitudes from https://aquarius.umaine.edu/docs/aqsci2015_meissner_2.pdf page 17 error map (from v4.0 data) linear from 30-60 max=0.5
+                sigo_scale=np.zeros(np.shape(sigo))
+                sigo_scale=0.4*((abs(lat)-30.)/30.0)
+                sigo_scale[sigo_scale>0.4]=0.4
+                sigo_scale[sigo_scale<0.0]=0.0
+                sigo=(sigo_scale+sigo) #*sigo
+                sigo[sigo>999.9]=999.9  #*sigo
+#  hack to stop assim into arctic
+                sigo[abs(lat)>50.]=999.9
+
+            # Get rid of SSS obs that have sigo>999.9
+                I=np.where(sigo<999.9)
+
+                lon=lon[I]
+                lat=lat[I]
+                depth=depth[I]
+                value=value[I]
+#              obs_error=obs_error[I]
+                typ=id_obs*np.ones(np.shape(value))
+                sigo=np.squeeze(sigo.flatten()[I])#[I])
+                instid=np.squeeze(instid.flatten()[I])#[I])
+
+#   ADDED BY ERIC TO REMOVE ADT WITH NAN VALUES
+        if id_obs==obsid_dict['id_eta_obs']: #'ADT'
+#           I=np.where(np.isnan(value))
+            I=np.where(np.abs(value)<10.)
+            lon=lon[I]
+            lat=lat[I]
+            depth=depth[I]
+            value=value[I]
+#           obs_error=obs_error[I]
+            typ=id_obs*np.ones(np.shape(value))
+            sigo=np.squeeze(sigo.flatten()[I])#[I])
+            instid=np.squeeze(instid.flatten()[I])#[I])
+
+        if id_obs==obsid_dict['id_eta_obs']: #'ADT'
+            sigo[np.isnan(sigo)]=999.9
+            oerr_min=0.1 # 10 cm
+            sigo[sigo<oerr_min]=oerr_min
+
             #Impose large sigos in the high latitudes
-            sigo_scale=xr.ones_like(obs['OBS_ERROR'])*0.1*(obs['LAT']/90.0)**4
-            obs['OBS_ERROR'] = sigo_scale + obs['OBS_ERROR']
-            sigo_sigma=obs['OBS_ERROR'].where(mask).std().values
+            sigo_scale=np.zeros(np.shape(sigo))
+#           sigo_scale=0.01*(LAT[I]/90.0)**4
+            sigo_scale=0.1*(lat/90.0)**4
+            sigo=(sigo_scale+sigo) #*sigo
+            sigo[sigo>999.9]=999.9  #*sigo
+            #oerr[LAT<-60]=99.9
+
+#   added by eric to test crop south of 55S
+        if id_obs==obsid_dict['id_eta_obs']: #'ADT'
+#           I=np.where(lat>-45.)
+#           I=np.where(lat>-55.)
+            I=np.where(lat>-50.)
+            lon=lon[I]
+            lat=lat[I]
+            depth=depth[I]
+            value=value[I]
+            typ=typ[I]
+            sigo=sigo[I]
+            instid=instid[I]
+
+#   eric test standard deviation of ADT observation error
+        if id_obs==obsid_dict['id_eta_obs']: #'ADT'
+            I=np.where(sigo!=999.9)
+            lon=lon[I]
+            lat=lat[I]
+            depth=depth[I]
+            value=value[I]
+            typ=typ[I]
+            sigo=sigo[I]
+            instid=instid[I]
+            sigo_sigma=np.std(sigo)
             if (sigo_sigma < .05):
-                if BOMB_ON_SIGO == 'True':
-                    print ("BAD ADT SIGO FULL STOP ANALYSIS CYCLE")
-                    print ('PARENT ID IS', os.getppid(), os.getpid())
-            #      create a file to tell parents that obs are bad
-                    command='touch '+SCRDIR+'/BADOBS'
-                    os.system(command)
-                    sys.exit(1)
-                elif BOMB_ON_SIGO == 'False':
-                    self.no_obs(descriptor = descriptor, platform = platform, color = color, size = markersize, present=False)
-                    print(f'BAD ADT SIGO. DROPING {descriptor}')
-                    return
+                print("BAD ADT SIGO FULL STOP ANALYSIS CYCLE")
+                print('PARENT ID IS', os.getppid(), os.getpid())
+#      create a file to tell parents that obs are bad
+                command='touch '+SCRDIR+'/BADOBS'
+                os.system(command)
+                sys.exit(1)
 
-        elif (id_obs==obsid_dict['id_aice_obs']):
-            print('Setting aice sigo')
-            obs['OBS_ERROR'] = 0.05*xr.ones_like(obs[vartype]) #value*0.05
+        '''
+        if ( (id_obs==obsid_dict['id_t_obs']) | (id_obs==obsid_dict['id_s_obs']) ): # Profiles
+            # Assumes a exponential decay of obs error
+            if (id_obs==obsid_dict['id_t_obs']):
+                prof_sigo = T_prof_sigo
+            else:
+                prof_sigo = S_prof_sigo
+            #D0=200.0 #e-folding scale
+            D0=2000000.0 #e-folding scale
 
-        elif (id_obs==obsid_dict['id_hice_obs']):
-            print('Setting hice sigo')
-            obs['OBS_ERROR'] = 0.3*xr.ones_like(obs[vartype]) #value*0.05
-        
-        mask = mask  * (~obs[vartype].isnull()) * (obs['OBS_ERROR']<999.9)
+            #print(np.shape(value))
+            #raw_input('<>?')
 
-        self.lon   = flatten(obs.LON, mask)
-        self.lat   = flatten(obs.LAT, mask)
-        self.depth = flatten(obs.DEPTH, mask)
-        self.value = flatten(obs[vartype], mask)
-        self.instid = flatten(obs.INST_ID, mask)
-        self.oerr  = xsigo*flatten(obs.OBS_ERROR, mask)  # Rescaled sigos
-        self.typ   = id_obs*np.ones(self.value.shape).astype(int)
+            sigo=prof_sigo*np.ones(np.shape(value))*np.exp(-depth/D0)
+            oerr_max=np.max(sigo)
+            sigo[sigo<0.01*oerr_max]=0.01*oerr_max
+        '''
+
+        if ( (id_obs==obsid_dict['id_sss_obs']) ): # satellite SSS
+            sigo[sigo<=0.0]=0.01  # don't allow any 0 error
+
+        if ( (id_obs==obsid_dict['id_t_obs']) | (id_obs==obsid_dict['id_s_obs']) ): # Profiles
+            sigo[sigo<=0.0]=0.01  # don't allow any 0 error for profile data
+
+        if (id_obs==obsid_dict['id_aice_obs']):
+            sigo = 0.05*np.ones(np.shape(value)) #value*0.05
+
+        if (id_obs==obsid_dict['id_hice_obs']):
+            sigo = 0.3*np.ones(np.shape(value)) #value*0.05
+            #sigo[sigo<0.01]=0.01
+
+        self.typ   = typ
+        self.lon   = lon
+        self.lat   = lat
+        self.depth = depth
+        self.value = value
+        self.instid = instid
+        self.oerr  = xsigo*sigo       # Rescaled sigos
         self.descriptor = descriptor
         self.platform = platform
         self.color=color
         self.size=markersize
-        
-        print(f"obs final flat shape after masking:", self.value.shape)
-        print(f'Reading {descriptor} done\n')
         if (len(self.typ)>0):
             self.present=True
         else:
             self.present=False
+
+
 
     def no_obs(self, descriptor='', platform='', color='r',size=10,present=False):
         self.typ   = []
@@ -479,6 +1079,10 @@ class Obs:
                 tiny=1e-3
                 self.value[self.value<tiny]=tiny
                 self.value[self.value>1.0-tiny]=1.0-tiny
+                self.value=np.log(self.value) - np.log(1 - self.value)
+            #print(np.min(self.value[np.isfinite(self.value)].flatten()))
+            #print(np.max(self.value[np.isfinite(self.value)].flatten()))
+            #self.oerr= ... sigos need to be transormed as well
 
             elif transtyp=='invlogit':
                 self.value = np.exp(self.value) / (1 + np.exp(self.value))
@@ -523,8 +1127,8 @@ class Obs:
                 ax.coastlines()    
                 ax.add_feature(cfeature.BORDERS, lw=.5)
                 ax.add_feature(cfeature.RIVERS)
-                c= ax.scatter(x, y, s=1, c=self.value, transform=ccrs.PlateCarree(),
-                            cmap=cm.jet, vmin=valmin, vmax=valmax, edgecolor=None, lw=0)
+                c= ax.scatter(x, y, s=1, c=self.value,transform=ccrs.PlateCarree(),
+                                  cmap=cm.jet,vmin=valmin,vmax=valmax,edgecolor=None,lw=0)
                 fig.colorbar(c, shrink=0.5, ax = ax)
 
                 ax2 = plt.subplot(2,1,2, projection=ccrs.Mollweide(central_longitude=-80))
@@ -533,7 +1137,7 @@ class Obs:
                 ax2.add_feature(cfeature.BORDERS, lw=.5)
                 ax2.add_feature(cfeature.RIVERS)
                 ax2.add_feature(cfeature.LAND, facecolor=("coral"))
-                c= ax2.scatter(x, y, s=1, c=self.oerr, transform=ccrs.PlateCarree(),
+                c= ax2.scatter(x, y, s=1, c=self.oerr,transform=ccrs.PlateCarree(),
                                   cmap=cm.jet,vmin=0,vmax=errmax,edgecolor=None,lw=0)
                 fig.colorbar(c, shrink=0.5, ax=ax2)
 
@@ -546,11 +1150,11 @@ class Obs:
                 errmax=0.5
 
                 ax = plt.subplot(2,1,1, projection=ccrs.NorthPolarStereo())
-                ax.coastlines() 
+                ax.coastlines(resolution='110m') 
                 ax.set_extent([-180, 180, 55, 90], crs=ccrs.PlateCarree())
-                ax.add_feature(cfeature.BORDERS, lw=.5,)
+                ax.add_feature(cfeature.BORDERS, lw=.5)
                 ax.add_feature(cfeature.RIVERS)
-                ax.add_feature(cfeature.LAND, facecolor=("coral"), )
+                ax.add_feature(cfeature.LAND, facecolor=("coral"))
                 if logit_transform:
                     c = ax.scatter(x, y, s=1, c=inv_logit(self.value), transform=ccrs.PlateCarree(),
                                 cmap=cm.jet,vmin=valmin,vmax=valmax,edgecolor=None,lw=0)
@@ -561,7 +1165,7 @@ class Obs:
                 fig.colorbar(c, shrink=0.5, ax = ax)
 
                 ax2 = plt.subplot(2,1,2, projection=ccrs.SouthPolarStereo())
-                ax2.coastlines() 
+                ax2.coastlines(resolution='110m') 
                 ax2.set_extent([-180, 180, -90, -55], crs=ccrs.PlateCarree())
                 ax2.add_feature(cfeature.BORDERS, lw=.5)
                 ax2.add_feature(cfeature.RIVERS)
@@ -603,36 +1207,36 @@ def argo(list_of_obs):
 
 #   5 Randomly generated subsets of Argo 
 def argo_1(list_of_obs):  
-    argo_t_1  = Obs(yyyy, mm, dd, hh, fname=ERICLEV50INSITUOBSDIR+'/V3/FINAL/T_ARGO_'+yyyy+'_1.nc', id_obs=obsid_dict['id_t_obs'], vartype='TEMP', xsigo=xsigo_t, color='c', markersize=5, descriptor='Argo_1-T', NDAYS=EXP_NDAYS)
-    argo_s_1  = Obs(yyyy, mm, dd, hh, fname=ERICLEV50INSITUOBSDIR+'/V3/FINAL/S_ARGO_'+yyyy+'_1.nc', id_obs=obsid_dict['id_s_obs'], vartype='SALT', xsigo=xsigo_s, color='c', descriptor='Argo_1-S', NDAYS=EXP_NDAYS)
+    argo_t_1  = Obs(yyyy, mm, dd, hh, fname=ERICLEV50INSITUOBSDIR+'/ARGO/V3/FINAL/T_ARGO_'+yyyy+'_1.nc', id_obs=obsid_dict['id_t_obs'], vartype='TEMP', xsigo=xsigo_t, color='c', markersize=5, descriptor='Argo_1-T', NDAYS=EXP_NDAYS)
+    argo_s_1  = Obs(yyyy, mm, dd, hh, fname=ERICLEV50INSITUOBSDIR+'/ARGO/V3/FINAL/S_ARGO_'+yyyy+'_1.nc', id_obs=obsid_dict['id_s_obs'], vartype='SALT', xsigo=xsigo_s, color='c', descriptor='Argo_1-S', NDAYS=EXP_NDAYS)
     update_list_of_obs(list_of_obs, argo_t_1)
     update_list_of_obs(list_of_obs, argo_s_1)
     return list_of_obs
 
 def argo_2(list_of_obs):  
-    argo_t_2  = Obs(yyyy, mm, dd, hh, fname=ERICLEV50INSITUOBSDIR+'/V3/FINAL/T_ARGO_'+yyyy+'_2.nc', id_obs=obsid_dict['id_t_obs'], vartype='TEMP', xsigo=xsigo_t, color='c', markersize=5, descriptor='Argo_2-T', NDAYS=EXP_NDAYS)
-    argo_s_2  = Obs(yyyy, mm, dd, hh, fname=ERICLEV50INSITUOBSDIR+'/V3/FINAL/S_ARGO_'+yyyy+'_2.nc', id_obs=obsid_dict['id_s_obs'], vartype='SALT', xsigo=xsigo_s, color='c', descriptor='Argo_2-S', NDAYS=EXP_NDAYS)
+    argo_t_2  = Obs(yyyy, mm, dd, hh, fname=ERICLEV50INSITUOBSDIR+'/ARGO/V3/FINAL/T_ARGO_'+yyyy+'_2.nc', id_obs=obsid_dict['id_t_obs'], vartype='TEMP', xsigo=xsigo_t, color='c', markersize=5, descriptor='Argo_2-T', NDAYS=EXP_NDAYS)
+    argo_s_2  = Obs(yyyy, mm, dd, hh, fname=ERICLEV50INSITUOBSDIR+'/ARGO/V3/FINAL/S_ARGO_'+yyyy+'_2.nc', id_obs=obsid_dict['id_s_obs'], vartype='SALT', xsigo=xsigo_s, color='c', descriptor='Argo_2-S', NDAYS=EXP_NDAYS)
     update_list_of_obs(list_of_obs, argo_t_2)
     update_list_of_obs(list_of_obs, argo_s_2)
     return list_of_obs
 
 def argo_3(list_of_obs):  
-    argo_t_3  = Obs(yyyy, mm, dd, hh, fname=ERICLEV50INSITUOBSDIR+'/V3/FINAL/T_ARGO_'+yyyy+'_3.nc', id_obs=obsid_dict['id_t_obs'], vartype='TEMP', xsigo=xsigo_t, color='c', markersize=5, descriptor='Argo_3-T', NDAYS=EXP_NDAYS)
-    argo_s_3  = Obs(yyyy, mm, dd, hh, fname=ERICLEV50INSITUOBSDIR+'/V3/FINAL/S_ARGO_'+yyyy+'_3.nc', id_obs=obsid_dict['id_s_obs'], vartype='SALT', xsigo=xsigo_s, color='c', descriptor='Argo_3-S', NDAYS=EXP_NDAYS)
+    argo_t_3  = Obs(yyyy, mm, dd, hh, fname=ERICLEV50INSITUOBSDIR+'/ARGO/V3/FINAL/T_ARGO_'+yyyy+'_3.nc', id_obs=obsid_dict['id_t_obs'], vartype='TEMP', xsigo=xsigo_t, color='c', markersize=5, descriptor='Argo_3-T', NDAYS=EXP_NDAYS)
+    argo_s_3  = Obs(yyyy, mm, dd, hh, fname=ERICLEV50INSITUOBSDIR+'/ARGO/V3/FINAL/S_ARGO_'+yyyy+'_3.nc', id_obs=obsid_dict['id_s_obs'], vartype='SALT', xsigo=xsigo_s, color='c', descriptor='Argo_3-S', NDAYS=EXP_NDAYS)
     update_list_of_obs(list_of_obs, argo_t_3)
     update_list_of_obs(list_of_obs, argo_s_3)
     return list_of_obs
 
 def argo_4(list_of_obs):  
-    argo_t_4  = Obs(yyyy, mm, dd, hh, fname=ERICLEV50INSITUOBSDIR+'/V3/FINAL/T_ARGO_'+yyyy+'_4.nc', id_obs=obsid_dict['id_t_obs'], vartype='TEMP', xsigo=xsigo_t, color='c', markersize=5, descriptor='Argo_4-T', NDAYS=EXP_NDAYS)
-    argo_s_4  = Obs(yyyy, mm, dd, hh, fname=ERICLEV50INSITUOBSDIR+'/V3/FINAL/S_ARGO_'+yyyy+'_4.nc', id_obs=obsid_dict['id_s_obs'], vartype='SALT', xsigo=xsigo_s, color='c', descriptor='Argo_4-S', NDAYS=EXP_NDAYS)
+    argo_t_4  = Obs(yyyy, mm, dd, hh, fname=ERICLEV50INSITUOBSDIR+'/ARGO/V3/FINAL/T_ARGO_'+yyyy+'_4.nc', id_obs=obsid_dict['id_t_obs'], vartype='TEMP', xsigo=xsigo_t, color='c', markersize=5, descriptor='Argo_4-T', NDAYS=EXP_NDAYS)
+    argo_s_4  = Obs(yyyy, mm, dd, hh, fname=ERICLEV50INSITUOBSDIR+'/ARGO/V3/FINAL/S_ARGO_'+yyyy+'_4.nc', id_obs=obsid_dict['id_s_obs'], vartype='SALT', xsigo=xsigo_s, color='c', descriptor='Argo_4-S', NDAYS=EXP_NDAYS)
     update_list_of_obs(list_of_obs, argo_t_4)
     update_list_of_obs(list_of_obs, argo_s_4)
     return list_of_obs
 
 def argo_5(list_of_obs):  
-    argo_t_5  = Obs(yyyy, mm, dd, hh, fname=ERICLEV50INSITUOBSDIR+'/V3/FINAL/T_ARGO_'+yyyy+'_5.nc', id_obs=obsid_dict['id_t_obs'], vartype='TEMP', xsigo=xsigo_t, color='c', markersize=5, descriptor='Argo_5-T', NDAYS=EXP_NDAYS)
-    argo_s_5  = Obs(yyyy, mm, dd, hh, fname=ERICLEV50INSITUOBSDIR+'/V3/FINAL/S_ARGO_'+yyyy+'_5.nc', id_obs=obsid_dict['id_s_obs'], vartype='SALT', xsigo=xsigo_s, color='c', descriptor='Argo_5-S', NDAYS=EXP_NDAYS)
+    argo_t_5  = Obs(yyyy, mm, dd, hh, fname=ERICLEV50INSITUOBSDIR+'/ARGO/V3/FINAL/T_ARGO_'+yyyy+'_5.nc', id_obs=obsid_dict['id_t_obs'], vartype='TEMP', xsigo=xsigo_t, color='c', markersize=5, descriptor='Argo_5-T', NDAYS=EXP_NDAYS)
+    argo_s_5  = Obs(yyyy, mm, dd, hh, fname=ERICLEV50INSITUOBSDIR+'/ARGO/V3/FINAL/S_ARGO_'+yyyy+'_5.nc', id_obs=obsid_dict['id_s_obs'], vartype='SALT', xsigo=xsigo_s, color='c', descriptor='Argo_5-S', NDAYS=EXP_NDAYS)
     update_list_of_obs(list_of_obs, argo_t_5)
     update_list_of_obs(list_of_obs, argo_s_5)
     return list_of_obs
@@ -653,23 +1257,9 @@ def xbt(list_of_obs):
     return list_of_obs
 
 def xbt_synS(list_of_obs):
-    # print(SYNOBSDIR+'/SYN_XBT_')
+    print(SYNOBSDIR+'/SYN_XBT_')
     xbt_s   = Obs(yyyy, mm, dd, hh, fname=SYNOBSDIR+'/XBT/SYN_XBT_'+yyyy+'.nc', id_obs=obsid_dict['id_s_obs'], vartype='SALT', xsigo=xsigo_s, color='c', descriptor='XBT-SYN-S', NDAYS=EXP_NDAYS)
     update_list_of_obs(list_of_obs, xbt_s)
-    return list_of_obs
-
-def woa18_atargo(list_of_obs):
-    woa18_atargo_t  = Obs(yyyy, mm, dd, hh, fname=WOA18+'/WOA_ARGO/T_WOAatARGO_'+yyyy+'.nc', id_obs=obsid_dict['id_t_obs'], vartype='TEMP', xsigo=xsigo_t, color='c', markersize=5, descriptor='WOA18_atArgo-T', NDAYS=EXP_NDAYS)
-    woa18_atargo_s  = Obs(yyyy, mm, dd, hh, fname=WOA18+'/WOA_ARGO/S_WOAatARGO_'+yyyy+'.nc', id_obs=obsid_dict['id_s_obs'], vartype='SALT', xsigo=xsigo_s, color='c', descriptor='WOA18_atArgo-S', NDAYS=EXP_NDAYS)
-    update_list_of_obs(list_of_obs, woa18_atargo_t)
-    update_list_of_obs(list_of_obs, woa18_atargo_s)
-    return list_of_obs
-
-def woa18_atna(list_of_obs):
-    woa18_atna_t= Obs(yyyy, mm, dd, hh, fname=WOA18+'/WOA_NA/T_WOAatNA_'+yyyy+'.nc', id_obs=obsid_dict['id_t_obs'], vartype='TEMP', xsigo=xsigo_t, color='c', markersize=5, descriptor='WOA18_atNA-T', NDAYS=EXP_NDAYS)
-    woa18_atna_s= Obs(yyyy, mm, dd, hh, fname=WOA18+'/WOA_NA/S_WOAatNA_'+yyyy+'.nc', id_obs=obsid_dict['id_s_obs'], vartype='SALT', xsigo=xsigo_s, color='c', descriptor='WOA18_atNA-S', NDAYS=EXP_NDAYS)
-    update_list_of_obs(list_of_obs, woa18_atna_t)
-    update_list_of_obs(list_of_obs, woa18_atna_s)
     return list_of_obs
 
 def tao(list_of_obs):
@@ -707,37 +1297,7 @@ def aq_L2_sss(list_of_obs):     #Aquarius V5.0
 #   aq_sss  = Obs(yyyy, mm, dd, hh, fname=fname, id_obs=obsid_dict['id_sss_obs'], vartype='SSS',xsigo=xsigo_sss, descriptor='Aquarius_L3_SSS', color='y')
     aq_sss  = Obs(yyyy, mm, dd, hh, fname=fname, id_obs=obsid_dict['id_sss_obs'], vartype='SSS',xsigo=xsigo_sss, descriptor='Aquarius_L2_SSS', color='y')
     update_list_of_obs(list_of_obs, aq_sss)
-#   print 'list_of_obs is ',list_of_obs
-    return list_of_obs
-
-# SSS satellite (Aquarius modified with RIM v1 5m salt adjustment)
-#===================
-def aq_RIM5_L2_sss(list_of_obs):     #Aquarius V5.0 RIM v1 adjusted to 5m
-    fname=SatSSSOBSDIR+'L2_AQ_SSS_7.0/V5_RIMV1_5m/'+'SSS_TRK_AQ_V5_RIMV1_5m_'+yyyy+'.nc'
-    print ('fname is',fname)
-#   aq_sss  = Obs(yyyy, mm, dd, hh, fname=fname, id_obs=obsid_dict['id_sss_obs'], vartype='SSS',xsigo=xsigo_sss, descriptor='Aquarius_L3_SSS', color='y')
-    aq_RIM_sss  = Obs(yyyy, mm, dd, hh, fname=fname, id_obs=obsid_dict['id_sss_obs'], vartype='SSS',xsigo=xsigo_sss, descriptor='Aquarius_RIM_L2_SSS', color='y')
-    update_list_of_obs(list_of_obs, aq_RIM_sss)
-#   print 'list_of_obs is ',list_of_obs
-    return list_of_obs
-
-# SSS satellite (SMAP modified with RIM v1 5m salt adjustment)
-#=================== default to V4 2015-2018
-def smap_RIM5_L2_sss(list_of_obs):     #Aquarius V5.0 RIM v1 adjusted to 5m
-    fname=SatSSSOBSDIR+'L2_SMAP_SSS_7.0/V4_RIMV1_5m/'+'SSS_TRK_SMAP_V4_RIMV1_5m_'+yyyy+'.nc'
-    print ('fname is',fname)
-    smap_RIM_sss  = Obs(yyyy, mm, dd, hh, fname=fname, id_obs=obsid_dict['id_sss_obs'], vartype='SSS',xsigo=xsigo_sss, descriptor='SMAP_RIM_L2_SSS', color='y')
-    update_list_of_obs(list_of_obs, smap_RIM_sss)
-#   print 'list_of_obs is ',list_of_obs
-    return list_of_obs
-
-#=SMAP RIM FROM V5==  v5 2019
-def smap_RIM5_L2_sssV5(list_of_obs):     #Aquarius V5.0 RIM v1 adjusted to 5m
-    fname=SatSSSOBSDIR+'L2_SMAP_SSS_7.0/V5_RIMV1_5m/'+'SSS_TRK_SMAP_V5_RIMV1_5m_'+yyyy+'.nc'
-    print ('fname is',fname)
-    smap_RIM_sss  = Obs(yyyy, mm, dd, hh, fname=fname, id_obs=obsid_dict['id_sss_obs'], vartype='SSS',xsigo=xsigo_sss, descriptor='SMAP_RIM_L2_SSS', color='y')
-    update_list_of_obs(list_of_obs, smap_RIM_sss)
-#   print 'list_of_obs is ',list_of_obs
+#   print('list_of_obs is ',list_of_obs)
     return list_of_obs
 
 def smap_L2_sss(list_of_obs):     #SMAP V4.0
@@ -745,7 +1305,7 @@ def smap_L2_sss(list_of_obs):     #SMAP V4.0
     print('fname is',fname)
     smap_sss  = Obs(yyyy, mm, dd, hh, fname=fname, id_obs=obsid_dict['id_sss_obs'], vartype='SSS',xsigo=xsigo_sss, descriptor='SMAP_L2_SSS', color='y')
     update_list_of_obs(list_of_obs, smap_sss)
-#   print 'list_of_obs is ',list_of_obs
+#   print('list_of_obs is ',list_of_obs)
     return list_of_obs
 
 def smap_v4_1_L2_sss(list_of_obs):     #SMAP V4.1  currently only for 6/18-9/18
@@ -753,7 +1313,7 @@ def smap_v4_1_L2_sss(list_of_obs):     #SMAP V4.1  currently only for 6/18-9/18
     print('fname is',fname)
     smap_sss  = Obs(yyyy, mm, dd, hh, fname=fname, id_obs=obsid_dict['id_sss_obs'], vartype='SSS',xsigo=xsigo_sss, descriptor='SMAP_L2_SSS', color='y')
     update_list_of_obs(list_of_obs, smap_sss)
-#   print 'list_of_obs is ',list_of_obs
+#   print('list_of_obs is ',list_of_obs)
     return list_of_obs
 
 def smap_v4_2_L2_sss(list_of_obs):     #SMAP V4.2  currently only for 2019
@@ -761,7 +1321,7 @@ def smap_v4_2_L2_sss(list_of_obs):     #SMAP V4.2  currently only for 2019
     print('fname is correct',fname)
     smap_sss  = Obs(yyyy, mm, dd, hh, fname=fname, id_obs=obsid_dict['id_sss_obs'], vartype='SSS',xsigo=xsigo_sss, descriptor='SMAP_L2_SSS', color='y')
     update_list_of_obs(list_of_obs, smap_sss)
-#   print 'list_of_obs is ',list_of_obs
+#   print('list_of_obs is ',list_of_obs)
     return list_of_obs
 
 def smap_v4_3_L2_sss(list_of_obs):     #SMAP V4.3
@@ -769,7 +1329,7 @@ def smap_v4_3_L2_sss(list_of_obs):     #SMAP V4.3
     print('fname is correct',fname)
     smap_sss  = Obs(yyyy, mm, dd, hh, fname=fname, id_obs=obsid_dict['id_sss_obs'], vartype='SSS',xsigo=xsigo_sss, descriptor='SMAP_L2_SSS', color='y')
     update_list_of_obs(list_of_obs, smap_sss)
-#   print 'list_of_obs is ',list_of_obs
+#   print('list_of_obs is ',list_of_obs)
     return list_of_obs
 
 def smap_v5_0_L2_sss(list_of_obs):     #SMAP V5.0
@@ -777,12 +1337,11 @@ def smap_v5_0_L2_sss(list_of_obs):     #SMAP V5.0
     print('fname is correct',fname)
     smap_sss  = Obs(yyyy, mm, dd, hh, fname=fname, id_obs=obsid_dict['id_sss_obs'], vartype='SSS',xsigo=xsigo_sss, descriptor='SMAP_L2_SSS', color='y')
     update_list_of_obs(list_of_obs, smap_sss)
-#   print 'list_of_obs is ',list_of_obs
+#   print('list_of_obs is ',list_of_obs)
     return list_of_obs
 
 def smos_L2_sss(list_of_obs):     #SMOS V3.0
-    #fname=SatSSSSMOSOBSDIR+'SSS_TRK_SMOS_L32Q_'+yyyy+'.nc'
-    fname = LEV50INSITUOBSDIR + 'L2_SMOS_SSS_7.0/L32Q/SSS_TRK_SMOS_L32Q_'+yyyy+'.nc'
+    fname=SatSSSOBSDIR+'L2_SMOS_SSS_7.0/L32Q/'+'SSS_TRK_SMOS_L32Q_'+yyyy+'.nc'
     print('fname is',fname,hh)
     smos_sss  = Obs(yyyy, mm, dd, hh, fname=fname, id_obs=obsid_dict['id_sss_obs'], vartype='SSS',xsigo=xsigo_sss, descriptor='SMOS_L2_SSS', color='y')
 #  only grab the 12z data
@@ -790,21 +1349,11 @@ def smos_L2_sss(list_of_obs):     #SMOS V3.0
 #     smos_sss  = Obs(yyyy, mm, dd, hh, fname=fname, id_obs=obsid_dict['id_sss_obs'], vartype='SSS',xsigo=xsigo_sss, descriptor='SMOS_L2_SSS', color='y')
 
     update_list_of_obs(list_of_obs, smos_sss)
-#   print 'list_of_obs is ',list_of_obs
-    return list_of_obs
-
-def smos_RC_L2_sss(list_of_obs):     #SMOS RAIN CORRECTED V3.0
-    #fname=SatSSSSMOSOBSDIR+'SSS_TRK_SMOS_L32Q_RC_'+yyyy+'.nc'
-    fname = LEV50INSITUOBSDIR + 'L2_SMOS_SSS_7.0/L32Q/SSS_TRK_SMOS_L32Q_RC'+yyyy+'.nc'
-    print('fname is',fname,hh)
-    smos_RC_sss  = Obs(yyyy, mm, dd, hh, fname=fname, id_obs=obsid_dict['id_sss_obs'], vartype='SSS',xsigo=xsigo_sss, descriptor='SMOS_RC_L2_SSS', color='y')
-    update_list_of_obs(list_of_obs, smos_RC_sss)
-#   print 'list_of_obs is ',list_of_obs
+#   print('list_of_obs is ',list_of_obs)
     return list_of_obs
 
 def smossub_L2_sss(list_of_obs):     #SMOS V3.0
-    fname=SatSSSSMOSOBSDIR+'SSS_TRK_SMOS_L32Q_'+yyyy+'.nc'
-#    fname=SatSSSOBSDIR+'L2_SMOS_SSS_7.0/L32Q/'+'SSS_TRK_SMOS_L32Q_'+yyyy+'.nc'
+    fname=SatSSSOBSDIR+'L2_SMOS_SSS_7.0/L32Q/'+'SSS_TRK_SMOS_L32Q_'+yyyy+'.nc'
     print('fname is',fname,hh)
     smos_sss  = Obs(yyyy, mm, dd, hh, fname=fname, id_obs=obsid_dict['id_sss_obs'], vartype='SSS',xsigo=xsigo_sss, descriptor='SMOS_L2_SSS', color='y',platform='SMOSSUB')
 #  only grab the 12z data
@@ -812,7 +1361,7 @@ def smossub_L2_sss(list_of_obs):     #SMOS V3.0
 #     smos_sss  = Obs(yyyy, mm, dd, hh, fname=fname, id_obs=obsid_dict['id_sss_obs'], vartype='SSS',xsigo=xsigo_sss, descriptor='SMOS_L2_SSS', color='y')
 
     update_list_of_obs(list_of_obs, smos_sss)
-#   print 'list_of_obs is ',list_of_obs
+#   print('list_of_obs is ',list_of_obs)
     return list_of_obs
 
 def aq_L3_sss(list_of_obs):     #Aquarius V5.0
@@ -823,7 +1372,7 @@ def aq_L3_sss(list_of_obs):     #Aquarius V5.0
 #   aq_sss  = Obs(yyyy, mm, dd, hh, fname=fname, id_obs=obsid_dict['id_sss_obs'], vartype='SSS',xsigo=xsigo_sss, descriptor='Aquarius_L3_SSS', color='y')
     aq_sss  = Obs(yyyy, mm, dd, hh12, fname=fname, id_obs=obsid_dict['id_sss_obs'], vartype='SSS',xsigo=xsigo_sss, descriptor='Aquarius_L3_SSS', color='y')
     update_list_of_obs(list_of_obs, aq_sss)
-#   print 'list_of_obs is ',list_of_obs
+#   print('list_of_obs is ',list_of_obs)
     return list_of_obs
 
 #def smap_L3_sss(list_of_obs):     #SMAP V2.0
@@ -836,7 +1385,7 @@ def smap_L3_sss(list_of_obs):     #SMAP V4.0
     hh12=12  # pick up 12z all day
     smap_sss  = Obs(yyyy, mm, dd, hh12, fname=fname, id_obs=obsid_dict['id_sss_obs'], vartype='SSS',xsigo=xsigo_sss, descriptor='SMAP_L3_SSS', color='y')
     update_list_of_obs(list_of_obs, smap_sss)
-#   print 'list_of_obs is ',list_of_obs
+#   print('list_of_obs is ',list_of_obs)
     return list_of_obs
 
 def smos_L3_sss(list_of_obs):     #SMOS V3.0
@@ -846,7 +1395,7 @@ def smos_L3_sss(list_of_obs):     #SMOS V3.0
     hh12=12  # pick up 12z all day
     smos_sss  = Obs(yyyy, mm, dd, hh12, fname=fname, id_obs=obsid_dict['id_sss_obs'], vartype='SSS',xsigo=xsigo_sss, descriptor='SMOS_L3_SSS', color='y')
     update_list_of_obs(list_of_obs, smos_sss)
-#   print 'list_of_obs is ',list_of_obs
+#   print('list_of_obs is ',list_of_obs)
     return list_of_obs
 
 # Altimeters
@@ -1011,6 +1560,7 @@ def gmi_L2_sst(list_of_obs):
     return list_of_obs
 
 def merra2_sst(list_of_obs):
+    print('in merra2_sst')
     m2sst = Obs(yyyy, mm, dd, hh, fname='', id_obs=obsid_dict['id_sst_obs'], vartype='TEMP',xsigo=1.0, descriptor='M2-SST', platform = 'M2-SST', NDAYS=EXP_NDAYS)
     update_list_of_obs(list_of_obs, m2sst)
     return list_of_obs
@@ -1062,17 +1612,14 @@ switch_obs = {
     "Argo_2"      : argo_2,
     "Argo_3"      : argo_3,
     "Argo_4"      : argo_4,
-    "Argo_5"      : argo_5,  # this is WMO *8, *9 and is the %20 to be withheld
+    "Argo_5"      : argo_5,
     "CTD"         : ctd,
     "XBT"         : xbt,
     "XBT-SYN-S"   : xbt_synS,
-    "WOA18_atArgo": woa18_atargo,
-    "WOA18_atNA"  : woa18_atna,
     "TAO"         : tao,
     "PIRATA"      : pirata,
     "RAMA"        : rama,
     "SMOS"        : smos_L2_sss,
-    "SMOS_RC"     : smos_RC_L2_sss,
     "SMOSSUB"     : smossub_L2_sss,
     "SMOSL3"      : smos_L3_sss,
     "SMAP"        : smap_L2_sss,
@@ -1082,9 +1629,6 @@ switch_obs = {
     "SMAPV5.0"    : smap_v5_0_L2_sss,
     "SMAPL3"      : smap_L3_sss,
     "AQUARIUS"    : aq_L2_sss,
-    "AQUARIUS_RIM": aq_RIM5_L2_sss,
-    "SMAP_RIM"    : smap_RIM5_L2_sss,
-    "SMAP_RIMV5"  : smap_RIM5_L2_sssV5,
     "AQUARIUSL3"  : aq_L3_sss,
     "CryoSat-2"   : cryosat2,
     "CryoSat-2-N" : cryosat2_N,
@@ -1180,8 +1724,6 @@ switch_inst_ids = {
 #   "AVHRR18_G"   : 602,
     "XBT-SYN-S"   : 531,
 #   "OSTIA"       : ostia_L3_sst,
-    "WOA18_atArgo": 557,
-    "WOA18_atNA"  : 558,
     "M2-SST"      : 516,
 #   "AVHRR-18"    : avhrr18_L2_sst,
 #   "NOAA-16"     : noaa16_L2_sst,
@@ -1205,7 +1747,7 @@ print('============== Extracting obs ============')
 if list_of_obs:
     cnt=0
     for obs in list_of_obs:
-        print(obs.descriptor, obs.typ[0])
+        print(obs.descriptor)
         pngname='obs-'+mm+'-'+dd+'-'+yyyy
         obs.plot(pngname)
         if (cnt==0):
@@ -1229,15 +1771,15 @@ if list_of_obs:
             print(np.shape(oerr), np.shape(obs.oerr))
 
             oerr=np.concatenate( (oerr,obs.oerr) )
-        del obs
+
         cnt+=1
 
 #***code to manually fix 180 data ***************************
     for i in range (0,len(lon)):
         if lon[i]==180.:
-             lon[i]=-179.9999
+            lon[i]=-179.9999
         if lon[i]==-180.:
-             lon[i]=-179.9999
+            lon[i]=-179.9999
 #************************************************************
 
     nobs=len(typ)
@@ -1249,8 +1791,8 @@ if list_of_obs:
 #   check to make sure minimum observation types are in gmao- file
 #   minreq=[3073,5521,5351]  #Tz, Sz, ADT
 #   minreq=[3073,5351]  #Tz, ADT
-#   minreq=[3073]  #Tz, ADT
-    minreq=[]  #Tz, ADT
+    minreq=[3073]  #Tz, ADT
+#   minreq=[]  #Tz, ADT
 #   minreq=[3073,5521]  #Tz, Sz
 #   minreq=[3073]  #Tz, Sz
     for i in range(len(minreq)):
@@ -1258,13 +1800,13 @@ if list_of_obs:
             print("Yes,found in List : ",minreq[i])
         else:
             if minreq[i] == 3073:
-                print("YOU ARE MISSING",minreq[i],"Argo T")
-                print ('PARENT ID IS', os.getppid(), os.getpid())
+               print("YOU ARE MISSING",minreq[i],"Argo T")
+               print ('PARENT ID IS', os.getppid(), os.getpid())
             if minreq[i] == 5521:
-                print("YOU ARE MISSING",minreq[i],"Argo S")
+               print("YOU ARE MISSING",minreq[i],"Argo S")
             if minreq[i] == 5351:
-                print("YOU ARE MISSING",minreq[i],"ADT")
-    #   create a file to tell parents that obs are bad
+               print("YOU ARE MISSING",minreq[i],"ADT")
+#   create a file to tell parents that obs are bad
             command='touch '+SCRDIR+'/BADOBS'
             os.system(command)
             sys.exit(1)
@@ -1338,14 +1880,12 @@ if list_of_obs:
             infile=fnameout
             outfile='tempout.nc'
             cmd = "ncdump -v instid "+infile
-#          print cmd
+#          print(cmd)
             returned_value = os.system(cmd)
-#          print 'return is',returned_value
+#          print('return is',returned_value)
             if (returned_value != 0):
-#                cmd = "/discover/swdev/gmao_SIteam/Baselibs/latest-mpiuni-SLES12/Linux/bin/ncap2 -s 'instid[$nobs]=-999.' "+infile+' '+outfile
-                # cmd = f"/discover/swdev/gmao_SIteam/Baselibs/latest-mpiuni-SLES{SLN}/Linux/bin/ncap2 -s 'instid[$nobs]=-999.' "+infile+' '+outfile
-                cmd = f"/discover/swdev/gmao_SIteam/Baselibs/latest-mpiuni-SLES15/Linux/bin/ncap2 -s 'instid[$nobs]=-999.' "+infile+' '+outfile
-#                  print cmd
+                cmd = "/discover/swdev/gmao_SIteam/Baselibs/latest-mpiuni-SLES12/Linux/bin/ncap2 -s 'instid[$nobs]=-999.' "+infile+' '+outfile
+#                  print(cmd)
                 print('ADDING INST_ID TO NETCDF FILE')
                 os.system(cmd)
                 cmd = "mv "+outfile+' '+fnameout
@@ -1359,9 +1899,16 @@ else:
     with open('Nobs', 'w') as fh:
         fh.write('0'+'\n')
 try:
+  #  print("!!!!!!!!!!!!!CDA_MODULE_LIST")
+  #  os.system("module list")
+  #  print("!!!!!!!!!!!!!CDA_PATH")
+  #  os.system("echo $PATH")
+  #  print("!!!!!!!!!!!!!CDA_LIBRATY")
+  #  os.system("echo $LD_LIBRARY_PATH")
+  #  print("!!!!!!!!!!!!!CDA_MPI")
+  #  os.system("which mpirun")
     command = './oceanobs_nc2bin.x -y '+yyyy+' -m '+mm+' -d '+dd+' -indir1 gmao-obs- -outdir .'
     print(command)
     os.system(command)
-except Exception as err:
-    print(f"Unexpected {err}, {type(err)}")
+except:
     print('Could not convert to NCEP binary format')

@@ -1,0 +1,62 @@
+ODAS UPDATE FOR MILAN
+=====================
+October, 2024
+veronica.i.ruizxomchuk@nasa.gov
+
+
+Problems:
+===========
+1. Given the pagepool memory limitation in SLES17,
+python observer code overloaded the memory resulting
+in a staling of the job with no progress. The problem
+was caused by the code loading full datafiles in memory
+via numpy arrays.
+
+2. Users without prioritty could not complete jobs
+as observer jobs in queue often cuased the main job 
+run out of time.
+
+3. Expected behavior of model BOMBING when ADT sigo variance
+is bellow a threshold. The user would have to either correct
+altimeter observations, or remove the problematic altimeter
+for the cycle, and resubmit for one cycle.
+
+4. Hardcoded path dependencies for utilities like ncap2 and
+mpi4py require code modification every time a software change
+is implemented.
+
+Solutions:
+===========
+1. Xarray paralelized lazy operations were implemented
+to replace numpy array operations:
+
+UMD_utils/ocean_obs.py replaces old code stored as 
+UMD_utils/ocean_obs.legacy.py
+
+Legacy is conserved because new xarray reader where not 
+implemented for some legacy observer readers.
+New reader might be implemented as needed.
+
+2. The IN_LINE environmental variable set in
+ocean_das_config when set to True, allows for observers to
+be executed within the same job. This option is slower than
+spawning multiple observer jobs, but in the long run minimizes
+queue wait times for users.
+NOTE: IN_LINE=False (old configuration) should not be used 
+on Milan nodes due to cpu per node quota.
+
+scripts/oda_run.j replaces old code stored as
+scripts/oda_run.legacy.j
+
+scripts/ocean_observer.py replaces old code stored as
+scripts/ocean_observer.legacy.py
+
+3. An option BOMB_ON_SIGO was implemented in ocean_das_config
+so when set to false, it will skip the altimeter data for
+the single observer, while conserving the ADT obs for the 
+rest of the cycle. BOMB_ON_SIGO default is set to True,
+to be kept for observation people to correct observation
+files.
+
+4. Hard coded paths where removed and new modules were
+aded to g5_modules.

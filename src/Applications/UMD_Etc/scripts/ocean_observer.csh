@@ -22,17 +22,7 @@
 # /////////////////////////////////////////////////////////////////////////
 # Date: Dec 2015    
 
-source ../ocean_das_config
-#module purge
-#set MODS = `$GEOSDIR/Linux/bin/g5_modules modules`
-#module load $MODS
-
-#module load python/GEOSpyD/Min4.8.3_py3.8
-
-#   Yehui's solution to hardware change 11/12/21
-#module use -a /discover/swdev/gmao_SIteam/modulefiles-SLES12
-#module load mpi/impi-prov/19.1.0.166
-#module swap mpi/impi mpi/impi/2021.2.0
+source ${EXPDIR}/ocean_das_config
 
 limit stacksize unlimited
 #setenv CARTOPY_USER_BACKGROUNDS /discover/nobackup/projects/gmao/SIteam/CartopyDownloads
