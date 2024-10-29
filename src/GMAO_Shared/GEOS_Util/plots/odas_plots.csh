@@ -1,4 +1,4 @@
-#!/bin/csh 
+#!/bin/csh  -f
 setenv MPLBACKEND Agg    
 
 if ( $#argv != 10 ) then
@@ -16,8 +16,8 @@ set day     = ${8}
 set hour    = ${9}
 set GEOSUTIL = ${10}
 
-set PLOTDIR = $GEOSUTIL'/process_omf/'
-
+set PLOTDIR = $GEOSUTIL/odas_plots
+source $EXPDIR/ocean_das_config
 echo 'here' $EXPDIR  $GEOSUTIL $PLOTDIR
 
 #  new plotting of OMF/OMA stats from ERIC 2/12/21
@@ -60,11 +60,13 @@ $PLOTDIR/plot_increment.p3.py $EXPDIR/ocean_das/oana-$nyears$nmonths$ndays'_'$nh
 $PLOTDIR/plot_increment.p3.py $EXPDIR/ocean_das/oana-$nyears$nmonths$ndays'_'$nhours/mean_ana_restart/incr.nc salt 10 'SALT INCREMENT LEVEL 10' -0.5 0.5 incr.$nyears$nmonths$ndays.SALT.LEV10.png > $EXPDIR/ocean_das/oana-$nyears$nmonths$ndays'_'$nhours/plot19_output 
 
 #  now do the depth at equator plots
-$PLOTDIR/calculate_xz_plot $EXPDIR/ocean_das/oana-$nyears$nmonths$ndays'_'$nhours/mean_ana_restart/incr.nc 'temp' -5. 5. 300. $nyears $nmonths $ndays $nhours > calculate_xz_output1
-$PLOTDIR/calculate_xz_plot $EXPDIR/ocean_das/oana-$nyears$nmonths$ndays'_'$nhours/mean_ana_restart/incr.nc 'salt' -5. 5. 300. $nyears $nmonths $ndays $nhours > calculate_xz_output2
+#$PLOTDIR/calculate_xz_plot $EXPDIR/ocean_das/oana-$nyears$nmonths$ndays'_'$nhours/mean_ana_restart/incr.nc 'temp' -5. 5. 300. $nyears $nmonths $ndays $nhours > calculate_xz_output1
+#$PLOTDIR/calculate_xz_plot $EXPDIR/ocean_das/oana-$nyears$nmonths$ndays'_'$nhours/mean_ana_restart/incr.nc 'salt' -5. 5. 300. $nyears $nmonths $ndays $nhours > calculate_xz_output2
 
-$PLOTDIR/xarray.xzplot.p3.py XZ_TEMP_-5-5_0-300_$nyears$nmonths$ndays$nhours.nc 'temp' -1.0 1.0 XZ_TEMP_-5-5_0-300_$nyears$nmonths$ndays$nhours.png > outputxz1
-$PLOTDIR/xarray.xzplot.p3.py XZ_SALT_-5-5_0-300_$nyears$nmonths$ndays$nhours.nc 'salt' -0.2 0.2 XZ_SALT_-5-5_0-300_$nyears$nmonths$ndays$nhours.png > outputxz2
+#$PLOTDIR/xarray.xzplot.p3.py XZ_TEMP_-5-5_0-300_$nyears$nmonths$ndays$nhours.nc 'temp' -1.0 1.0 XZ_TEMP_-5-5_0-300_$nyears$nmonths$ndays$nhours.png > outputxz1
+$PLOTDIR/xz_plots.py $EXPDIR/ocean_das/oana-$nyears$nmonths$ndays'_'$nhours/mean_ana_restart/incr.nc 'temp' -5.0 5.0 300. $nyears $nmonths $ndays $nhours > outputxz1
+#$PLOTDIR/xarray.xzplot.p3.py XZ_SALT_-5-5_0-300_$nyears$nmonths$ndays$nhours.nc 'salt' -0.2 0.2 XZ_SALT_-5-5_0-300_$nyears$nmonths$ndays$nhours.png > outputxz2
+$PLOTDIR/xz_plots.py $EXPDIR/ocean_das/oana-$nyears$nmonths$ndays'_'$nhours/mean_ana_restart/incr.nc 'salt' -5.0 5.0 300. $nyears $nmonths $ndays $nhours > outputxz2
 
 echo 'list all the plots'
 ls -ltr *.png
@@ -76,10 +78,10 @@ ls -ltr *.png
     echo 'createing plots_odas directory', $EXPDIR/plots_odas
     mkdir $EXPDIR/plots_odas
  endif
- mv *.png $EXPDIR/plots_odas/.
- mv plot*_output $EXPDIR/plots_odas/.
- mv outputxz* $EXPDIR/plots_odas/.
- echo 'moving plots'
+mv *.png $EXPDIR/plots_odas/.
+mv plot*_output $EXPDIR/plots_odas/.
+mv outputxz* $EXPDIR/plots_odas/.
+echo 'moving plots'
  echo $EXPDIR
 
 endif

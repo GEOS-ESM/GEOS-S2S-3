@@ -611,8 +611,8 @@ if len(sys.argv) > 14:
                 valmin=-2.0
                 valmax=2.0
             if(whatparm=='omf-oma'):
-                valmin=-0.5
-                valmax=0.5
+                valmin=-0.2
+                valmax=0.2
 
         ax = fig.add_subplot(111, projection=ccrs.LambertCylindrical(-80))
         ax.set_global()
@@ -681,10 +681,8 @@ if len(sys.argv) > 14:
                 valmin=-0.02
                 valmax=0.02
             if(whatparm=='omf-oma'):
-#               valmin=-0.2
-#               valmax=0.2
-                valmin=-0.5
-                valmax=0.5
+                valmin=-0.2
+                valmax=0.2
             descriptor='Sz'
             ax = fig.add_subplot(111, projection=ccrs.LambertCylindrical(-80))
             ax.set_global()
@@ -708,10 +706,10 @@ if len(sys.argv) > 14:
                 valmin=-0.2
                 valmax=0.2
             if(whatparm=='omf-oma'):
-                valmin=-0.5
-                valmax=0.5
-#               valmin=-0.2
-#               valmax=0.2
+#               valmin=-0.5
+#               valmax=0.5
+                valmin=-0.2
+                valmax=0.2
             descriptor='Tz'
             ax = fig.add_subplot(111, projection=ccrs.LambertCylindrical(-80))
             ax.set_global()
