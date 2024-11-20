@@ -35,6 +35,11 @@ setenv RUN_CMD         "@RUN_CMD"
 setenv GCMVER           @GCMVER
 
 source $GEOSBIN/g5_modules
+
+if( $SITE == NAS ) then
+    module swap mpi-hpe/mpt.2.23 mpi-hpe/mpt.2.25
+endif
+
 setenv LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:${BASEDIR}/${ARCH}/lib
 
 #######################################################################
@@ -66,6 +71,11 @@ if( $GCMEMIP == TRUE ) then
     setenv  SCRDIR  $EXPDIR/scratch.$RSTDATE
 else
     setenv  SCRDIR  $EXPDIR/scratch
+    if( $SITE == NCCS ) then
+        if ( -l $SCRDIR ) unlink $SCRDIR
+        mkdir -p $TSE_TMPDIR/scratch
+        ln -s $TSE_TMPDIR/scratch $SCRDIR
+    endif 
 endif
 
 if (! -e $SCRDIR ) mkdir -p $SCRDIR
