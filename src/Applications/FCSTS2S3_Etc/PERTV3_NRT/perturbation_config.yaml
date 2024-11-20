@@ -1,0 +1,44 @@
+# Config file for pertubations setup
+
+# Paths to experiments
+paths:
+  # handle for where the files will be stored
+  ananame: 'GiOcean'
+  # exe path
+  XDIR:        /discover/nobackup/vruizxom/perturbations/space/vruizxom
+  # restart path
+  RESDIR:      /discover/nobackup/vruizxom/perturbations/space/vruizxom/Go_e1
+
+# Perturbation window config
+limits:
+  atmo:
+    daylim: 60
+    members: 5
+    # balanced:
+
+  ocn:
+    daylim: 60
+    omembers: 10
+    balanced: False
+
+# Deffinitions:
+# - daylim: how far back the window can go.
+# - members: how many perturbation members (pairs of dates for windows).
+# - balanced: balanced perturbations (positive and negative). If false or not present, only positive is given.
+
+# dates: 20160130 20160228 20160330 20160430 # not yet (geting it as arg) but this could be used to run several at once.
+
+dates_pool:
+    ATMpdates: 
+    #If commented out, perturbations will be run allways
+        atmDJF : [1201,1206,1211,1216,1221,1226,1231,0105,0110,0115,0120,0125,0130,0204,0209,0214,0219,0224]
+        atmMAM : [0301,0306,0311,0316,0321,0326,0331,0405,0410,0415,0420,0425,0430,0505,0510,0515,0520,0525,0530]
+        atmJJA : [0604,0609,0614,0619,0624,0629,0704,0709,0714,0719,0724,0729,0803,0808,0813,0818,0823,0828]
+        atmSON : [0902,0927,0912,0917,0922,0927,1002,1007,1012,1017,1022,1027,1101,1106,1111,1116,1121,1126]
+
+    OCNpdates:
+    #If commented out, perturbations will be run allways
+        ocnDJF : [1226,0130,0224]
+        ocnMAM : [0326,0425,0530]
+        ocnJJA : [0629,0729,0828]
+        ocnSON : [0927,1027,1126]

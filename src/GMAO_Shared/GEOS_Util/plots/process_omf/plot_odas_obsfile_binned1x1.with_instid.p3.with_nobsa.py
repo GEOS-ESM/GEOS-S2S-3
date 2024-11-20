@@ -27,7 +27,8 @@ from netCDF4 import Dataset
 from datetime import date
 import datetime
 import matplotlib.cm as cm
-from mpl_toolkits.basemap import Basemap
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
 
 switch_obs = {
      'SZ'   : 5521, # Salinity
@@ -313,6 +314,7 @@ if len(sys.argv) > 14:
                 leva=np.concatenate((leva,lev1a),axis=0)
                 instid1a=ncfile.variables['instida'][:]
                 instida=np.concatenate((instida,instid1a),axis=0)
+            ncfile.close()
 
     #               print np.size(obsid)
     #                       print obsid
@@ -551,20 +553,8 @@ if len(sys.argv) > 14:
 #             print (gridout2[ic],lonout,latout,ic, i,j)
                 ic=ic+1
     ssize=5*np.ones(len(gridout2))
-#       print ssize
+
     fig = plt.figure(num=1, figsize=(10,8), facecolor='w')
-#   fig = plt.figure(num=1, figsize=(15,12), facecolor='w')
-    fig.add_subplot(111)
-#   map = Basemap(projection='moll', llcrnrlat=-90, urcrnrlat=90,llcrnrlon=-180., urcrnrlon=180., resolution='c', lon_0=-80)
-    map = Basemap(projection='cyl', llcrnrlat=-90, urcrnrlat=90,llcrnrlon=-180., urcrnrlon=180., resolution='c', lon_0=-80)
-#   map = Basemap(projection='moll', llcrnrlat=-90, urcrnrlat=90,llcrnrlon=-180., urcrnrlon=180., resolution='c', lon_0=180)
-    x, y = list(map(lon2, lat2))
-#   print max(x),min(x)
-#   for i in range(0,len(x)):
-#     if(lon2[i] > 178.):
-#         print x[i]
-#     if(lon2[i] < -178.):
-#         print x[i]
    
     valmin=-0.02
     valmax=0.02
@@ -581,8 +571,8 @@ if len(sys.argv) > 14:
                 descriptor='SSH'
                 errmax=0.25
             if(whatparm=='omf-oma'):
-                valmin=-0.02
-                valmax=0.02
+                valmin=-0.2 
+                valmax=0.2
                 descriptor='SSH'
                 errmax=0.25
         if (obsid[0]==5525):   #  SST
@@ -621,17 +611,19 @@ if len(sys.argv) > 14:
                 valmin=-2.0
                 valmax=2.0
             if(whatparm=='omf-oma'):
-                valmin=-0.02
-                valmax=0.02
+                valmin=-0.5
+                valmax=0.5
 
-        plt.subplot(211)
-        map.drawcoastlines()
-        map.drawcountries()
-        map.drawmapboundary()
-#           print 'here1'
-        map.scatter(x, y, 1, c=gridout2,cmap=cm.jet,vmin=valmin,vmax=valmax,edgecolor=None,lw=0,alpha=1)
-        plt.colorbar(shrink=0.7)
-#       plt.colorbar(orientation="horizontal",pad=0.2)
+        ax = fig.add_subplot(111, projection=ccrs.LambertCylindrical(-80))
+        ax.set_global()
+        ax.coastlines()
+        ax.add_feature(cfeature.BORDERS, lw=.5)
+        ax.add_feature(cfeature.RIVERS)
+        ax.add_feature(cfeature.LAND)
+        cl = ax.scatter(lon2, lat2, 1, c=gridout2,transform=ccrs.PlateCarree(),
+                   cmap=cm.jet, vmin=valmin, vmax=valmax,
+                        edgecolor=None,lw=0,alpha=1)
+        fig.colorbar(cl, shrink=0.3)
 
     elif ( (obsid[0]==6000) | (obsid[0]==6001)):
         if (obsid[0]==6000):
@@ -643,37 +635,40 @@ if len(sys.argv) > 14:
                 valmax=0.2
             descriptor='AICE'
         errmax=0.5
-        map = Basemap(projection='npstere',lon_0=0,boundinglat=55, resolution='c')
-        x, y = list(map(lon, lat))
-        plt.subplot(211)
-        map.drawcoastlines()
-        map.drawcountries()
-        map.fillcontinents(color='coral')
-        map.drawmapboundary()
+        ax = fig.add_subplot(211, projection=ccrs.NorthPolarStereo())
+        ax.set_extent([-180, 180, 55, 90], crs=ccrs.PlateCarree())
+        ax.coastlines()
+        ax.add_feature(cfeature.BORDERS, lw=.5)
+        ax.add_feature(cfeature.RIVERS, color='coral')
+        ax.add_feature(cfeature.LAND)
         if logit_transform:
-#           print('here2')
-            map.scatter(x, y, 1, c=inv_logit(gridout2),cmap=cm.jet,vmin=valmin,vmax=valmax,edgecolor=None,lw=0)
+            cl = ax.scatter(lon2, lat2, 1, transform=ccrs.PlateCarree(),
+                            c=inv_logit(gridout2), cmap=cm.jet,
+                            vmin=valmin, vmax=valmax, edgecolor=None, lw=0)
         else:
-#           print('here3')
-            map.scatter(x, y, 1, c=gridout2,cmap=cm.jet,vmin=valmin,vmax=valmax,edgecolor=None,lw=0)
-        plt.colorbar(shrink=0.7)
-#       plt.colorbar(orientation="horizontal",pad=0.2)
+            print('here3')
+            cl = ax.scatter(lon2, lat2, 1, transform=ccrs.PlateCarree(),
+                            c=gridout2, cmap=cm.jet,
+                            vmin=valmin, vmax=valmax, edgecolor=None, lw=0)
+        fig.colorbar(cl, shrink=0.3)
 
-        map = Basemap(projection='spstere',lon_0=0,boundinglat=-55, resolution='c')
-        x, y = list(map(lon, lat))
-        plt.subplot(212)
-        map.drawcoastlines()
-        map.drawcountries()
-        map.fillcontinents(color='coral')
-        map.drawmapboundary()
+        ax2 = fig.add_subplot(212, projection=ccrs.SouthPolarStereo())
+        ax2.set_extent([-180, 180, -90, -55], crs=ccrs.PlateCarree())
+        ax2.coastlines()
+        ax2.add_feature(cfeature.BORDERS, lw=.5)
+        ax2.add_feature(cfeature.RIVERS, color='coral')
+        ax2.add_feature(cfeature.LAND)
         if logit_transform:
-#           print('here4')
-            map.scatter(x, y, 1, c=inv_logit(gridout2),cmap=cm.jet,vmin=valmin,vmax=valmax,edgecolor=None,lw=0)
+            cl = ax2.scatter(lon2, lat2, 1, transform=ccrs.PlateCarree(),
+                             c=inv_logit(gridout2), cmap=cm.jet,
+                             vmin=valmin, vmax=valmax, edgecolor=None)
         else:
-#           print('here5')
-            map.scatter(x, y, 1, c=gridout2,cmap=cm.jet,vmin=valmin,vmax=valmax,edgecolor=None,lw=0)
-        plt.colorbar(shrink=0.7)
-#       plt.colorbar(orientation="horizontal",pad=0.2)
+            print('here3')
+            cl = ax2.scatter(lon2, lat2, 1, transform=ccrs.PlateCarree(),
+                             c=gridout2, cmap=cm.jet,
+                             vmin=valmin, vmax=valmax, edgecolor=None)
+        ax2.colorbars(cl, shrink=0.3)
+    
     else:
         if (obsid[0]==5521):   # SZ
             if(whatparm=='obs'):
@@ -686,19 +681,21 @@ if len(sys.argv) > 14:
                 valmin=-0.02
                 valmax=0.02
             if(whatparm=='omf-oma'):
-                valmin=-0.1
-                valmax=0.1
+#               valmin=-0.2
+#               valmax=0.2
+                valmin=-0.5
+                valmax=0.5
             descriptor='Sz'
-            plt.subplot(211)
-            map.drawcoastlines()
-            map.drawcountries()
-            map.fillcontinents(color='coral')
-            map.drawmapboundary()
-#                      print ('here6')
-            map.scatter(x, y, 1, c=gridout2,cmap=cm.jet,vmin=valmin,vmax=valmax,edgecolor=None,lw=2)
-            plt.colorbar(shrink=0.7)
-#           plt.colorbar(orientation="horizontal",pad=0.2)
-    #              map.plot(x, y, color=gridout2, marker='.', markersize= 5, linestyle='None',alpha=0.2)
+            ax = fig.add_subplot(111, projection=ccrs.LambertCylindrical(-80))
+            ax.set_global()
+            ax.coastlines()
+#           ax.add_feature(cfeature.BORDERS, lw=.5)
+#           ax.add_feature(cfeature.RIVERS)
+            ax.add_feature(cfeature.LAND, color='coral')
+            cl = ax.scatter(lon2, lat2, 1, c=gridout2,transform=ccrs.PlateCarree(),
+                       cmap=cm.jet, vmin=valmin, vmax=valmax, edgecolor=None, lw=2)
+            fig.colorbar(cl, shrink=0.3)
+
         if (obsid[0]==3073):
     #              print ('here')
             if(whatparm=='obs'):
@@ -711,31 +708,29 @@ if len(sys.argv) > 14:
                 valmin=-0.2
                 valmax=0.2
             if(whatparm=='omf-oma'):
-#               valmin=-0.5
-#               valmax=0.5
-                valmin=-0.1
-                valmax=0.1
+                valmin=-0.5
+                valmax=0.5
+#               valmin=-0.2
+#               valmax=0.2
             descriptor='Tz'
-            plt.subplot(211)
-            map.drawcoastlines()
-            map.drawcountries()
-            map.fillcontinents(color='coral')
-            map.drawmapboundary()
-#                      print 'here7'
-            map.scatter(x, y, 1, c=gridout2,cmap=cm.jet,vmin=valmin,vmax=valmax,edgecolor=None,lw=2,alpha=1)
-            plt.colorbar(shrink=0.7)
-#           plt.colorbar(orientation='horizontal',pad=0.2)
-    #              map.plot(x, y, color=gridout2, marker='.', markersize= 5, linestyle='None',alpha=0.2)
+            ax = fig.add_subplot(111, projection=ccrs.LambertCylindrical(-80))
+            ax.set_global()
+            ax.coastlines()
+#           ax.add_feature(cfeature.BORDERS, lw=.5)
+#           ax.add_feature(cfeature.RIVERS)
+            ax.add_feature(cfeature.LAND, color='coral')
+            cl = ax.scatter(lon2, lat2, 1, c=gridout2,transform=ccrs.PlateCarree(),
+                       cmap=cm.jet, vmin=valmin, vmax=valmax, edgecolor=None, lw=2)
+            fig.colorbar(cl, shrink=0.3)
 
     datestart=yyyys+mms+dds+hhs
     dateend=yyyye+mme+dde+hhe
     titlestr=str(len(gridout2))+' '+descriptor+' '+whatparm+' '+str(yyyys)+str(mms)+str(dds)+str(hhs)+'-'+str(yyyye)+str(mme)+str(dde)+str(hhe)+'\n '+str(levtop)+'-'+str(levbot)+' m '+senstit2
     plt.title(titlestr)
 #   plt.savefig(descriptor+'_'+whatparm+'_'+datestart+'-'+dateend+'_'+levtop+'-'+levbot+'m_binned'+senstit2, dpi=300)
-    plt.savefig(descriptor+'_'+whatparm+'_'+datestart+'-'+dateend+'_'+levtop+'-'+levbot+'m_binned'+senstit2)
+    fig.savefig(descriptor+'_'+whatparm+'_'+datestart+'-'+dateend+'_'+levtop+'-'+levbot+'m_binned'+senstit2)
 #plt.clf()
 #       plt.show()  # to output on the screen
-    plt.close()
 else:
     print('# * Args:  ')
     print('# *              directory      : directory to  find obs-YYYYMMDD_HH.nc files')

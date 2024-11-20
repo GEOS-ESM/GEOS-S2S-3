@@ -10,8 +10,8 @@ ifndef ESMADIR
 endif
 
 ALLDIRS = GEOSagcm_GridComp\
-	  GEOSdataatm_GridComp\
-	  GEOSmkiau_GridComp\
+          GEOSdataatm_GridComp\
+          GEOSmkiau_GridComp\
           GEOSogcm_GridComp
 
 SRCS := GEOS_GcmGridComp.F90
@@ -146,6 +146,7 @@ $(LIB) lib : $(OBJS)
 #              ------------------------------------------
 
 GEOSmkiau_GridComp_install : GEOSagcm_GridComp_install
+GEOSdataatm_GridComp_install : GEOSagcm_GridComp_install
 
 #.
 

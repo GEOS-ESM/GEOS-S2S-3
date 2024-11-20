@@ -1,0 +1,28 @@
+PrimaryExports%%
+# -------------|-------|-------|--------|----------------------|--------|--------|-------------|----------|
+#  Import      |       |       | Regrid |        Refresh       | OffSet | Scale  | Variable On |   File   |
+#  Name        | Units | Clim  | Method |     Time Template    | Factor | Factor |     File    | Template |
+# -------------|-------|-------|--------|----------------------|--------|--------|-------------|----------|
+
+PS              'Pa'      Y         N               0             none     none      SLP        /discover/nobackup/mmehari/DATA/MODEL/dataAtm_forcing/CORE/NYF_v2.0/slp.clim.nc
+TA              'K'       Y         N               0             none     none      T_10_MOD   /discover/nobackup/mmehari/DATA/MODEL/dataAtm_forcing/CORE/NYF_v2.0/t_10_mod.clim.nc
+QA              '1'       Y         N               0             none     none      Q_10_MOD   /discover/nobackup/mmehari/DATA/MODEL/dataAtm_forcing/CORE/NYF_v2.0/q_10_mod.clim.nc   
+UA              'm s-1'   Y         N               0             none     none      U_10_MOD   /discover/nobackup/mmehari/DATA/MODEL/dataAtm_forcing/CORE/NYF_v2.0/u_10_mod.clim.nc
+VA              'm s-1'   Y         N               0             none     none      V_10_MOD   /discover/nobackup/mmehari/DATA/MODEL/dataAtm_forcing/CORE/NYF_v2.0/v_10_mod.clim.nc
+RUNOFF          'kg m-2 s-1'  Y     N               0             none     none      RUNOFF     /discover/nobackup/mmehari/DATA/MODEL/dataAtm_forcing/CORE/NYF_v2.0/ncar_runoff.clim.nc
+PCU             'kg m-2 s-1'  Y     N               0             none     none      RAIN       /discover/nobackup/mmehari/DATA/MODEL/dataAtm_forcing/CORE/NYF_v2.0/ncar_precip.clim.nc
+PLS             'kg m-2 s-1'  Y     N               0             none     none      RAIN       /discover/nobackup/mmehari/DATA/MODEL/dataAtm_forcing/CORE/NYF_v2.0/ncar_precip.clim.nc
+SNO             'kg m-2 s-1'  Y     N               0             none     none      SNOW       /discover/nobackup/mmehari/DATA/MODEL/dataAtm_forcing/CORE/NYF_v2.0/ncar_precip.clim.nc
+LWDN            'W m-2'   Y         N               0             none     none      LWDN_MOD   /discover/nobackup/mmehari/DATA/MODEL/dataAtm_forcing/CORE/NYF_v2.0/ncar_rad.clim.nc
+SWGDWN          'W m-2'   Y         N               0             none     none      SWDN_MOD   /discover/nobackup/mmehari/DATA/MODEL/dataAtm_forcing/CORE/NYF_v2.0/ncar_rad.clim.nc
+DUDT            'm s-2'       N     N               0             none     none      DUDT       /dev/null
+DVDT            'm s-2'       N     N               0             none     none      DVDT       /dev/null
+DTDT           'Pa K s-1'     N     N               0             none     none      DTDT       /dev/null
+DQVANA         'kg kg-1'      N     N               0             none     none      DQVANA     /dev/null
+DQLANA         'kg kg-1'      N     N               0             none     none      DQLANA     /dev/null
+DQIANA         'kg kg-1'      N     N               0             none     none      DQIANA     /dev/null
+DOXANA         'kg kg-1'      N     N               0             none     none      DOXANA     /dev/null
+DPEDT          'Pa s-1'       N     N               0             none     none      DPEDT      /dev/null
+PHIS           'm+2 s-2'      N     N               0             none     none      PHIS       /dev/null
+TRADV          'X'            N     N               0             none     none      TRADV      /dev/null
+%%
