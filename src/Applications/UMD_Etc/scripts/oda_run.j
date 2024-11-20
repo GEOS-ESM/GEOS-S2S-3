@@ -292,7 +292,7 @@ if( $ODAS_OUTPUT_OMA == True )then
    endif
    if ($IN_LINE == True) then
 #  False assumes forecast is already writen
-    ${UMD_LETKFSCRIPTS}/ocean_observer_comb.py oma ${ANADIR} False $DA_seq 
+    ${UMD_LETKFSCRIPTS}/ocean_observer.py oma ${ANADIR} False $DA_seq 
     set OBSSTATUS = $status
     if( $OBSSTATUS == 1 ) then
       echo "BAD OMA OBSERVER IN oda_run.j"

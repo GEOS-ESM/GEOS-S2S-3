@@ -45,7 +45,7 @@ setenv IN_LINE              True              # False: runs multiple observer jo
                                               # True: runs observers in line (within model job, model pauses to wait until complete). Recomended for MILAN nodes
 setenv ODAS_CONSTR          "[sky|cas]"       # Only used when IN_LINE is False. Must be same node constraint as in gcm_run.j
                                               # Not recomended for use in Milan.
-setenv BOMB_ON_SIGO         False             # True: BOMBS the model due to not meeting sigo ADT requirements (as before)
+setenv BOMB_ON_SIGO         True              # True: BOMBS the model due to not meeting sigo ADT requirements (as before)
                                               # False: Skips ADT observations that fail sigo requirements. Does not bomb.
 # Varibles used for salinity relaxation
 setenv SSSVAR                LEVITUSSC        # use SMAP seasonal cycle for SSS relaxation
