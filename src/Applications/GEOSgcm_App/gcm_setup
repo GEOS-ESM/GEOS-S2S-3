@@ -363,7 +363,7 @@ if(  $OGCM == "N"     | \
      $OGCM == "F"     | \
      $OGCM == "FALSE" ) set OGCM = FALSE
 
-if( $OGCM != TRUE & $OGCM != FALSE ) then
+if( $OGCM != "TRUE" & $OGCM != "FALSE" ) then
 echo
 echo "${C1}COUPLED${CN} must be set equal to TRUE or FALSE!"
 goto  OGCM
@@ -372,7 +372,7 @@ echo
 endif
 endif
 
-if( $OGCM == TRUE ) then
+if( $OGCM == "TRUE" ) then
 
     set COUPLED   = ""
     set OGRIDTYP  = "TM"
@@ -593,7 +593,7 @@ if( $AGCM_IM ==  "72" ) then
      set  CHEM_DT = $DT
      set JOB_SGMT = 00000015
      set NUM_SGMT = 20
-     if( $OGCM == TRUE ) then
+     if( $OGCM == "TRUE" ) then
           set  NX = $OGCM_NX
           set  NY = $OGCM_NY
      set OCEAN_DT = $DT
@@ -633,7 +633,7 @@ if( $AGCM_IM ==  "144" ) then
      set  CHEM_DT = $DT
      set JOB_SGMT = 00000015
      set NUM_SGMT = 20
-     if( $OGCM == TRUE ) then
+     if( $OGCM == "TRUE" ) then
           set  NX = $OGCM_NX
           set  NY = $OGCM_NY
      set OCEAN_DT = $DT
@@ -671,7 +671,7 @@ if( $AGCM_IM ==  "288" ) then
      set  CHEM_DT = $DT
      set JOB_SGMT = 00000008
      set NUM_SGMT = 5
-     if( $OGCM == TRUE ) then
+     if( $OGCM == "TRUE" ) then
           set  NX = $OGCM_NX
           set  NY = $OGCM_NY
      set OCEAN_DT = $DT
@@ -689,7 +689,7 @@ if( $AGCM_IM ==  "c90" ) then
      set IRRAD_DT = 3600
      set AGCM_IM  = 90
      set AGCM_JM  = `expr $AGCM_IM \* 6`
-     if( $OGCM == TRUE ) then
+     if( $OGCM == "TRUE" ) then
           set  NX = $OGCM_NY
           set  NY = $OGCM_NX
 	  set OCEAN_DT = $DT
@@ -715,7 +715,7 @@ if( $AGCM_IM ==  "576" ) then
      set  CHEM_DT = $DT
      set JOB_SGMT = 00000016
      set NUM_SGMT = 1
-     if( $OGCM == TRUE ) then
+     if( $OGCM == "TRUE" ) then
           set  NX = $OGCM_NX
           set  NY = $OGCM_NY
      set OCEAN_DT = $DT
@@ -734,7 +734,7 @@ if( $AGCM_IM ==  "c180" ) then
      set  CHEM_DT = $DT
      set AGCM_IM  = 180
      set AGCM_JM  = `expr $AGCM_IM \* 6`
-     if( $OGCM == TRUE ) then
+     if( $OGCM == "TRUE" ) then
           set  NX = 20
           set  NY = 72
      set OCEAN_DT = $DT
@@ -761,7 +761,7 @@ if( $AGCM_IM == "1152" ) then
      set JOB_SGMT = 00000005
      set NUM_SGMT = 1
      set NUM_READERS = 4
-     if( $OGCM == TRUE ) then
+     if( $OGCM == "TRUE" ) then
           set  NX = $OGCM_NX
           set  NY = $OGCM_NY
      set OCEAN_DT = $DT
@@ -967,10 +967,41 @@ else
 endif
 
 set RDOCEAN = FALSE
+set DATA_ATMOS = FALSE 
+set ACTUAL_ATM4OCN = ""
+set USE_DATA_ATM4OCN = 0
 
-if( $OGCM == TRUE ) then
+if( $OGCM == "TRUE" ) then
 
-RDOCEAN:
+DATATMOS:
+   echo "Do you wish to run ${C1}Data Atmosphere${CN}? (Default: ${C2}no${CN})"
+   set DATA_ATMOS = $<
+   if (.$DATA_ATMOS == .) then
+      set DATA_ATMOS = FALSE
+   else
+      set DATA_ATMOS = `echo $DATA_ATMOS | tr "[:lower:]" "[:upper:]"`
+      if ($DATA_ATMOS == "Y"    | \
+          $DATA_ATMOS == "YES"  | \
+          $DATA_ATMOS == "T"    | \
+          $DATA_ATMOS == "TRUE" ) set DATA_ATMOS = TRUE 
+      if ($DATA_ATMOS == "N"    | \
+          $DATA_ATMOS == "NO"   | \
+          $DATA_ATMOS == "F"    | \
+          $DATA_ATMOS == "FALSE") set DATA_ATMOS = FALSE
+      else if ($DATA_ATMOS != TRUE & $DATA_ATMOS != FALSE) then
+         echo
+         echo "Please answer ${C2}yes${CN} or ${C2}no${CN}!"
+         goto DATATMOS
+      endif
+   endif
+
+   if ($DATA_ATMOS == TRUE) then
+      set ACTUAL_ATM4OCN = "#"
+      set USE_DATA_ATM4OCN = 1
+      goto AFTEROCEAN
+   endif
+
+RDUALOCEAN:
    echo "    Do you wish to run the ${C1}REPLAY DUAL OCEAN${CN} Model? (Default: ${C2}NO${CN} or ${C2}FALSE${CN})"
    set   RDOCEAN  = $<
    if( .$RDOCEAN == . ) then
@@ -989,7 +1020,7 @@ RDOCEAN:
       if( $RDOCEAN != TRUE & $RDOCEAN != FALSE ) then
          echo
          echo "${C1}RDOCEAN${CN} must be set equal to TRUE or FALSE!"
-         goto  RDOCEAN
+         goto  RDUALOCEAN
       else
          echo
       endif
@@ -1055,6 +1086,7 @@ AODAS:
    endif
 endif
 
+AFTEROCEAN:
 set BEG_DATE =  '18910301 000000'
 set END_DATE =  '29990302 210000'
 set JOB_SGMT = "$JOB_SGMT 000000"
@@ -1098,7 +1130,7 @@ endif
 
 # Check for Runoff Routing Model
 # ------------------------------
-if( $OGCM == TRUE ) then
+if( $OGCM == "TRUE" ) then
     set RUNRRM = TRUE
     set RUN_ROUTE = 1
     goto GOCART
@@ -1920,7 +1952,7 @@ set FILES = "gcm_run.j          \
              HISTORY.rc.tmpl    "
 set FILES = `echo $FILES`
 
-if( $OGCM == TRUE ) then
+if( $OGCM == "TRUE" ) then
 
     set MOMDIR = ${OGCM_IM}x${OGCM_JM}
 
@@ -2138,6 +2170,10 @@ s/@RUN_ROUTE/$RUN_ROUTE/g
 s?@CPEXEC?$CPEXEC?g
 s?@TAREXEC?$TAREXEC?g
 
+s?@ACTUAL_ATM4OCN?$ACTUAL_ATM4OCN?g
+s?@USE_DATA_ATM4OCN?$USE_DATA_ATM4OCN?g
+
+
 EOF
 
 # Added FV3 Specific Parameters
@@ -2217,7 +2253,7 @@ end
 # --------------------------------------------
     set FILES = "AGCM.rc.tmpl gcm_run.j gcm_stats.j gcm_forecast.tmpl gcm_forecast.setup HISTORY.rc.tmpl gcm_convert.j gcm_regress.j gcm_post.j gcm_emip.setup gcm_plot.tmpl"
 
-if( $OGCM == TRUE ) then
+if( $OGCM == "TRUE" ) then
     set FILES = "$FILES input.nml.tmpl diag_table.tmpl field_table.tmpl"
 endif
 
@@ -2254,7 +2290,7 @@ if(! -e $EXPDIR/regress   ) mkdir -p $EXPDIR/regress
 if(! -e $EXPDIR/forecasts ) mkdir -p $EXPDIR/forecasts
 if(! -e $EXPDIR/convert   ) mkdir -p $EXPDIR/convert
 
-if( $OGCM == TRUE ) if(! -e $EXPDIR/RESTART ) mkdir -p $EXPDIR/RESTART
+if( $OGCM == "TRUE" ) if(! -e $EXPDIR/RESTART ) mkdir -p $EXPDIR/RESTART
 
 
 # Rename and Move Files to Relevant Experiment Work Sub-Directories
@@ -2278,7 +2314,7 @@ if( $OGCM == TRUE ) if(! -e $EXPDIR/RESTART ) mkdir -p $EXPDIR/RESTART
 /bin/mv $HOMDIR/AGCM.rc.tmpl           $HOMDIR/AGCM.rc
 /bin/mv $HOMDIR/HISTORY.rc.tmpl        $HOMDIR/HISTORY.rc
 
-if( $OGCM == TRUE ) then
+if( $OGCM == "TRUE" ) then
     /bin/mv $HOMDIR/plotocn.j          $EXPDIR/plot
     /bin/mv $HOMDIR/diag_table.tmpl    $HOMDIR/diag_table
     /bin/mv $HOMDIR/field_table.tmpl   $HOMDIR/field_table
@@ -2635,9 +2671,10 @@ echo " Experiment Description:                    $EXPDSC"
 echo " Atmospheric Horizontal Resolution:         ${AGCM_IM}x${AGCM_JM}"
 echo " Atmospheric Vertical Resolution:           $AGCM_LM"
 echo " Running the Coupled Ocean/Sea-Ice Model?   $OGCM"
-if ($OGCM == TRUE) then
+if ($OGCM == "TRUE") then
    echo "    Ocean Model Lat-Lon Horizontal Resolution::   ${OGCM_IM}x${OGCM_JM}"
    echo "    Ocean Model Vertical Resolution::             ${OGCM_LM}"
+   echo "    Using Data Atmosphere?                        $DATA_ATMOS" 
    echo "    Running the REPLAY DUAL OCEAN Model?          $RDOCEAN"
    if ( $RDOCEAN == TRUE ) then
       echo "        Running the ODAS Model?           $AODAS"
@@ -2841,7 +2878,7 @@ HOMDIR/gcm_run.j
 HOMDIR/gcm_emip.setup
 EOF
 
-if( $OGCM == TRUE ) then
+if( $OGCM == "TRUE" ) then
 cat >> $FILES_TO_PROCESS << EOF
 HOMDIR/input.nml
 HOMDIR/diag_table
