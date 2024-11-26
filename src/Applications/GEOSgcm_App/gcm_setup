@@ -1181,6 +1181,19 @@ endif
 # Check for GOCART
 # ----------------
 GOCART:
+
+# If we are running DATA_ATMOS, we can skip the GOCART bits, but we must still fill
+# things out with something. So we use the climatological aerosols settings so
+# the sed scripts don't get confused.
+if ($DATA_ATMOS == TRUE) then
+   set GOKART = FALSE
+   set AERO_PROVIDER   = GOCART.data
+   set EMISSIONS       = ""
+   set GOCART          = "#"
+   set HIST_GOCART     = "#DELETE"
+   set GOCART_TYPE     = "Climatological"
+else
+
 echo "Do you wish to run ${C1}GOCART${CN} with ${C2}Actual${CN} or ${C2}Climatological${CN} Aerosols? (Enter: ${C2}A${CN} (Default) or ${C2}C${CN})"
 set   GOKART  = $<
 if( .$GOKART == . ) set  GOKART  = A
@@ -1252,7 +1265,8 @@ set  GOCART          = "#"
 set  HIST_GOCART     = "#DELETE"
 set  GOCART_TYPE     = "Climatological"
 
-endif
+endif # GOKART
+endif # DATA_ATMOS
 
 # RATS Provider
 # -------------
@@ -2663,8 +2677,10 @@ else
    echo " Land Surface Model:                                  CatchmentCN Model"
 endif
 echo " Running the Runoff Routing Model?                    $RUNRRM"
-echo " Running GOCART with Actual or Climatology Aerosols?  $GOCART_TYPE"
-echo " GOCART Emission Files:                               $EMISSIONS"
+if ($DATA_ATMOS == FALSE) then
+   echo " Running GOCART with Actual or Climatology Aerosols?  $GOCART_TYPE"
+   echo " GOCART Emission Files:                               $EMISSIONS"
+endif
 echo " History Template used:                               $HISTORY_TEMPLATE"
 echo
 echo " Experiment Directory:"
