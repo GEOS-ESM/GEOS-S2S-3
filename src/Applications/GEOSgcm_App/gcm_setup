@@ -416,7 +416,7 @@ if( $OGCM == "TRUE" ) then
     echo "    Enter the Ocean Model ${C1}Vertical Resolution${CN}: ${C2}LM${CN} (Default: 50)"
     set   OGCM_LM = $<
     if( .$OGCM_LM == . ) then
-	set   OGCM_LM = 50
+       set OGCM_LM = 50
     endif
 
     set OGCM_GRIDSPEC = tripolar_${OGCM_IM}x${OGCM_JM}.ascii
@@ -429,10 +429,10 @@ else
     # OGCM = FALSE (Data Ocean Resolution)
     # ------------------------------------
     DORSLV:
-	echo "    Enter the ${C1}Data_Ocean Horizontal Resolution ${CN}code: ${C2}o1${CN} (1  -deg,  360x180  Reynolds) Default"
-    echo "                                                 ${C2}o2${CN} (1/4-deg, 1440x720  MERRA-2)"
-    echo "                                                 ${C2}o3${CN} (1/8-deg, 2880x1440 OSTIA)"
-    echo "                                                 ${C2}CS${CN} (Cubed-Sphere OSTIA)"
+    echo "    Enter the ${C1}Data_Ocean Horizontal Resolution ${CN}code: ${C2}o1${CN} (1  -deg,  360x180  Reynolds) Default"
+    echo "                                                     ${C2}o2${CN} (1/4-deg, 1440x720  MERRA-2)"
+    echo "                                                     ${C2}o3${CN} (1/8-deg, 2880x1440 OSTIA)"
+    echo "                                                     ${C2}CS${CN} (Cubed-Sphere OSTIA)"
     set   HRCODE = `echo $<`
     if( .$HRCODE == . ) set HRCODE = o1
     set   HRCODE = `echo $HRCODE | tr "[:upper:]" "[:lower:]"`
@@ -442,7 +442,7 @@ else
         $HRCODE != 'o3' & \
         $HRCODE != 'cs' ) goto DORSLV
     if( $HRCODE == 'o1' ) then
-	set Resolution = `echo  360  180`
+        set Resolution = `echo  360  180`
         set OGCM_IM  = $Resolution[1]
         set OGCM_JM  = $Resolution[2]
         set BCSTAG   = Icarus_Reynolds
@@ -692,11 +692,11 @@ if( $AGCM_IM ==  "c90" ) then
      if( $OGCM == "TRUE" ) then
           set  NX = $OGCM_NY
           set  NY = $OGCM_NX
-	  set OCEAN_DT = $DT
+          set OCEAN_DT = $DT
      else
           set  NX = 4
           set  NY = `expr $NX \* 6`
-	  set OCEAN_DT = $IRRAD_DT
+          set OCEAN_DT = $IRRAD_DT
      endif
      set  CHEM_DT = $DT
      set HYDROSTATIC = TRUE
@@ -974,7 +974,7 @@ set USE_DATA_ATM4OCN = 0
 if( $OGCM == "TRUE" ) then
 
 DATATMOS:
-   echo "Do you wish to run ${C1}Data Atmosphere${CN}? (Default: ${C2}no${CN})"
+   echo "    Do you wish to run ${C1}Data Atmosphere${CN}? (Default: ${C2}NO${CN} or ${C2}FALSE${CN})"
    set DATA_ATMOS = $<
    if (.$DATA_ATMOS == .) then
       set DATA_ATMOS = FALSE
@@ -988,9 +988,9 @@ DATATMOS:
           $DATA_ATMOS == "NO"   | \
           $DATA_ATMOS == "F"    | \
           $DATA_ATMOS == "FALSE") set DATA_ATMOS = FALSE
-      else if ($DATA_ATMOS != TRUE & $DATA_ATMOS != FALSE) then
+      if ($DATA_ATMOS != TRUE & $DATA_ATMOS != FALSE) then
          echo
-         echo "Please answer ${C2}yes${CN} or ${C2}no${CN}!"
+         echo "Please answer ${C2}YES${CN} or ${C2}NO${CN}!"
          goto DATATMOS
       endif
    endif
@@ -1073,11 +1073,11 @@ AODAS:
             set   rstREF_TIME  = 210000
          endif
 
-	set OGCM_NX = 40
-	set OGCM_NY = 36
-	set NX = 20
-	set NY = 72
-	@   OGCM_NPROCS = $OGCM_NX * $OGCM_NY
+         set OGCM_NX = 40
+         set OGCM_NY = 36
+         set NX = 20
+         set NY = 72
+         @  OGCM_NPROCS = $OGCM_NX * $OGCM_NY
 
          set RESTART_REC = ""
          set noODAS = "#DELETE"
@@ -1096,26 +1096,25 @@ if( $AODAS == TRUE ) then
 endif
 
  
-#######################################################################
-#           Check for land surface and runoff routing  models         #
-#######################################################################
+######################################################################
+#           Check for land surface and runoff routing models         #
+######################################################################
 
-# Check for Catche-Carbon
-# -----------------------
+# Check for Catch-Carbon
+# ----------------------
 CATCHCN:
 echo "Enter the choice of ${C1} Land Surface Model${CN}: use ${C2}1${CN} (Default: Catchment Model), ${C2}2${CN} (CatchmentCN Model)"
 set   LSM  = $<
 if( .$LSM == . ) then
-set   LSM  = 1
+   set   LSM  = 1
 endif
 
 if( $LSM != 1 & $LSM != 2 ) then
-echo
-echo "${C1} Land Surface Model${CN} must be set equal to ${C2}1{CN} or ${C2}2${CN}!"
-goto CATCHCN
+   echo
+   echo "${C1} Land Surface Model${CN} must be set equal to ${C2}1{CN} or ${C2}2${CN}!"
+   goto CATCHCN
 else
-echo
-endif
+   echo
 endif
 
 set HIST_CATCHCN     = ""
@@ -1319,7 +1318,7 @@ if( $SITE == 'NAS' ) then
               setenv COUPLEDIR  /nobackup/gmao_SIteam/ModelData/coupled/Forcings       # Coupled Ocean/Atmos Forcing
               setenv CPEXEC     cp                                                     # Copy utility for large copies
               setenv TAREXEC    tar                                                    # Tar utility for large archives
-	      set  G5LIBDIR=/nobackup/gmao_SIteam/Utilities/ocean-scripting/python/g5lib
+              set  G5LIBDIR=/nobackup/gmao_SIteam/Utilities/ocean-scripting/python/g5lib
 else if( $SITE == 'NCCS' ) then
               setenv BATCH_CMD "sbatch"                                                # SLURM Batch command
               setenv BATCH_GROUP "SBATCH --account="                                   # SLURM Syntax for account name
@@ -1360,7 +1359,7 @@ else if( $SITE == 'NCCS' ) then
               setenv COUPLEDIR  /home/yvikhlia/nobackup/coupled/Forcings               # Coupled Ocean/Atmos Forcing
               setenv CPEXEC     /bin/cp                                                # Copy utility for large copies
               setenv TAREXEC    tar                                                    # Tar utility for large archives
-	      set G5LIBDIR=/home/yvikhlia/python/g5lib
+              set G5LIBDIR=/home/yvikhlia/python/g5lib
 else
 # These are defaults for the desktop
               setenv BATCH_GROUP "SBATCH -A "                                          # PBS Syntax for GROUP
@@ -1957,7 +1956,7 @@ if( $OGCM == "TRUE" ) then
     set MOMDIR = ${OGCM_IM}x${OGCM_JM}
 
     if ($AODAS == TRUE) then
-	set MOMDIR = ${OGCM_IM}x${OGCM_JM}_odas
+       set MOMDIR = ${OGCM_IM}x${OGCM_JM}_odas
     endif
 
     /bin/cp ${G5LIBDIR}/plotocn.j $tmpDIR
@@ -1967,7 +1966,7 @@ if( $OGCM == "TRUE" ) then
                  input.nml.tmpl   \
                  diag_table.tmpl  \
                  field_table.tmpl \
-	         plotocn.j        \
+                 plotocn.j        \
                  __init__.py"
 
     set FILES = `echo $FILES`
