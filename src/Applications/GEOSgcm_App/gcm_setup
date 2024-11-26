@@ -374,6 +374,8 @@ endif
 
 if( $OGCM == "TRUE" ) then
 
+    set DEFAULT_HISTORY_TEMPLATE = "HISTORY.AOGCM.rc.tmpl"
+
     set COUPLED   = ""
     set OGRIDTYP  = "TM"
     set DATAOCEAN = "#DELETE"
@@ -425,6 +427,8 @@ if( $OGCM == "TRUE" ) then
     @   OGCM_NPROCS = $OGCM_NX * $OGCM_NY
 
 else
+
+    set DEFAULT_HISTORY_TEMPLATE = "HISTORY.AGCM.rc.tmpl"
 
     # OGCM = FALSE (Data Ocean Resolution)
     # ------------------------------------
@@ -998,6 +1002,8 @@ DATATMOS:
    if ($DATA_ATMOS == TRUE) then
       set ACTUAL_ATM4OCN = "#"
       set USE_DATA_ATM4OCN = 1
+
+      set DEFAULT_HISTORY_TEMPLATE = "HISTORY.DATAATM.rc.tmpl"
       goto AFTEROCEAN
    endif
 
@@ -1055,6 +1061,9 @@ AODAS:
       endif
 
       if( $AODAS == TRUE ) then
+
+         set DEFAULT_HISTORY_TEMPLATE = "HISTORY.AODAS.rc.tmpl"
+
          echo "          (AODAS) Enter the choice of ${C1} Restart Record Parameters: Frequency (hhmmss)${CN}: (Default: 240000)"
          set   rstREF_FREQ  = $<
          if( .$rstREF_FREQ == . ) then
@@ -1193,6 +1202,7 @@ if( $GOKART == TRUE ) then
 set GOCART          = ""
 set GOCART_INTERNAL = "GOCART_INTERNAL"
 set HIST_GOCART     = ""
+set GOCART_TYPE     = "Actual"
 
 # Emission Files
 # --------------
@@ -1240,6 +1250,7 @@ set  AERO_PROVIDER   = GOCART.data
 set  EMISSIONS       = ""
 set  GOCART          = "#"
 set  HIST_GOCART     = "#DELETE"
+set  GOCART_TYPE     = "Climatological"
 
 endif
 
@@ -1460,71 +1471,31 @@ set tmpDIR = $EXPDIR/.tmpDIR
 
     set check =  FALSE
 while( $check == FALSE )
-  if( -e $HOME/.HISTORYrc ) then
-            set HISTORYrc = `cat $HOME/.HISTORYrc`
+
+  echo "Enter the filename of the ${C1}HISTORY template${CN} to use"
+  echo "-----------------------------------------------------------"
+  echo "The default HISTORY Template is ${C2}${DEFAULT_HISTORY_TEMPLATE}${CN}"
+  echo "  1. Hit ENTER to use the default HISTORY template (${C2}${DEFAULT_HISTORY_TEMPLATE}${CN}) or"
+  echo "  2. Type the full path of the HISTORY template to use"
+
+  set   HISTORY_TEMPLATE  = $<
+  if( .$HISTORY_TEMPLATE == . ) then
+     set HISTORY_TEMPLATE = ${DEFAULT_HISTORY_TEMPLATE}
+  endif
+
+  # Check to see if the HISTORY template exists in the $ETCDIR
+  if( -e $HISTORY_TEMPLATE ) then
+     set check = TRUE
+     /bin/cp -f $HISTORY_TEMPLATE $tmpDIR/HISTORY.rc.tmpl
   else
-            set HISTORYrc = Current
-          echo $HISTORYrc > $HOME/.HISTORYrc
-  endif
-
-
-  echo "Enter the tag or directory (/filename) of the ${C1}HISTORY.AGCM.rc.tmpl${CN} to use"
-  echo "(To use ${C1}HISTORY.AGCM.rc.tmpl${CN} from current build, Type:  ${C2}Current${CN}         )"
-  echo "-------------------------------------------------------------------------"
-  echo "Hit ENTER to use Default Tag/Location: (${C2}${HISTORYrc}${CN})"
-  set   NUHISTORY  = $<
-  if( .$NUHISTORY != . ) set HISTORYrc = $NUHISTORY
-  if( -e $tmpDIR/HISTORY.rc.hold ) /bin/mv -f $tmpDIR/HISTORY.rc.hold $tmpDIR/HISTORY.rc.tmpl
-  if( -e $tmpDIR/HISTORY.rc.tmpl ) /bin/mv -f $tmpDIR/HISTORY.rc.tmpl $tmpDIR/HISTORY.rc.hold
-
-  if( "$HISTORYrc" == "Current" ) then
-            set check = TRUE
-            if( -e $HOME/.HISTORYrc ) /bin/rm $HOME/.HISTORYrc
-            echo $HISTORYrc >                 $HOME/.HISTORYrc
-            /bin/cp -f $tmpDIR/HISTORY.AGCM.rc.tmpl $tmpDIR/HISTORY.rc.tmpl
-  endif
-
-  if( "$HISTORYrc" != "Current" ) then
-       if( -f $HISTORYrc ) then
-            set check = TRUE
-cat $HOME/.HISTORYrc
-            if( -e $HOME/.HISTORYrc ) /bin/rm $HOME/.HISTORYrc
-            echo $HISTORYrc >                 $HOME/.HISTORYrc
-            /bin/cp -f $HISTORYrc $tmpDIR/HISTORY.rc.tmp1
-
-            set  EXPID_old = `grep  "EXPID:" $tmpDIR/HISTORY.rc.tmp1 | cut -d: -f2`
-            set EXPDSC_old = `grep "EXPDSC:" $tmpDIR/HISTORY.rc.tmp1 | cut -d: -f2`
-
-            /bin/rm -f $tmpDIR/command
-            set  string = "EXPID:"
-            echo cat $tmpDIR/HISTORY.rc.tmp1 \| awk \'\{if \( \$1 \~ \"${string}\" \) \
-                 \{sub \( \"${EXPID_old}\" , \"${EXPID}\"  \)\;print\} else print\}\' \> $tmpDIR/HISTORY.rc.tmpl > $tmpDIR/command
-            chmod +x   $tmpDIR/command
-            $tmpDIR/command
-            /bin/rm -f $tmpDIR/command
-            /bin/mv -f $tmpDIR/HISTORY.rc.tmpl $tmpDIR/HISTORY.rc.tmp1
-            cat $tmpDIR/HISTORY.rc.tmp1 | sed -e "s|${EXPDSC_old}|${EXPDSC}|g" > $tmpDIR/HISTORY.rc.tmpl
-            /bin/rm -f $tmpDIR/HISTORY.rc.tmp1
-       else if( -e $HISTORYrc/HISTORY.AGCM.rc.tmpl ) then
-            set check = TRUE
-            if( -e $HOME/.HISTORYrc ) /bin/rm $HOME/.HISTORYrc
-            echo $HISTORYrc >                 $HOME/.HISTORYrc
-            /bin/cp -f $HISTORYrc/HISTORY.AGCM.rc.tmpl $tmpDIR/HISTORY.rc.tmpl
-       else
-           cvs upd -r $HISTORYrc -p $APPDIR/HISTORY.AGCM.rc.tmpl > $APPDIR/HISTORY.rc.tmpl
-           if( $status != 0 ) then
-            echo " "
-            echo "\!\! ERROR in using $HISTORYrc as a cvs tag or directory/filename. \!\!"
-            echo "\!\! Please check cvs connectivity or $HISTORYrc syntax. \!\!"
-            echo " "
-           else
-            set check = TRUE
-            if( -e $HOME/.HISTORYrc ) /bin/rm $HOME/.HISTORYrc
-            echo $HISTORYrc >                 $HOME/.HISTORYrc
-           endif
-       endif
+     echo "Error: Could not find ${RED}${HISTORY_TEMPLATE}${RESET}"
+     echo ""
+     set check = FALSE
   endif
 end
+
+echo ""
+echo "Using ${C2}${HISTORY_TEMPLATE}${CN}"
 
 #######################################################################
 #                 Create Paths for HOME and EXP Directories
@@ -2671,12 +2642,12 @@ echo " Atmospheric Horizontal Resolution:         ${AGCM_IM}x${AGCM_JM}"
 echo " Atmospheric Vertical Resolution:           $AGCM_LM"
 echo " Running the Coupled Ocean/Sea-Ice Model?   $OGCM"
 if ($OGCM == "TRUE") then
-   echo "    Ocean Model Lat-Lon Horizontal Resolution::   ${OGCM_IM}x${OGCM_JM}"
-   echo "    Ocean Model Vertical Resolution::             ${OGCM_LM}"
+   echo "    Ocean Model Lat-Lon Horizontal Resolution:    ${OGCM_IM}x${OGCM_JM}"
+   echo "    Ocean Model Vertical Resolution:              ${OGCM_LM}"
    echo "    Using Data Atmosphere?                        $DATA_ATMOS" 
    echo "    Running the REPLAY DUAL OCEAN Model?          $RDOCEAN"
    if ( $RDOCEAN == TRUE ) then
-      echo "        Running the ODAS Model?           $AODAS"
+      echo "        Running the ODAS Model?                   $AODAS"
       if ( $AODAS == TRUE ) then
          echo "            Restart Record Parameters: Frequency (hhmmss):        $rstREF_FREQ"
          echo "            Restart Record Parameters: Reference Date (YYYYMMDD): $rstREF_DATE"
@@ -2692,8 +2663,9 @@ else
    echo " Land Surface Model:                                  CatchmentCN Model"
 endif
 echo " Running the Runoff Routing Model?                    $RUNRRM"
-echo " Running GOCART with Actual or Clomatology Aaerosols? $GOKART"
-echo " GOCART Emission Files:                               $EMISSIONS "
+echo " Running GOCART with Actual or Climatology Aerosols?  $GOCART_TYPE"
+echo " GOCART Emission Files:                               $EMISSIONS"
+echo " History Template used:                               $HISTORY_TEMPLATE"
 echo
 echo " Experiment Directory:"
 echo "    --> $EXPDIR"
