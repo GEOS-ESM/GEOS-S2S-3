@@ -971,11 +971,41 @@ else
 endif
 
 set RDOCEAN = FALSE
+set RUN_OBIO = FALSE
+set COMMENT_OBIO = "#"
+set USE_OCEANOBIOGEOCHEM = 0
 set DATA_ATMOS = FALSE 
 set ACTUAL_ATM4OCN = ""
 set USE_DATA_ATM4OCN = 0
 
 if( $OGCM == "TRUE" ) then
+
+OBIO:
+   echo "    Do you wish to run ${C1}NOBM(OBIO)${CN}? (Default: ${C2}NO${CN} or ${C2}FALSE${CN})"
+   set RUN_OBIO = $<
+   if (.$RUN_OBIO == .) then
+      set RUN_OBIO = FALSE
+   else
+      set RUN_OBIO = `echo $RUN_OBIO | tr "[:lower:]" "[:upper:]"`
+      if ($RUN_OBIO == "Y"    | \
+          $RUN_OBIO == "YES"  | \
+          $RUN_OBIO == "T"    | \
+          $RUN_OBIO == "TRUE" ) set RUN_OBIO = TRUE
+      if ($RUN_OBIO == "N"    | \
+          $RUN_OBIO == "NO"   | \
+          $RUN_OBIO == "F"    | \
+          $RUN_OBIO == "FALSE") set RUN_OBIO = FALSE
+      if ($RUN_OBIO != TRUE & $RUN_OBIO != FALSE) then
+         echo
+         echo "Please answer ${C2}YES${CN} or ${C2}NO${CN}!"
+         goto OBIO
+      endif
+   endif
+
+   if ($RUN_OBIO == TRUE) then 
+      set COMMENT_OBIO = ""
+      set USE_OCEANOBIOGEOCHEM = 1
+   endif
 
 DATATMOS:
    echo "    Do you wish to run ${C1}Data Atmosphere${CN}? (Default: ${C2}NO${CN} or ${C2}FALSE${CN})"
@@ -2153,6 +2183,9 @@ s/@RUN_ROUTE/$RUN_ROUTE/g
 
 s?@CPEXEC?$CPEXEC?g
 s?@TAREXEC?$TAREXEC?g
+
+s?@COMMENT_OBIO?$COMMENT_OBIO?g
+s?@USE_OCEANOBIOGEOCHEM?$USE_OCEANOBIOGEOCHEM?g
 
 s?@ACTUAL_ATM4OCN?$ACTUAL_ATM4OCN?g
 s?@USE_DATA_ATM4OCN?$USE_DATA_ATM4OCN?g
