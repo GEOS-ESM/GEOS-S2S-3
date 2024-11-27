@@ -8,7 +8,6 @@ COLLECTIONS: 'geosgcm_surf'
              'geosgcm_ocn3dT'
 #             'geosgcm_ocn2d'
              'geosgcm_ocn2dT'
-#             'geosgcm_obio'
 #             'geosgcm_icecat'
 #             'geosgcm_icesig'
 #             'geosgcm_seaice'
@@ -28,6 +27,7 @@ COLLECTIONS: 'geosgcm_surf'
 #             'oletkf_bkg'
 #             'mon_test'
 #             'geosgcm_intlayer_Nx'
+@COMMENT_OBIO             'geosgcm_obio'
              ::
 
   geosgcm_surf.template:  '%y4%m2%d2_%h2%n2z.nc4',
@@ -123,7 +123,7 @@ COLLECTIONS: 'geosgcm_surf'
   geosgcm_ocn3dT.archive:   '%c/Y%y4',
   geosgcm_ocn3dT.mode:      'time-averaged',
   geosgcm_ocn3dT.format: 'CFIO',           
-  geosgcm_ocn3dT.frequency:  010000,
+  geosgcm_ocn3dT.frequency:  240000,
   geosgcm_ocn3dT.levels: 'vgrid.ascii'
   geosgcm_ocn3dT.fields:  'DH'    , 'MOM',
                      'T'     , 'MOM',
