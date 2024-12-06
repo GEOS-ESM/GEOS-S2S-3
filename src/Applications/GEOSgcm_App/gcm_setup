@@ -973,6 +973,8 @@ endif
 set RDOCEAN = FALSE
 set RUN_OBIO = FALSE
 set COMMENT_OBIO = "#"
+set GEN_TRACERS = false
+set NUMBER_GEN_TRACERS = 5
 set USE_OCEANOBIOGEOCHEM = 0
 set DATA_ATMOS = FALSE 
 set ACTUAL_ATM4OCN = ""
@@ -1004,6 +1006,8 @@ OBIO:
 
    if ($RUN_OBIO == TRUE) then 
       set COMMENT_OBIO = ""
+      set GEN_TRACERS = true
+      set NUMBER_GEN_TRACERS = 19
       set USE_OCEANOBIOGEOCHEM = 1
    endif
 
@@ -2185,6 +2189,8 @@ s?@CPEXEC?$CPEXEC?g
 s?@TAREXEC?$TAREXEC?g
 
 s?@COMMENT_OBIO?$COMMENT_OBIO?g
+s?@GEN_TRACERS?$GEN_TRACERS?g
+s?@NUMBER_GEN_TRACERS?$NUMBER_GEN_TRACERS?g 
 s?@USE_OCEANOBIOGEOCHEM?$USE_OCEANOBIOGEOCHEM?g
 
 s?@ACTUAL_ATM4OCN?$ACTUAL_ATM4OCN?g
@@ -2691,6 +2697,7 @@ echo " Running the Coupled Ocean/Sea-Ice Model?   $OGCM"
 if ($OGCM == "TRUE") then
    echo "    Ocean Model Lat-Lon Horizontal Resolution:    ${OGCM_IM}x${OGCM_JM}"
    echo "    Ocean Model Vertical Resolution:              ${OGCM_LM}"
+   echo "    Running NOBM (OBIO)?                          $RUN_OBIO" 
    echo "    Using Data Atmosphere?                        $DATA_ATMOS" 
    echo "    Running the REPLAY DUAL OCEAN Model?          $RDOCEAN"
    if ( $RDOCEAN == TRUE ) then
