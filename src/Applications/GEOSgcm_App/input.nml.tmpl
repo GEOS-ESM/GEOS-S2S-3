@@ -40,11 +40,11 @@
 /
 
  &generic_tracer_nml
-        do_generic_tracer=.false.
+        do_generic_tracer=.@GEN_TRACERS.
         do_generic_CFC=.false.
         do_generic_TOPAZ=.false.
-	do_generic_GEN=.false.
-	num_generic_gen_tracers = 5
+	do_generic_GEN=.@GEN_TRACERS.
+	num_generic_gen_tracers = @NUMBER_GEN_TRACERS
 /
 
  &ice_model_nml
