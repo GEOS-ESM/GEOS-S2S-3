@@ -1,5 +1,5 @@
 !  $Id: MAPL_GenericCplComp.F90,v 1.14 2020/03/09 14:30:32 atrayano Exp $
-
+#define DEALOC_(A) if(associated(A))then;if(MAPL_ShmInitialized)then;call MAPL_SyncSharedMemory(rc=STATUS);call MAPL_DeAllocNodeArray(A,rc=STATUS);else;deallocate(A,stat=STATUS);endif;VERIFY_(STATUS);NULLIFY(A);endif
 #include "MAPL_Generic.h"
 
 !=============================================================================
@@ -21,6 +21,7 @@ module MAPL_GenericCplCompMod
 
   use ESMF
   use ESMFL_Mod
+  use MAPL_ShmemMod
   use MAPL_BaseMod
   use MAPL_ConstantsMod
   use MAPL_IOMod
@@ -316,6 +317,11 @@ contains
     VERIFY_(STATUS)
     allocate(STATE%ARRAY_COUNT (NCPLS), STAT=STATUS)
     VERIFY_(STATUS)
+    DO J = 1, NCPLS
+       NULLIFY(STATE%ARRAY_COUNT(J)%ptr1c)
+       NULLIFY(STATE%ARRAY_COUNT(J)%ptr2c)
+       NULLIFY(STATE%ARRAY_COUNT(J)%ptr3c)
+    END DO
     allocate(STATE%ACCUM_RANK (NCPLS), STAT=STATUS)
     VERIFY_(STATUS)
     allocate(STATE%couplerType(NCPLS), STAT=STATUS)
@@ -1301,7 +1307,7 @@ contains
           case default
              ASSERT_(.false.)
           end select
-          if(associated(mask)) deallocate(mask)
+          DEALOC_(mask)
        end do
 
        if (am_i_root) call Free_File(unit = UNIT, rc=STATUS)
@@ -1494,7 +1500,7 @@ contains
           case default
              ASSERT_(.false.)
           end select
-          if(associated(mask)) deallocate(mask)
+          DEALOC_(mask)
        end do
 
        if(am_i_root) call Free_File(unit = UNIT, rc=STATUS)
