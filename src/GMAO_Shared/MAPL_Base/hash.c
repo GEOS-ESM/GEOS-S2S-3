@@ -1,5 +1,4 @@
 
-// $Id: hash.c,v 1.11 2014/11/12 21:06:31 atrayano Exp $
 
 #ifndef sysAIX
 #include <stdio.h>
@@ -12,6 +11,10 @@
 
 #define FREE(A) (void)free(A); A=NULL
 
+// TLC - missing signatures were causing compilation warnings
+static int hash1(int);
+static int hash2(int,int);
+
 typedef struct {
   int i,j,k,m;
 } entry_t;
@@ -20,7 +23,7 @@ typedef struct{
   entry_t *entry_list;
   int next_entry, size;
 }  bucket_t;
-  
+
 typedef struct {
   bucket_t *bucket_list;
   int num_entries, num_buckets;
@@ -35,7 +38,7 @@ void init_hash(hash_t *h, int nbuckets) {
 
   h->bucket_list = (bucket_t *)malloc((size_t)(nbuckets*sizeof(bucket_t)));
   if(!h->bucket_list) {
-    printf("hash.c $Name: GEOS-S2S-3_20231512 $ line=%d : Could not allocate bucket list\n",__LINE__);
+    printf("hash.c line=%d : Could not allocate bucket list\n",__LINE__);
     exit(1);
   }
   for(l=0; l<nbuckets; l++) {
@@ -52,7 +55,7 @@ void init_bucket(bucket_t *b) {
   b->next_entry = 0;
   b->entry_list = (entry_t *)malloc((size_t)(b->size*sizeof(entry_t)));
   if(!b->entry_list) {
-    printf("hash.c $Name: GEOS-S2S-3_20231512 $ line=%d : Could not allocate entry list\n",__LINE__);
+    printf("hash.c line=%d : Could not allocate entry list\n",__LINE__);
     exit(1);
   }
 }
@@ -68,7 +71,7 @@ int create_hash(int nbuckets)
   if(!hash_heap) {
     hash_heap = (hash_t *)malloc(hash_heap_size*sizeof(hash_t));
     if(!hash_heap) {
-      printf("hash.c $Name: GEOS-S2S-3_20231512 $ line=%d : Could not allocate hash_heap\n",__LINE__);
+      printf("hash.c line=%d : Could not allocate hash_heap\n",__LINE__);
       exit(1);
     }
     for(i=0;i<hash_heap_size;i++) hash_heap[i].bucket_list=(bucket_t *)NULL;
@@ -85,15 +88,15 @@ int create_hash(int nbuckets)
   // If newhash requires bigger heap, reallocate it
 
   if(newhash==hash_heap_size) {
-    hash_heap = 
+    hash_heap =
       (hash_t *)realloc(hash_heap,sizeof(hash_t)*(hash_heap_size+=HEAPCHUNK));
 
     if(!hash_heap) {
-      printf("hash.c $Name: GEOS-S2S-3_20231512 $ line=%d : Could not expand hash_heap\n",__LINE__);
+      printf("hash.c line=%d : Could not expand hash_heap\n",__LINE__);
       exit(1);
     }
 
-    for(i=newhash;i<hash_heap_size;i++) 
+    for(i=newhash;i<hash_heap_size;i++)
       hash_heap[i].bucket_list=(bucket_t *)NULL;
   }
 
@@ -109,14 +112,14 @@ void destroy_hash(int h)
   int i;
 
   if(!hash_heap) {
-    printf("hash.c $Name: GEOS-S2S-3_20231512 $ line=%d : Attempt to destroy hash from empty heap\n",__LINE__);
+    printf("hash.c line=%d : Attempt to destroy hash from empty heap\n",__LINE__);
     exit(1);
   } else if(!hash_heap[h].bucket_list) {
-    printf("hash.c $Name: GEOS-S2S-3_20231512 $ line=%d : Attempt to destroy uninitalized hash\n",__LINE__);
+    printf("hash.c line=%d : Attempt to destroy uninitalized hash\n",__LINE__);
     exit(1);
-  } else { 
+  } else {
     for(i=0;i<hash_heap[h].num_buckets;i++) {
-	FREE(hash_heap[h].bucket_list[i].entry_list);
+       FREE(hash_heap[h].bucket_list[i].entry_list);
     }
     FREE(hash_heap[h].bucket_list);
   }
@@ -164,9 +167,9 @@ void dump_hash(int h, int *i, int *j, int *k)
     bucket = hash->bucket_list + l;
     for(m=0; m<bucket->next_entry; m++) {
       entry = (bucket->entry_list) + m;
-      i[num]==entry->i;
-      j[num]==entry->j;
-      k[num]==entry->k;
+      i[num]=entry->i;
+      j[num]=entry->j;
+      k[num]=entry->k;
       num++;
     }
   }
@@ -185,13 +188,13 @@ int increment_hash(int h, int i, int j, int k)
 
   if(!hash_heap) {
 
-    printf("hash.c $Name: GEOS-S2S-3_20231512 $ line=%d : Attempt to increment hash from empty heap\n",__LINE__);
+    printf("hash.c line=%d : Attempt to increment hash from empty heap\n",__LINE__);
     exit(1);
 
   } else if(!(hash_heap[h].bucket_list)) {
 
-    printf("hash.c $Name: GEOS-S2S-3_20231512 $ line=%d : Attempt to increment uninitalized hash %d i=%d j=%d %ld\n",
-	   __LINE__,h,i,j,hash_heap[h].bucket_list);
+    printf("hash.c line=%d : Attempt to increment uninitalized hash %d i=%d j=%d %ld\n",
+          __LINE__,h,i,j,(long) hash_heap[h].bucket_list);
     exit(1);
 
   } else {
@@ -208,7 +211,7 @@ int increment_hash(int h, int i, int j, int k)
       key=hash1(i);
     else if(k==INT_MAX)
       key=hash2(i,j);
-    else 
+    else
       key=hash2(hash2(i,j),k);
 
     hash   = hash_heap+h;
@@ -223,19 +226,19 @@ int increment_hash(int h, int i, int j, int k)
 
       int m;
       for(m=bucket->next_entry-1; m>=0; m--) {
-	entry = (bucket->entry_list) + m;
-	if(entry->i==i && entry->j==j && entry->k==k)
-	  return entry->m;
+         entry = (bucket->entry_list) + m;
+         if(entry->i==i && entry->j==j && entry->k==k)
+            return entry->m;
       }
 
       if(bucket->next_entry == bucket->size) {
-	bucket->size      += HASHCHUNK;
-	bucket->entry_list = 
-	  (entry_t *)realloc(bucket->entry_list,sizeof(entry_t)*bucket->size);
-	if(!bucket->entry_list) {
-	  printf("hash.c $Name: GEOS-S2S-3_20231512 $ %d : Could not reallocate entry list\n",__LINE__);
-	  exit(1);
-	}
+         bucket->size      += HASHCHUNK;
+         bucket->entry_list =
+            (entry_t *)realloc(bucket->entry_list,sizeof(entry_t)*bucket->size);
+         if(!bucket->entry_list) {
+            printf("hash.c line=%d : Could not reallocate entry list\n",__LINE__);
+            exit(1);
+         }
       }
 
     }
@@ -250,7 +253,7 @@ int increment_hash(int h, int i, int j, int k)
     entry->m = hash->num_entries;
 
     return entry->m;
-  }  
+  }
 }
 
 // Hash function from 2 ints to 1 int
