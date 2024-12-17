@@ -550,7 +550,7 @@ endif
 
 # Set DEFAULT SHMEM Parameter
 # ---------------------------
-     set USE_SHMEM = 1
+     set USE_SHMEM = 0
 
 # Set IAU-Forcing and Bias Correction OFF
 # ---------------------------------------
@@ -1146,6 +1146,16 @@ endif
 # Check for Catch-Carbon
 # ----------------------
 CATCHCN:
+
+# If we are running DATA_ATMOS, we can skip the Land bits, but we must still fill
+# things out with something. So we use the default Land settings.
+
+if ($DATA_ATMOS == TRUE) then
+  set LSM         = 1
+  set LSM_CHOICE  = 1
+  set HIST_CATCHCN   = "#DELETE"
+else
+
 echo "Enter the choice of ${C1} Land Surface Model${CN}: use ${C2}1${CN} (Default: Catchment Model), ${C2}2${CN} (CatchmentCN Model)"
 set   LSM  = $<
 if( .$LSM == . ) then
@@ -1169,14 +1179,21 @@ else
     set LSM_CHOICE = 2
 endif
 
+endif # DATA_ATMOS
 
 # Check for Runoff Routing Model
 # ------------------------------
 if( $OGCM == "TRUE" ) then
-    set RUNRRM = TRUE
-    set RUN_ROUTE = 1
+    if ($DATA_ATMOS == TRUE) then
+      set RUNRRM = FALSE
+      set RUN_ROUTE = 0
+    else
+      set RUNRRM = TRUE
+      set RUN_ROUTE = 1
+    endif
     goto GOCART
 endif
+
 RRM:
 echo "Do you wish to run ${C1} the Runoff Routing Model${CN}? (Default: ${C2}NO${CN} or ${C2}FALSE${CN})"
 set   RUNRRM  = $<
@@ -1848,32 +1865,30 @@ EOF
 if ( $SITE == 'NCCS' ) then
 
 cat > $HOMDIR/SETENV.commands << EOF
+setenv I_MPI_SHM_HEAP_VSIZE 512
+setenv PSM2_MEMORY large
+
+setenv I_MPI_EXTRA_FILESYSTEM 1
+setenv I_MPI_EXTRA_FILESYSTEM_FORCE gpfs
 
 # We set some variables only on SLES15 at NCCS
 set OS_VERSION=\`grep VERSION_ID /etc/os-release | cut -d= -f2 | cut -d. -f1 | sed 's/"//g'\`
 
 if ( \$OS_VERSION == 15 ) then
-    setenv I_MPI_FABRICS shm:ofi
-    setenv I_MPI_OFI_PROVIDER psm3
-#    setenv I_MPI_FALLBACK 0
-#    setenv I_MPI_FABRICS ofi
-#    setenv I_MPI_OFI_PROVIDER psm3
-#    setenv I_MPI_ADJUST_SCATTER 2
-#    setenv I_MPI_ADJUST_SCATTERV 2
-#    setenv I_MPI_ADJUST_GATHER 2
-#    setenv I_MPI_ADJUST_GATHERV 3
-#    setenv I_MPI_ADJUST_ALLGATHER 3
-#    setenv I_MPI_ADJUST_ALLGATHERV 3
-#    setenv I_MPI_ADJUST_ALLREDUCE 12
-#    setenv I_MPI_ADJUST_REDUCE 10
-#    setenv I_MPI_ADJUST_BCAST 11
-#    setenv I_MPI_ADJUST_REDUCE_SCATTER 4
-#    setenv I_MPI_ADJUST_BARRIER 9
-else
-    setenv I_MPI_SHM_HEAP_VSIZE 512
-    setenv PSM2_MEMORY large
-    setenv I_MPI_EXTRA_FILESYSTEM 1
-    setenv I_MPI_EXTRA_FILESYSTEM_FORCE gpfs
+setenv I_MPI_FALLBACK 0
+setenv I_MPI_FABRICS ofi
+setenv I_MPI_OFI_PROVIDER psm3
+setenv I_MPI_ADJUST_SCATTER 2
+setenv I_MPI_ADJUST_SCATTERV 2
+setenv I_MPI_ADJUST_GATHER 2
+setenv I_MPI_ADJUST_GATHERV 3
+setenv I_MPI_ADJUST_ALLGATHER 3
+setenv I_MPI_ADJUST_ALLGATHERV 3
+setenv I_MPI_ADJUST_ALLREDUCE 12
+setenv I_MPI_ADJUST_REDUCE 10
+setenv I_MPI_ADJUST_BCAST 11
+setenv I_MPI_ADJUST_REDUCE_SCATTER 4
+setenv I_MPI_ADJUST_BARRIER 9
 endif
 EOF
 
@@ -2713,13 +2728,13 @@ if ($OGCM == "TRUE") then
 else
    echo "    Data_Ocean Horizontal Resolution: ${OGCM_IM}x${OGCM_JM}"
 endif
-if ($LSM == 1) then
-   echo " Land Surface Model:                                  Catchment Model"
-else
-   echo " Land Surface Model:                                  CatchmentCN Model"
-endif
-echo " Running the Runoff Routing Model?                    $RUNRRM"
 if ($DATA_ATMOS == FALSE) then
+   if ($LSM == 1) then
+      echo " Land Surface Model:                                  Catchment Model"
+   else
+      echo " Land Surface Model:                                  CatchmentCN Model"
+   endif
+   echo " Running the Runoff Routing Model?                    $RUNRRM"
    echo " Running GOCART with Actual or Climatology Aerosols?  $GOCART_TYPE"
    echo " GOCART Emission Files:                               $EMISSIONS"
 endif

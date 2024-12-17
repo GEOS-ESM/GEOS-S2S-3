@@ -352,7 +352,7 @@ LSM_CHOICE: @LSM_CHOICE
 # -------------------------------------------------------------------------------
 
 >>>DATAOCEAN<<<RUN_ROUTE: @RUN_ROUTE
->>>COUPLED<<<RUN_ROUTE: 1
+>>>COUPLED<<<RUN_ROUTE: @RUN_ROUTE
 
 ##############################################################################################
 ##############################################################################################
@@ -547,9 +547,9 @@ NDVI_FILE:                 ndvi.data
 TILING_FILE:                tile.bin 
 VISDF_FILE:                visdf.dat
 NIRDF_FILE:                nirdf.dat
->>>COUPLED<<<ROUTING_FILE:             runoff.bin
+>>>COUPLED<<<@ACTUAL_ATM4OCNROUTING_FILE:             runoff.bin
 
-@ACTUAL_ATM4OCN VEGDYN_INTERNAL_RESTART_FILE:  vegdyn.data
+@ACTUAL_ATM4OCNVEGDYN_INTERNAL_RESTART_FILE:  vegdyn.data
 
 KPAR_FILE: SEAWIFS_KPAR_mon_clim.data
 
