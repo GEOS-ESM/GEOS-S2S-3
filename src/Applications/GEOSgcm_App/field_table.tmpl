@@ -196,15 +196,15 @@ elon = 360.0
 #"riverspread", "Uruguay", "iloc=887,jloc=349,is=887,ie=890,js=348,je=351"/
 
 #
-#"tracer_packages","ocean_mod","generic_gen"
-#const_init_tracer = .true.
-#restart_file = generic_gen_res.nc
-#horizontal-advection-scheme = mdppm
-#vertical-advection-scheme = mdppm
-#ppm_hlimiter=2
-#ppm_vlimiter=2
+@COMMENT_OBIO"tracer_packages","ocean_mod","generic_gen"
+@COMMENT_OBIOconst_init_tracer = .true.
+@COMMENT_OBIOrestart_file = generic_gen_res.nc
+@COMMENT_OBIOhorizontal-advection-scheme = upwind
+@COMMENT_OBIOvertical-advection-scheme = upwind
+@COMMENT_OBIOppm_hlimiter=2
+@COMMENT_OBIOppm_vlimiter=2
 #/
 #
-#"namelists", "ocean_mod", "generic_gen"
+@COMMENT_OBIO"namelists", "ocean_mod", "generic_gen"
 #
 #/
