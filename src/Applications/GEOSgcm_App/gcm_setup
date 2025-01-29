@@ -363,7 +363,7 @@ if(  $OGCM == "N"     | \
      $OGCM == "F"     | \
      $OGCM == "FALSE" ) set OGCM = FALSE
 
-if( $OGCM != TRUE & $OGCM != FALSE ) then
+if( $OGCM != "TRUE" & $OGCM != "FALSE" ) then
 echo
 echo "${C1}COUPLED${CN} must be set equal to TRUE or FALSE!"
 goto  OGCM
@@ -372,7 +372,9 @@ echo
 endif
 endif
 
-if( $OGCM == TRUE ) then
+if( $OGCM == "TRUE" ) then
+
+    set DEFAULT_HISTORY_TEMPLATE = "HISTORY.AOGCM.rc.tmpl"
 
     set COUPLED   = ""
     set OGRIDTYP  = "TM"
@@ -416,7 +418,7 @@ if( $OGCM == TRUE ) then
     echo "    Enter the Ocean Model ${C1}Vertical Resolution${CN}: ${C2}LM${CN} (Default: 50)"
     set   OGCM_LM = $<
     if( .$OGCM_LM == . ) then
-	set   OGCM_LM = 50
+       set OGCM_LM = 50
     endif
 
     set OGCM_GRIDSPEC = tripolar_${OGCM_IM}x${OGCM_JM}.ascii
@@ -426,13 +428,15 @@ if( $OGCM == TRUE ) then
 
 else
 
+    set DEFAULT_HISTORY_TEMPLATE = "HISTORY.AGCM.rc.tmpl"
+
     # OGCM = FALSE (Data Ocean Resolution)
     # ------------------------------------
     DORSLV:
-	echo "    Enter the ${C1}Data_Ocean Horizontal Resolution ${CN}code: ${C2}o1${CN} (1  -deg,  360x180  Reynolds) Default"
-    echo "                                                 ${C2}o2${CN} (1/4-deg, 1440x720  MERRA-2)"
-    echo "                                                 ${C2}o3${CN} (1/8-deg, 2880x1440 OSTIA)"
-    echo "                                                 ${C2}CS${CN} (Cubed-Sphere OSTIA)"
+    echo "    Enter the ${C1}Data_Ocean Horizontal Resolution ${CN}code: ${C2}o1${CN} (1  -deg,  360x180  Reynolds) Default"
+    echo "                                                     ${C2}o2${CN} (1/4-deg, 1440x720  MERRA-2)"
+    echo "                                                     ${C2}o3${CN} (1/8-deg, 2880x1440 OSTIA)"
+    echo "                                                     ${C2}CS${CN} (Cubed-Sphere OSTIA)"
     set   HRCODE = `echo $<`
     if( .$HRCODE == . ) set HRCODE = o1
     set   HRCODE = `echo $HRCODE | tr "[:upper:]" "[:lower:]"`
@@ -442,7 +446,7 @@ else
         $HRCODE != 'o3' & \
         $HRCODE != 'cs' ) goto DORSLV
     if( $HRCODE == 'o1' ) then
-	set Resolution = `echo  360  180`
+        set Resolution = `echo  360  180`
         set OGCM_IM  = $Resolution[1]
         set OGCM_JM  = $Resolution[2]
         set BCSTAG   = Icarus_Reynolds
@@ -593,7 +597,7 @@ if( $AGCM_IM ==  "72" ) then
      set  CHEM_DT = $DT
      set JOB_SGMT = 00000015
      set NUM_SGMT = 20
-     if( $OGCM == TRUE ) then
+     if( $OGCM == "TRUE" ) then
           set  NX = $OGCM_NX
           set  NY = $OGCM_NY
      set OCEAN_DT = $DT
@@ -633,7 +637,7 @@ if( $AGCM_IM ==  "144" ) then
      set  CHEM_DT = $DT
      set JOB_SGMT = 00000015
      set NUM_SGMT = 20
-     if( $OGCM == TRUE ) then
+     if( $OGCM == "TRUE" ) then
           set  NX = $OGCM_NX
           set  NY = $OGCM_NY
      set OCEAN_DT = $DT
@@ -671,7 +675,7 @@ if( $AGCM_IM ==  "288" ) then
      set  CHEM_DT = $DT
      set JOB_SGMT = 00000008
      set NUM_SGMT = 5
-     if( $OGCM == TRUE ) then
+     if( $OGCM == "TRUE" ) then
           set  NX = $OGCM_NX
           set  NY = $OGCM_NY
      set OCEAN_DT = $DT
@@ -689,14 +693,14 @@ if( $AGCM_IM ==  "c90" ) then
      set IRRAD_DT = 3600
      set AGCM_IM  = 90
      set AGCM_JM  = `expr $AGCM_IM \* 6`
-     if( $OGCM == TRUE ) then
+     if( $OGCM == "TRUE" ) then
           set  NX = $OGCM_NY
           set  NY = $OGCM_NX
-	  set OCEAN_DT = $DT
+          set OCEAN_DT = $DT
      else
           set  NX = 4
           set  NY = `expr $NX \* 6`
-	  set OCEAN_DT = $IRRAD_DT
+          set OCEAN_DT = $IRRAD_DT
      endif
      set  CHEM_DT = $DT
      set HYDROSTATIC = TRUE
@@ -715,7 +719,7 @@ if( $AGCM_IM ==  "576" ) then
      set  CHEM_DT = $DT
      set JOB_SGMT = 00000016
      set NUM_SGMT = 1
-     if( $OGCM == TRUE ) then
+     if( $OGCM == "TRUE" ) then
           set  NX = $OGCM_NX
           set  NY = $OGCM_NY
      set OCEAN_DT = $DT
@@ -734,7 +738,7 @@ if( $AGCM_IM ==  "c180" ) then
      set  CHEM_DT = $DT
      set AGCM_IM  = 180
      set AGCM_JM  = `expr $AGCM_IM \* 6`
-     if( $OGCM == TRUE ) then
+     if( $OGCM == "TRUE" ) then
           set  NX = 20
           set  NY = 72
      set OCEAN_DT = $DT
@@ -761,7 +765,7 @@ if( $AGCM_IM == "1152" ) then
      set JOB_SGMT = 00000005
      set NUM_SGMT = 1
      set NUM_READERS = 4
-     if( $OGCM == TRUE ) then
+     if( $OGCM == "TRUE" ) then
           set  NX = $OGCM_NX
           set  NY = $OGCM_NY
      set OCEAN_DT = $DT
@@ -967,10 +971,77 @@ else
 endif
 
 set RDOCEAN = FALSE
+set RUN_OBIO = FALSE
+set COMMENT_OBIO = "#"
+set GEN_TRACERS = false
+set NUMBER_GEN_TRACERS = 5
+set USE_OCEANOBIOGEOCHEM = 0
+set DATA_ATMOS = FALSE 
+set ACTUAL_ATM4OCN = ""
+set USE_DATA_ATM4OCN = 0
 
-if( $OGCM == TRUE ) then
+if( $OGCM == "TRUE" ) then
 
-RDOCEAN:
+OBIO:
+   echo "    Do you wish to run ${C1}NOBM(OBIO)${CN}? (Default: ${C2}NO${CN} or ${C2}FALSE${CN})"
+   set RUN_OBIO = $<
+   if (.$RUN_OBIO == .) then
+      set RUN_OBIO = FALSE
+   else
+      set RUN_OBIO = `echo $RUN_OBIO | tr "[:lower:]" "[:upper:]"`
+      if ($RUN_OBIO == "Y"    | \
+          $RUN_OBIO == "YES"  | \
+          $RUN_OBIO == "T"    | \
+          $RUN_OBIO == "TRUE" ) set RUN_OBIO = TRUE
+      if ($RUN_OBIO == "N"    | \
+          $RUN_OBIO == "NO"   | \
+          $RUN_OBIO == "F"    | \
+          $RUN_OBIO == "FALSE") set RUN_OBIO = FALSE
+      if ($RUN_OBIO != TRUE & $RUN_OBIO != FALSE) then
+         echo
+         echo "Please answer ${C2}YES${CN} or ${C2}NO${CN}!"
+         goto OBIO
+      endif
+   endif
+
+   if ($RUN_OBIO == TRUE) then 
+      set COMMENT_OBIO = ""
+      set GEN_TRACERS = true
+      set NUMBER_GEN_TRACERS = 19
+      set USE_OCEANOBIOGEOCHEM = 1
+   endif
+
+DATATMOS:
+   echo "    Do you wish to run ${C1}Data Atmosphere${CN}? (Default: ${C2}NO${CN} or ${C2}FALSE${CN})"
+   set DATA_ATMOS = $<
+   if (.$DATA_ATMOS == .) then
+      set DATA_ATMOS = FALSE
+   else
+      set DATA_ATMOS = `echo $DATA_ATMOS | tr "[:lower:]" "[:upper:]"`
+      if ($DATA_ATMOS == "Y"    | \
+          $DATA_ATMOS == "YES"  | \
+          $DATA_ATMOS == "T"    | \
+          $DATA_ATMOS == "TRUE" ) set DATA_ATMOS = TRUE 
+      if ($DATA_ATMOS == "N"    | \
+          $DATA_ATMOS == "NO"   | \
+          $DATA_ATMOS == "F"    | \
+          $DATA_ATMOS == "FALSE") set DATA_ATMOS = FALSE
+      if ($DATA_ATMOS != TRUE & $DATA_ATMOS != FALSE) then
+         echo
+         echo "Please answer ${C2}YES${CN} or ${C2}NO${CN}!"
+         goto DATATMOS
+      endif
+   endif
+
+   if ($DATA_ATMOS == TRUE) then
+      set ACTUAL_ATM4OCN = "#"
+      set USE_DATA_ATM4OCN = 1
+
+      set DEFAULT_HISTORY_TEMPLATE = "HISTORY.DATAATM.rc.tmpl"
+      goto AFTEROCEAN
+   endif
+
+RDUALOCEAN:
    echo "    Do you wish to run the ${C1}REPLAY DUAL OCEAN${CN} Model? (Default: ${C2}NO${CN} or ${C2}FALSE${CN})"
    set   RDOCEAN  = $<
    if( .$RDOCEAN == . ) then
@@ -989,7 +1060,7 @@ RDOCEAN:
       if( $RDOCEAN != TRUE & $RDOCEAN != FALSE ) then
          echo
          echo "${C1}RDOCEAN${CN} must be set equal to TRUE or FALSE!"
-         goto  RDOCEAN
+         goto  RDUALOCEAN
       else
          echo
       endif
@@ -1024,6 +1095,9 @@ AODAS:
       endif
 
       if( $AODAS == TRUE ) then
+
+         set DEFAULT_HISTORY_TEMPLATE = "HISTORY.AODAS.rc.tmpl"
+
          echo "          (AODAS) Enter the choice of ${C1} Restart Record Parameters: Frequency (hhmmss)${CN}: (Default: 240000)"
          set   rstREF_FREQ  = $<
          if( .$rstREF_FREQ == . ) then
@@ -1042,11 +1116,11 @@ AODAS:
             set   rstREF_TIME  = 210000
          endif
 
-	set OGCM_NX = 40
-	set OGCM_NY = 36
-	set NX = 20
-	set NY = 72
-	@   OGCM_NPROCS = $OGCM_NX * $OGCM_NY
+         set OGCM_NX = 40
+         set OGCM_NY = 36
+         set NX = 20
+         set NY = 72
+         @  OGCM_NPROCS = $OGCM_NX * $OGCM_NY
 
          set RESTART_REC = ""
          set noODAS = "#DELETE"
@@ -1055,6 +1129,7 @@ AODAS:
    endif
 endif
 
+AFTEROCEAN:
 set BEG_DATE =  '18910301 000000'
 set END_DATE =  '29990302 210000'
 set JOB_SGMT = "$JOB_SGMT 000000"
@@ -1064,26 +1139,35 @@ if( $AODAS == TRUE ) then
 endif
 
  
-#######################################################################
-#           Check for land surface and runoff routing  models         #
-#######################################################################
+######################################################################
+#           Check for land surface and runoff routing models         #
+######################################################################
 
-# Check for Catche-Carbon
-# -----------------------
+# Check for Catch-Carbon
+# ----------------------
 CATCHCN:
+
+# If we are running DATA_ATMOS, we can skip the Land bits, but we must still fill
+# things out with something. So we use the default Land settings.
+
+if ($DATA_ATMOS == TRUE) then
+  set LSM         = 1
+  set LSM_CHOICE  = 1
+  set HIST_CATCHCN   = "#DELETE"
+else
+
 echo "Enter the choice of ${C1} Land Surface Model${CN}: use ${C2}1${CN} (Default: Catchment Model), ${C2}2${CN} (CatchmentCN Model)"
 set   LSM  = $<
 if( .$LSM == . ) then
-set   LSM  = 1
+   set   LSM  = 1
 endif
 
 if( $LSM != 1 & $LSM != 2 ) then
-echo
-echo "${C1} Land Surface Model${CN} must be set equal to ${C2}1{CN} or ${C2}2${CN}!"
-goto CATCHCN
+   echo
+   echo "${C1} Land Surface Model${CN} must be set equal to ${C2}1{CN} or ${C2}2${CN}!"
+   goto CATCHCN
 else
-echo
-endif
+   echo
 endif
 
 set HIST_CATCHCN     = ""
@@ -1095,14 +1179,21 @@ else
     set LSM_CHOICE = 2
 endif
 
+endif # DATA_ATMOS
 
 # Check for Runoff Routing Model
 # ------------------------------
-if( $OGCM == TRUE ) then
-    set RUNRRM = TRUE
-    set RUN_ROUTE = 1
+if( $OGCM == "TRUE" ) then
+    if ($DATA_ATMOS == TRUE) then
+      set RUNRRM = FALSE
+      set RUN_ROUTE = 0
+    else
+      set RUNRRM = TRUE
+      set RUN_ROUTE = 1
+    endif
     goto GOCART
 endif
+
 RRM:
 echo "Do you wish to run ${C1} the Runoff Routing Model${CN}? (Default: ${C2}NO${CN} or ${C2}FALSE${CN})"
 set   RUNRRM  = $<
@@ -1141,6 +1232,19 @@ endif
 # Check for GOCART
 # ----------------
 GOCART:
+
+# If we are running DATA_ATMOS, we can skip the GOCART bits, but we must still fill
+# things out with something. So we use the climatological aerosols settings so
+# the sed scripts don't get confused.
+if ($DATA_ATMOS == TRUE) then
+   set GOKART = FALSE
+   set AERO_PROVIDER   = GOCART.data
+   set EMISSIONS       = ""
+   set GOCART          = "#"
+   set HIST_GOCART     = "#DELETE"
+   set GOCART_TYPE     = "Climatological"
+else
+
 echo "Do you wish to run ${C1}GOCART${CN} with ${C2}Actual${CN} or ${C2}Climatological${CN} Aerosols? (Enter: ${C2}A${CN} (Default) or ${C2}C${CN})"
 set   GOKART  = $<
 if( .$GOKART == . ) set  GOKART  = A
@@ -1162,6 +1266,7 @@ if( $GOKART == TRUE ) then
 set GOCART          = ""
 set GOCART_INTERNAL = "GOCART_INTERNAL"
 set HIST_GOCART     = ""
+set GOCART_TYPE     = "Actual"
 
 # Emission Files
 # --------------
@@ -1209,8 +1314,10 @@ set  AERO_PROVIDER   = GOCART.data
 set  EMISSIONS       = ""
 set  GOCART          = "#"
 set  HIST_GOCART     = "#DELETE"
+set  GOCART_TYPE     = "Climatological"
 
-endif
+endif # GOKART
+endif # DATA_ATMOS
 
 # RATS Provider
 # -------------
@@ -1287,7 +1394,7 @@ if( $SITE == 'NAS' ) then
               setenv COUPLEDIR  /nobackup/gmao_SIteam/ModelData/coupled/Forcings       # Coupled Ocean/Atmos Forcing
               setenv CPEXEC     cp                                                     # Copy utility for large copies
               setenv TAREXEC    tar                                                    # Tar utility for large archives
-	      set  G5LIBDIR=/nobackup/gmao_SIteam/Utilities/ocean-scripting/python/g5lib
+              set  G5LIBDIR=/nobackup/gmao_SIteam/Utilities/ocean-scripting/python/g5lib
 else if( $SITE == 'NCCS' ) then
               setenv BATCH_CMD "sbatch"                                                # SLURM Batch command
               setenv BATCH_GROUP "SBATCH --account="                                   # SLURM Syntax for account name
@@ -1328,7 +1435,7 @@ else if( $SITE == 'NCCS' ) then
               setenv COUPLEDIR  /home/yvikhlia/nobackup/coupled/Forcings               # Coupled Ocean/Atmos Forcing
               setenv CPEXEC     /bin/cp                                                # Copy utility for large copies
               setenv TAREXEC    tar                                                    # Tar utility for large archives
-	      set G5LIBDIR=/home/yvikhlia/python/g5lib
+              set G5LIBDIR=/home/yvikhlia/python/g5lib
 else
 # These are defaults for the desktop
               setenv BATCH_GROUP "SBATCH -A "                                          # PBS Syntax for GROUP
@@ -1429,71 +1536,31 @@ set tmpDIR = $EXPDIR/.tmpDIR
 
     set check =  FALSE
 while( $check == FALSE )
-  if( -e $HOME/.HISTORYrc ) then
-            set HISTORYrc = `cat $HOME/.HISTORYrc`
+
+  echo "Enter the filename of the ${C1}HISTORY template${CN} to use"
+  echo "-----------------------------------------------------------"
+  echo "The default HISTORY Template is ${C2}${DEFAULT_HISTORY_TEMPLATE}${CN}"
+  echo "  1. Hit ENTER to use the default HISTORY template (${C2}${DEFAULT_HISTORY_TEMPLATE}${CN}) or"
+  echo "  2. Type the full path of the HISTORY template to use"
+
+  set   HISTORY_TEMPLATE  = $<
+  if( .$HISTORY_TEMPLATE == . ) then
+     set HISTORY_TEMPLATE = ${DEFAULT_HISTORY_TEMPLATE}
+  endif
+
+  # Check to see if the HISTORY template exists in the $ETCDIR
+  if( -e $HISTORY_TEMPLATE ) then
+     set check = TRUE
+     /bin/cp -f $HISTORY_TEMPLATE $tmpDIR/HISTORY.rc.tmpl
   else
-            set HISTORYrc = Current
-          echo $HISTORYrc > $HOME/.HISTORYrc
-  endif
-
-
-  echo "Enter the tag or directory (/filename) of the ${C1}HISTORY.AGCM.rc.tmpl${CN} to use"
-  echo "(To use ${C1}HISTORY.AGCM.rc.tmpl${CN} from current build, Type:  ${C2}Current${CN}         )"
-  echo "-------------------------------------------------------------------------"
-  echo "Hit ENTER to use Default Tag/Location: (${C2}${HISTORYrc}${CN})"
-  set   NUHISTORY  = $<
-  if( .$NUHISTORY != . ) set HISTORYrc = $NUHISTORY
-  if( -e $tmpDIR/HISTORY.rc.hold ) /bin/mv -f $tmpDIR/HISTORY.rc.hold $tmpDIR/HISTORY.rc.tmpl
-  if( -e $tmpDIR/HISTORY.rc.tmpl ) /bin/mv -f $tmpDIR/HISTORY.rc.tmpl $tmpDIR/HISTORY.rc.hold
-
-  if( "$HISTORYrc" == "Current" ) then
-            set check = TRUE
-            if( -e $HOME/.HISTORYrc ) /bin/rm $HOME/.HISTORYrc
-            echo $HISTORYrc >                 $HOME/.HISTORYrc
-            /bin/cp -f $tmpDIR/HISTORY.AGCM.rc.tmpl $tmpDIR/HISTORY.rc.tmpl
-  endif
-
-  if( "$HISTORYrc" != "Current" ) then
-       if( -f $HISTORYrc ) then
-            set check = TRUE
-cat $HOME/.HISTORYrc
-            if( -e $HOME/.HISTORYrc ) /bin/rm $HOME/.HISTORYrc
-            echo $HISTORYrc >                 $HOME/.HISTORYrc
-            /bin/cp -f $HISTORYrc $tmpDIR/HISTORY.rc.tmp1
-
-            set  EXPID_old = `grep  "EXPID:" $tmpDIR/HISTORY.rc.tmp1 | cut -d: -f2`
-            set EXPDSC_old = `grep "EXPDSC:" $tmpDIR/HISTORY.rc.tmp1 | cut -d: -f2`
-
-            /bin/rm -f $tmpDIR/command
-            set  string = "EXPID:"
-            echo cat $tmpDIR/HISTORY.rc.tmp1 \| awk \'\{if \( \$1 \~ \"${string}\" \) \
-                 \{sub \( \"${EXPID_old}\" , \"${EXPID}\"  \)\;print\} else print\}\' \> $tmpDIR/HISTORY.rc.tmpl > $tmpDIR/command
-            chmod +x   $tmpDIR/command
-            $tmpDIR/command
-            /bin/rm -f $tmpDIR/command
-            /bin/mv -f $tmpDIR/HISTORY.rc.tmpl $tmpDIR/HISTORY.rc.tmp1
-            cat $tmpDIR/HISTORY.rc.tmp1 | sed -e "s|${EXPDSC_old}|${EXPDSC}|g" > $tmpDIR/HISTORY.rc.tmpl
-            /bin/rm -f $tmpDIR/HISTORY.rc.tmp1
-       else if( -e $HISTORYrc/HISTORY.AGCM.rc.tmpl ) then
-            set check = TRUE
-            if( -e $HOME/.HISTORYrc ) /bin/rm $HOME/.HISTORYrc
-            echo $HISTORYrc >                 $HOME/.HISTORYrc
-            /bin/cp -f $HISTORYrc/HISTORY.AGCM.rc.tmpl $tmpDIR/HISTORY.rc.tmpl
-       else
-           cvs upd -r $HISTORYrc -p $APPDIR/HISTORY.AGCM.rc.tmpl > $APPDIR/HISTORY.rc.tmpl
-           if( $status != 0 ) then
-            echo " "
-            echo "\!\! ERROR in using $HISTORYrc as a cvs tag or directory/filename. \!\!"
-            echo "\!\! Please check cvs connectivity or $HISTORYrc syntax. \!\!"
-            echo " "
-           else
-            set check = TRUE
-            if( -e $HOME/.HISTORYrc ) /bin/rm $HOME/.HISTORYrc
-            echo $HISTORYrc >                 $HOME/.HISTORYrc
-           endif
-       endif
+     echo "Error: Could not find ${RED}${HISTORY_TEMPLATE}${RESET}"
+     echo ""
+     set check = FALSE
   endif
 end
+
+echo ""
+echo "Using ${C2}${HISTORY_TEMPLATE}${CN}"
 
 #######################################################################
 #                 Create Paths for HOME and EXP Directories
@@ -1922,12 +1989,12 @@ set FILES = "gcm_run.j          \
              HISTORY.rc.tmpl    "
 set FILES = `echo $FILES`
 
-if( $OGCM == TRUE ) then
+if( $OGCM == "TRUE" ) then
 
     set MOMDIR = ${OGCM_IM}x${OGCM_JM}
 
     if ($AODAS == TRUE) then
-	set MOMDIR = ${OGCM_IM}x${OGCM_JM}_odas
+       set MOMDIR = ${OGCM_IM}x${OGCM_JM}_odas
     endif
 
     /bin/cp ${G5LIBDIR}/plotocn.j $tmpDIR
@@ -1937,7 +2004,7 @@ if( $OGCM == TRUE ) then
                  input.nml.tmpl   \
                  diag_table.tmpl  \
                  field_table.tmpl \
-	         plotocn.j        \
+                 plotocn.j        \
                  __init__.py"
 
     set FILES = `echo $FILES`
@@ -2140,6 +2207,15 @@ s/@RUN_ROUTE/$RUN_ROUTE/g
 s?@CPEXEC?$CPEXEC?g
 s?@TAREXEC?$TAREXEC?g
 
+s?@COMMENT_OBIO?$COMMENT_OBIO?g
+s?@GEN_TRACERS?$GEN_TRACERS?g
+s?@NUMBER_GEN_TRACERS?$NUMBER_GEN_TRACERS?g 
+s?@USE_OCEANOBIOGEOCHEM?$USE_OCEANOBIOGEOCHEM?g
+
+s?@ACTUAL_ATM4OCN?$ACTUAL_ATM4OCN?g
+s?@USE_DATA_ATM4OCN?$USE_DATA_ATM4OCN?g
+
+
 EOF
 
 # Added FV3 Specific Parameters
@@ -2219,7 +2295,7 @@ end
 # --------------------------------------------
     set FILES = "AGCM.rc.tmpl gcm_run.j gcm_stats.j gcm_forecast.tmpl gcm_forecast.setup HISTORY.rc.tmpl gcm_convert.j gcm_regress.j gcm_post.j gcm_emip.setup gcm_plot.tmpl"
 
-if( $OGCM == TRUE ) then
+if( $OGCM == "TRUE" ) then
     set FILES = "$FILES input.nml.tmpl diag_table.tmpl field_table.tmpl"
 endif
 
@@ -2256,7 +2332,7 @@ if(! -e $EXPDIR/regress   ) mkdir -p $EXPDIR/regress
 if(! -e $EXPDIR/forecasts ) mkdir -p $EXPDIR/forecasts
 if(! -e $EXPDIR/convert   ) mkdir -p $EXPDIR/convert
 
-if( $OGCM == TRUE ) if(! -e $EXPDIR/RESTART ) mkdir -p $EXPDIR/RESTART
+if( $OGCM == "TRUE" ) if(! -e $EXPDIR/RESTART ) mkdir -p $EXPDIR/RESTART
 
 
 # Rename and Move Files to Relevant Experiment Work Sub-Directories
@@ -2280,7 +2356,7 @@ if( $OGCM == TRUE ) if(! -e $EXPDIR/RESTART ) mkdir -p $EXPDIR/RESTART
 /bin/mv $HOMDIR/AGCM.rc.tmpl           $HOMDIR/AGCM.rc
 /bin/mv $HOMDIR/HISTORY.rc.tmpl        $HOMDIR/HISTORY.rc
 
-if( $OGCM == TRUE ) then
+if( $OGCM == "TRUE" ) then
     /bin/mv $HOMDIR/plotocn.j          $EXPDIR/plot
     /bin/mv $HOMDIR/diag_table.tmpl    $HOMDIR/diag_table
     /bin/mv $HOMDIR/field_table.tmpl   $HOMDIR/field_table
@@ -2637,12 +2713,14 @@ echo " Experiment Description:                    $EXPDSC"
 echo " Atmospheric Horizontal Resolution:         ${AGCM_IM}x${AGCM_JM}"
 echo " Atmospheric Vertical Resolution:           $AGCM_LM"
 echo " Running the Coupled Ocean/Sea-Ice Model?   $OGCM"
-if ($OGCM == TRUE) then
-   echo "    Ocean Model Lat-Lon Horizontal Resolution::   ${OGCM_IM}x${OGCM_JM}"
-   echo "    Ocean Model Vertical Resolution::             ${OGCM_LM}"
+if ($OGCM == "TRUE") then
+   echo "    Ocean Model Lat-Lon Horizontal Resolution:    ${OGCM_IM}x${OGCM_JM}"
+   echo "    Ocean Model Vertical Resolution:              ${OGCM_LM}"
+   echo "    Running NOBM (OBIO)?                          $RUN_OBIO" 
+   echo "    Using Data Atmosphere?                        $DATA_ATMOS" 
    echo "    Running the REPLAY DUAL OCEAN Model?          $RDOCEAN"
    if ( $RDOCEAN == TRUE ) then
-      echo "        Running the ODAS Model?           $AODAS"
+      echo "        Running the ODAS Model?                   $AODAS"
       if ( $AODAS == TRUE ) then
          echo "            Restart Record Parameters: Frequency (hhmmss):        $rstREF_FREQ"
          echo "            Restart Record Parameters: Reference Date (YYYYMMDD): $rstREF_DATE"
@@ -2652,14 +2730,17 @@ if ($OGCM == TRUE) then
 else
    echo "    Data_Ocean Horizontal Resolution: ${OGCM_IM}x${OGCM_JM}"
 endif
-if ($LSM == 1) then
-   echo " Land Surface Model:                                  Catchment Model"
-else
-   echo " Land Surface Model:                                  CatchmentCN Model"
+if ($DATA_ATMOS == FALSE) then
+   if ($LSM == 1) then
+      echo " Land Surface Model:                                  Catchment Model"
+   else
+      echo " Land Surface Model:                                  CatchmentCN Model"
+   endif
+   echo " Running the Runoff Routing Model?                    $RUNRRM"
+   echo " Running GOCART with Actual or Climatology Aerosols?  $GOCART_TYPE"
+   echo " GOCART Emission Files:                               $EMISSIONS"
 endif
-echo " Running the Runoff Routing Model?                    $RUNRRM"
-echo " Running GOCART with Actual or Clomatology Aaerosols? $GOKART"
-echo " GOCART Emission Files:                               $EMISSIONS "
+echo " History Template used:                               $HISTORY_TEMPLATE"
 echo
 echo " Experiment Directory:"
 echo "    --> $EXPDIR"
@@ -2843,7 +2924,7 @@ HOMDIR/gcm_run.j
 HOMDIR/gcm_emip.setup
 EOF
 
-if( $OGCM == TRUE ) then
+if( $OGCM == "TRUE" ) then
 cat >> $FILES_TO_PROCESS << EOF
 HOMDIR/input.nml
 HOMDIR/diag_table

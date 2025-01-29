@@ -204,7 +204,7 @@ endif
 
 #Link files needed for OBIO
 #--------------------------
-#/bin/ln -sf /nobackup/mmehari/DATA/MISCEL/lidata/*  $EXPDIR/RC
+@COMMENT_OBIO/bin/ln -sf /discover/nobackup/mmehari/DATA/MISCEL/lidata/*  $EXPDIR/RC
 
 #######################################################################
 #   Move to Scratch Directory and Copy RC Files from Home Directory

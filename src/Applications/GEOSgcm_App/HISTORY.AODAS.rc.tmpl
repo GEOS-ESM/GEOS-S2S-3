@@ -46,6 +46,7 @@ COLLECTIONS: 'iau_inst_6hr_glo_L720x361_v72'
              'aci_tavg_1dy_glo_L720x361_sfc'
              'mod_inst_6hr_glo_L720x361_sfc'
              'ice_inst_6hr_glo_T1440x1080_slv'
+@COMMENT_OBIO             'bio_tavg_1mo_L720x361_z50'
              ::
 
   iau_inst_6hr_glo_L720x361_v72.template:  '%y4%m2%d2_%h2%n2z.nc4',
@@ -1321,4 +1322,47 @@ COLLECTIONS: 'iau_inst_6hr_glo_L720x361_v72'
                               'AICE'        , 'SEAICE',
                               'DRAFT'       , 'SEAICE',
                               ::
+
+  bio_tavg_1mo_L720x361_z50.template:  '%y4%m2%d2_%h2%n2z.nc4',
+  bio_tavg_1mo_L720x361_z50.mode:      'time-averaged',
+  bio_tavg_1mo_L720x361_z50.format:    'CFIO',
+  bio_tavg_1mo_L720x361_z50.resolution: 720 361,
+  bio_tavg_1mo_L720x361_z50.monthly:        1 ,
+#  bio_tavg_1mo_L720x361_z50.frequency: 240000,
+#  bio_tavg_1mo_L720x361_z50.duration:  240000,
+  bio_tavg_1mo_L720x361_z50.regrid_exch: 'tile_hist.bin',
+  bio_tavg_1mo_L720x361_z50.levels: 'vgrid.ascii'
+  bio_tavg_1mo_L720x361_z50.fields:  'NITRATE'    , 'OBIO',
+                        'AMMON'      , 'OBIO',
+                        'SILICA'     , 'OBIO',
+                        'IRON'       , 'OBIO',
+                        'DIATOM'     , 'OBIO',
+                        'CHLORO'     , 'OBIO',
+                        'CYANO'      , 'OBIO',
+                        'COCCO'      , 'OBIO',
+                        'DINO'       , 'OBIO',
+                        'PHAEO'      , 'OBIO',
+                        'HERB'       , 'OBIO',
+                        'CDET'       , 'OBIO',
+                        'SDET'       , 'OBIO',
+                        'FDET'       , 'OBIO',
+                        'DOC'        , 'OBIO',
+                        'DIC'        , 'OBIO',
+                        'ALK'        , 'OBIO',
+                        'PIC'        , 'OBIO',
+                        'CDC'        , 'OBIO',
+                        'PCO2'       , 'OBIO',
+                        'FCO2'       , 'OBIO',
+                        'PPDIATOM'   , 'OBIO',
+                        'PPCHLORO'   , 'OBIO',
+                        'PPCYANO'    , 'OBIO',
+                        'PPCOCCO'    , 'OBIO',
+                        'PPDINO'     , 'OBIO',
+                        'PPPHAEO'    , 'OBIO',
+                        'SWHEAT'     , 'ORAD',
+                        'KPAR'       , 'ORAD',
+                        'TIRRQ'      , 'ORAD',
+                        'CDOMABSQ'   , 'ORAD',
+                        'SRESTORE'   , 'OCEAN',
+                         ::
 

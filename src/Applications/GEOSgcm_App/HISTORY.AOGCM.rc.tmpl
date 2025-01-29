@@ -29,6 +29,7 @@ COLLECTIONS: 'geosgcm_prog'
 	     'geosgcm_icethm'
 	     'geosgcm_aoflux'
 	     'geosgcm_srestore'
+@COMMENT_OBIO             'geosgcm_obio'
              ::
 
   geosgcm_prog.template:  '%y4%m2%d2_%h2%n2z.nc4',
@@ -669,3 +670,47 @@ COLLECTIONS: 'geosgcm_prog'
   geosgcm_srestore.frequency:  240000,
   geosgcm_srestore.fields:    'SRESTORE'    , 'OCEAN',
   			    ::
+
+  geosgcm_obio.template:  '%y4%m2%d2_%h2%n2z.nc4',
+  geosgcm_obio.mode:      'time-averaged',
+  geosgcm_obio.format:    'CFIO',
+  geosgcm_obio.resolution: 720 361,
+#  geosgcm_obio.monthly:        1 ,
+  geosgcm_obio.frequency: 240000,
+#  geosgcm_obio.duration:  240000,
+  geosgcm_obio.regrid_exch: 'tile_hist.bin',
+  geosgcm_obio.levels: 'vgrid.ascii'
+  geosgcm_obio.fields:    'NITRATE'   , 'OBIO',
+                        'AMMON'     , 'OBIO',
+                        'SILICA'    , 'OBIO',
+                        'IRON'      , 'OBIO',
+                        'DIATOM'     , 'OBIO',
+                        'CHLORO'     , 'OBIO',
+                        'CYANO'      , 'OBIO',
+                        'COCCO'      , 'OBIO',
+                        'DINO'       , 'OBIO',
+                        'PHAEO'      , 'OBIO',
+                        'HERB'       , 'OBIO',
+                        'CDET'       , 'OBIO',
+                        'SDET'       , 'OBIO',
+                        'FDET'       , 'OBIO',
+                        'DOC'        , 'OBIO',
+                        'DIC'        , 'OBIO',
+                        'ALK'        , 'OBIO',
+                        'PIC'        , 'OBIO',
+                        'CDC'        , 'OBIO',
+                        'PCO2'       , 'OBIO',
+                        'FCO2'       , 'OBIO',
+                        'PPDIATOM'   , 'OBIO',
+                        'PPCHLORO'   , 'OBIO',
+                        'PPCYANO'    , 'OBIO',
+                        'PPCOCCO'    , 'OBIO',
+                        'PPDINO'     , 'OBIO',
+                        'PPPHAEO'    , 'OBIO',
+                        'SWHEAT'     , 'ORAD',
+                        'KPAR'       , 'ORAD',
+                        'TIRRQ'      , 'ORAD',
+                        'CDOMABSQ'   , 'ORAD',
+                        'SRESTORE'   , 'OCEAN',
+                         ::
+
