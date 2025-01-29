@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Fixed a missing link(connectivity) in OGCM causing spurious FRAZIL ice production in S2S3 ODAS. 
+
 ### Added
 
 - The new DataAtm has been backported from the current GEOS version to the S2Sv3 model, it replaced the old one. It includes the atmospheric component of OASIM (Ocean and Atmosphere Spectral Irradiance Model) that is used to force OBIO (NOBM).

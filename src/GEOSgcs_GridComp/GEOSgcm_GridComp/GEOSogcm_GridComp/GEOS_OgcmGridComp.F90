@@ -716,6 +716,13 @@ contains
      VERIFY_(STATUS)
   end if
 
+  call MAPL_AddConnectivity ( GC,  &
+          SHORT_NAME  = (/'FRACICE'/), &
+          DST_ID = OCEAN,             &
+          SRC_ID = SEAICE,            &
+          RC=STATUS  )
+  VERIFY_(STATUS)
+
   if(DUAL_OCEAN) then 
      call MAPL_AddConnectivity ( GC,  &
           SRC_NAME  = (/'FRACICE'/), & 
