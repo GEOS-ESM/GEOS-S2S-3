@@ -979,6 +979,7 @@ set USE_OCEANOBIOGEOCHEM = 0
 set DATA_ATMOS = FALSE 
 set ACTUAL_ATM4OCN = ""
 set USE_DATA_ATM4OCN = 0
+set RUN_DUAL = false
 
 if( $OGCM == "TRUE" ) then
 
@@ -1068,6 +1069,7 @@ RDUALOCEAN:
 
    if( $RDOCEAN == TRUE ) then
       set COUPLED_DUAL = ""
+      set RUN_DUAL = true
 
 AODAS:
       echo "       Do you wish to run the ${C1}AODAS${CN} Model? (Default: ${C2}NO${CN} or ${C2}FALSE${CN})"
@@ -2214,6 +2216,8 @@ s?@USE_OCEANOBIOGEOCHEM?$USE_OCEANOBIOGEOCHEM?g
 
 s?@ACTUAL_ATM4OCN?$ACTUAL_ATM4OCN?g
 s?@USE_DATA_ATM4OCN?$USE_DATA_ATM4OCN?g
+
+s?@RUN_DUAL?$RUN_DUAL?g
 
 
 EOF
