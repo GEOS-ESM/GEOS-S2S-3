@@ -78,7 +78,7 @@ end
 #######################################################################
 
 # Set default behavior of switches
-set NOCVS = FALSE
+set NOCVS = TRUE
 set GPU   = FALSE
 
 while ( $#argv > 0 )
