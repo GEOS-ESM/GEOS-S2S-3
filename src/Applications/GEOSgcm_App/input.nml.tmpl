@@ -188,7 +188,7 @@
 /
 
  &ocean_increment_tracer_nml
-        use_this_module=.TRUE.
+        use_this_module=.@RUN_DUAL.
         days_to_increment = 0
         secs_to_increment = 64800
 /
@@ -373,9 +373,9 @@
       read_restore_mask=.false.
       restore_mask_gfdl=.false.
       max_ice_thickness=1.0
-      zero_net_water_restore=.true.
-      zero_net_water_coupler=.true.
-      zero_net_water_couple_restore=.true.
+      zero_net_water_restore=.@RUN_DUAL.
+      zero_net_water_coupler=.@RUN_DUAL.
+      zero_net_water_couple_restore=.@RUN_DUAL.
       zero_net_salt_restore=.false.
       avg_sfc_velocity=.false.
       avg_sfc_temp_salt_eta=.false.
@@ -437,8 +437,8 @@
 /
 
  &ocean_sponges_tracer_nml
-	use_this_module = .true.
-	damp_coeff_3d = .true.
+	use_this_module = .@RUN_DUAL.
+	damp_coeff_3d = .@RUN_DUAL.
 /
 
  &ocean_sponges_velocity_nml
