@@ -331,9 +331,7 @@ class Obs:
         print('\n:::::::::::::::::::',descriptor, platform)
         if (platform == 'M2-SST'):
             obs = M2_sst_reader(yyyy, mm, dd, hh, path2scratch=SCRDIR)
-            if obs == None:
-                self.no_obs(descriptor = descriptor, platform = platform, color = color, size = markersize, present=False)
-                return
+            vartype = 'sst'
         elif not os.path.exists(fname):
             self.no_obs(descriptor = descriptor, platform = platform, color = color, size = markersize, present=False)
             print(f'No file {fname}')
