@@ -43,7 +43,7 @@ setenv ODAS_do_reinit       False             # True: input to anaice2rst.x is f
                                               #       hole free 
 setenv IN_LINE              True              # False: runs multiple observer jobs. NOT recomended for MILAN nodes
                                               # True: runs observers in line (within model job, model pauses to wait until complete). Recomended for MILAN nodes
-setenv ODAS_CONSTR          "[sky|cas]"       # Only used when IN_LINE is False. Must be same node constraint as in gcm_run.j
+setenv ODAS_CONSTR          "[cas]"       # Only used when IN_LINE is False. Must be same node constraint as in gcm_run.j
                                               # Not recomended for use in Milan.
 setenv BOMB_ON_SIGO         True              # True: BOMBS the model due to not meeting sigo ADT requirements (as before)
                                               # False: Skips ADT observations that fail sigo requirements. Does not bomb.
