@@ -191,7 +191,7 @@ def flatten(da, mask=None):
 def standard_obs_reader(fname, vartype, yyyy, mm, dd, hh, EXP_NDAYS, TSE_TMPDIR):
     print('\nIN standard_obs_reader for',vartype)
     print(fname)
-    intermediate = f'{TSE_TMPDIR}/extracted_{yyyy}{mm}{dd}{hh}_{os.path.basename(fname)}.nc'
+    intermediate = f'{TSE_TMPDIR}/extracted_{yyyy}{mm}{dd}{hh}_{os.path.basename(fname)}'
     if os.path.isfile(intermediate):
         print(f'Intermediate file {intermediate} found, loading obs')
     else:
@@ -231,7 +231,6 @@ def standard_obs_reader(fname, vartype, yyyy, mm, dd, hh, EXP_NDAYS, TSE_TMPDIR)
         print('obs reduced QCPRF shape:', obs[vartype].shape)
         if obs[vartype].shape[0] == 0:
             return xr.zeros_like(obs)
-        intermediate = f'{TSE_TMPDIR}/extracted_{yyyy}{mm}{dd}{hh}_{os.path.basename(fname)}.nc'
         print(f'Computing intermediate file: {intermediate}')
         obs = obs.compute()
         obs.to_netcdf(intermediate)
@@ -331,7 +330,8 @@ class Obs:
         print('\n:::::::::::::::::::',descriptor, platform)
         if (platform == 'M2-SST'):
             obs = M2_sst_reader(yyyy, mm, dd, hh, path2scratch=SCRDIR)
-            if obs == None:
+            vartype = 'sst'
+            if obs is None:
                 self.no_obs(descriptor = descriptor, platform = platform, color = color, size = markersize, present=False)
                 return
         elif not os.path.exists(fname):
