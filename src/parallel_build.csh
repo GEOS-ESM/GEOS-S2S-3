@@ -135,6 +135,7 @@ while ($#argv)
    if ("$1" == "-rom")  set nodeTYPE = "Rome"
    if ("$1" == "-mil")  set nodeTYPE = "Milan"
    if ("$1" == "-cas")  set nodeTYPE = "CascadeLake"
+   if ("$1" == "-c15")  set nodeTYPE = "15CascadeLake"
    if ("$1" == "-sky")  set nodeTYPE = "Skylake"
    if ("$1" == "-bro")  set nodeTYPE = "Broadwell"
    if ("$1" == "-has")  set nodeTYPE = "Haswell"
@@ -225,13 +226,14 @@ endif
 
 # This is a flag needed at NCCS for Cascade Lake. Default is blank
 set ntaskspernode = ''
+set reservation = ''
 
 # at NCCS
 #--------
 if ($SITE == NCCS) then
 
    set nT = `echo $nodeTYPE| tr "[A-Z]" "[a-z]" | cut -c1-3 `
-   if (($nT != has) && ($nT != sky) && ($nT != cas) && ($nT != mil)) then
+   if (($nT != has) && ($nT != sky) && ($nT != cas) && ($nT != mil) && ($nT != 15c)) then
       echo "ERROR. Unknown node type at NCCS: $nodeTYPE"
       exit 1
    endif
@@ -239,6 +241,7 @@ if ($SITE == NCCS) then
    if ($nT == has) @ NCPUS_DFLT = 28
    if ($nT == sky) @ NCPUS_DFLT = 40
    if ($nT == cas) @ NCPUS_DFLT = 48
+   if ($nT == 15c) @ NCPUS_DFLT = 48
    if ($nT == mil) @ NCPUS_DFLT = 126
 
    if ($nT == has) set proc = 'hasw'
@@ -250,6 +253,15 @@ if ($SITE == NCCS) then
       # make -j48, (usually make -j10 and only asks for 10 tasks) but
       # this suppresses the warning.
       set ntaskspernode = '--ntasks-per-node=45'
+   endif
+   if ($nT == 15c) then
+      set proc = 'cas'
+      # Adding this adds prevents a warning from NCCS about using 48
+      # tasks per node on Cascade. This script will never actually run
+      # make -j48, (usually make -j10 and only asks for 10 tasks) but
+      # this suppresses the warning.
+      set ntaskspernode = '--ntasks-per-node=45'
+      set reservation = '--reservation=sles15_cas'
    endif
    if ($nT == mil) set proc = 'mil'
 
@@ -592,6 +604,7 @@ else if ( $SITE == NCCS ) then
         --nodes=1              \
         --ntasks=${numjobs}    \
         $ntaskspernode         \
+        $reservation           \
         --time=$walltime       \
         $0
    unset echo
@@ -782,6 +795,7 @@ flagged options
    -rom                 compile on Rome nodes (only at NAS)
    -mil                 compile on Milan nodes
    -cas                 compile on Cascade Lake nodes
+   -c15                 compile on Cascade Lake nodes with SLES15
    -sky                 compile on Skylake nodes (default)
    -bro                 compile on Broadwell nodes (only at NAS)
    -has                 compile on Haswell nodes
