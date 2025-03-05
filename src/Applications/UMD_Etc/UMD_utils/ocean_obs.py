@@ -1296,11 +1296,11 @@ if list_of_obs:
 
 #   check to make sure minimum observation types are in gmao- file
 #   instrument check (i.e. ARGO) follows below
-#   ominreq=[3073, 5521, 5351]  #Tz, Sz, ADT
-    ominreq=[3073, 5351]  #Tz, ADT
+    ominreq=[3073, 5521, 5351]  #Tz, Sz, ADT
+#   ominreq=[3073, 5351]  #Tz, ADT
 #   ominreq=[3073]  #Tz,
 #   ominreq[3073, 5521]  #Tz, Sz
-#    ominreq=[5351]  #ADT
+#   ominreq=[5351]  #ADT
 
     for oid in ominreq:
         if oid in typ:
