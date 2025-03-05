@@ -170,6 +170,31 @@ obsid_dict = {
     'id_hice_obs': 6001  # HICE
     }
 
+def inv_dict(dict, ID):
+    for key, value in dict.items():
+        if value == ID:
+            return key
+
+def wait_for_file_completion(fname, min_file_minutes=5):
+    """
+    Waits until the file is at least `min_file_minutes` old before proceeding.
+
+    Args:
+        fname (str): Path to the file.
+        min_file_minutes (int): Minimum age of the file in minutes before proceeding.
+        check_interval (int): Time (in seconds) to wait before checking again.
+    """
+    while True:
+        # Get the file's last modification time
+        file_age_minutes = (time.time() - os.stat(fname).st_mtime) / 60
+        if file_age_minutes >= min_file_minutes:
+            print(f"File {fname} is ready (age: {file_age_minutes:.2f} minutes).")
+            break
+        else:
+            print(f"Waiting... File {fname} is only {file_age_minutes:.2f} minutes old.")
+        check_interval = min_file_minutes-file_age_minutes
+        time.sleep(check_interval*60)  # Sleep before rechecking
+        
 def inv_logit(p):
     return np.exp(p) / (1 + np.exp(p))
 
@@ -195,6 +220,7 @@ def standard_obs_reader(fname, vartype, yyyy, mm, dd, hh, EXP_NDAYS, TSE_TMPDIR)
     if os.path.isfile(intermediate):
         print(f'Intermediate file {intermediate} found, loading obs')
     else:
+        wait_for_file_completion(fname, min_file_minutes=5) # makes sure fname is not actively being updated
         keep = ['N_LEVS', 'DEPTH', vartype, 'QC_LEV', 'QC_PRF', 'LON', 'LAT', 'DATE_TIME', 'OBS_ERROR', 'INST_ID']
         obs = xr.open_dataset(fname, chunks='auto') # solution to memory issue in Milan
         obs = obs[keep]
@@ -330,11 +356,14 @@ class Obs:
         print('\n:::::::::::::::::::',descriptor, platform)
         if (platform == 'M2-SST'):
             obs = M2_sst_reader(yyyy, mm, dd, hh, path2scratch=SCRDIR)
-            vartype = 'sst'
+            vartype= 'sst'
             if obs is None:
                 self.no_obs(descriptor = descriptor, platform = platform, color = color, size = markersize, present=False)
                 return
-        elif not os.path.exists(fname):
+        elif not os.path.exists(fname) and not os.path.exists(f'{TSE_TMPDIR}/extracted_{yyyy}{mm}{dd}{hh}_{os.path.basename(fname)}'):
+            # This is a file check that will only triger a no obs if fname is not found in the 1st ocean_obs pass.
+            # Reader will search fname in the 1st pass and in the 2nd pass will search for the inermediate file (generated in the 1st pass).
+            # This assures that the 1st and 2nd pass run on the same set of observations prior model masking (time window)
             self.no_obs(descriptor = descriptor, platform = platform, color = color, size = markersize, present=False)
             print(f'No file {fname}')
             return
@@ -592,11 +621,30 @@ def update_list_of_obs(list_of_obs, obs):
     if obs.present:
         list_of_obs.append(obs)
 
+def no_file_crash(fname, yyyy, mm, dd, hh):
+    # Model will bomb if fname or intermediate are not present
+    # Because intermediate is generated in the 1st pass, this will crash the model only in the 1st pass
+    print(f'Checking required file {fname}')
+    intermediate = f'{TSE_TMPDIR}/extracted_{yyyy}{mm}{dd}{hh}_{os.path.basename(fname)}'
+    if os.path.isfile(fname) or os.path.isfile(intermediate):
+        print('File check pass')
+    else:
+        print(f"YOU ARE MISSING type {fname} platform")
+        print('PARENT ID IS', os.getppid(), os.getpid())
+    #   create a file to tell parents that obs are bad
+        command='touch '+SCRDIR+'/BADOBS'
+        os.system(command)
+        sys.exit(1)
+
 # Profiling drifters, moorings, ...
 #==================================
 def argo(list_of_obs):
-    argo_t  = Obs(yyyy, mm, dd, hh, fname=LEV50INSITUOBSDIR+'/ARGO/V3/FINAL/T_ARGO_'+yyyy+'.nc', id_obs=obsid_dict['id_t_obs'], vartype='TEMP', xsigo=xsigo_t, color='c', markersize=5, descriptor='Argo-T', NDAYS=EXP_NDAYS)
-    argo_s  = Obs(yyyy, mm, dd, hh, fname=LEV50INSITUOBSDIR+'/ARGO/V3/FINAL/S_ARGO_'+yyyy+'.nc', id_obs=obsid_dict['id_s_obs'], vartype='SALT', xsigo=xsigo_s, color='c', descriptor='Argo-S', NDAYS=EXP_NDAYS)
+    fname = LEV50INSITUOBSDIR+'/ARGO/V3/FINAL/T_ARGO_'+yyyy+'.nc'
+    no_file_crash(fname, yyyy, mm, dd, hh) # model bomb if fname or intermediate are not present
+    argo_t  = Obs(yyyy, mm, dd, hh, fname=fname, id_obs=obsid_dict['id_t_obs'], vartype='TEMP', xsigo=xsigo_t, color='c', markersize=5, descriptor='Argo-T', NDAYS=EXP_NDAYS)
+    fname = LEV50INSITUOBSDIR+'/ARGO/V3/FINAL/S_ARGO_'+yyyy+'.nc'
+    no_file_crash(fname, yyyy, mm, dd, hh)
+    argo_s  = Obs(yyyy, mm, dd, hh, fname=fname, id_obs=obsid_dict['id_s_obs'], vartype='SALT', xsigo=xsigo_s, color='c', descriptor='Argo-S', NDAYS=EXP_NDAYS)
     update_list_of_obs(list_of_obs, argo_t)
     update_list_of_obs(list_of_obs, argo_s)
     return list_of_obs
@@ -1247,27 +1295,25 @@ if list_of_obs:
         fh.write(str(nobs)+'\n')
 
 #   check to make sure minimum observation types are in gmao- file
-#   minreq=[3073,5521,5351]  #Tz, Sz, ADT
-#   minreq=[3073,5351]  #Tz, ADT
-#   minreq=[3073]  #Tz, ADT
-    minreq=[]  #Tz, ADT
-#   minreq=[3073,5521]  #Tz, Sz
-#   minreq=[3073]  #Tz, Sz
-    for i in range(len(minreq)):
-        if minreq[i] in typ:
-            print("Yes,found in List : ",minreq[i])
+#   instrument check (i.e. ARGO) follows below
+#   ominreq=[3073, 5521, 5351]  #Tz, Sz, ADT
+    ominreq=[3073, 5351]  #Tz, ADT
+#   ominreq=[3073]  #Tz,
+#   ominreq[3073, 5521]  #Tz, Sz
+#    ominreq=[5351]  #ADT
+
+    for oid in ominreq:
+        if oid in typ:
+            print("Yes,found in List : ",oid, inv_dict(obsid_dict, oid))
         else:
-            if minreq[i] == 3073:
-                print("YOU ARE MISSING",minreq[i],"Argo T")
-                print ('PARENT ID IS', os.getppid(), os.getpid())
-            if minreq[i] == 5521:
-                print("YOU ARE MISSING",minreq[i],"Argo S")
-            if minreq[i] == 5351:
-                print("YOU ARE MISSING",minreq[i],"ADT")
+            print(f"YOU ARE MISSING type {oid} obs, {inv_dict(obsid_dict, oid)}")
+            print('PARENT ID IS', os.getppid(), os.getpid())
+
     #   create a file to tell parents that obs are bad
             command='touch '+SCRDIR+'/BADOBS'
             os.system(command)
             sys.exit(1)
+
 
     fnameout='gmao-obs-'+yyyy+mm+dd+'.nc'
     ncfile = Dataset(fnameout,'w')
