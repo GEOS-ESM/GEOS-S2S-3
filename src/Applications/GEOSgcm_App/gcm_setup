@@ -1868,10 +1868,6 @@ if ( $SITE == 'NCCS' ) then
 
 cat > $HOMDIR/SETENV.commands << EOF
 
-# We set some variables only on SLES15 at NCCS
-set OS_VERSION=\`grep VERSION_ID /etc/os-release | cut -d= -f2 | cut -d. -f1 | sed 's/"//g'\`
-
-if ( \$OS_VERSION == 15 ) then
     setenv I_MPI_FABRICS shm:ofi
     setenv I_MPI_OFI_PROVIDER psm3
 #    setenv I_MPI_FALLBACK 0
@@ -1888,12 +1884,6 @@ if ( \$OS_VERSION == 15 ) then
 #    setenv I_MPI_ADJUST_BCAST 11
 #    setenv I_MPI_ADJUST_REDUCE_SCATTER 4
 #    setenv I_MPI_ADJUST_BARRIER 9
-else
-    setenv I_MPI_SHM_HEAP_VSIZE 512
-    setenv PSM2_MEMORY large
-    setenv I_MPI_EXTRA_FILESYSTEM 1
-    setenv I_MPI_EXTRA_FILESYSTEM_FORCE gpfs
-endif
 EOF
 
 endif # if NCCS
