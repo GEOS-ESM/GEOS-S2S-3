@@ -171,6 +171,24 @@ module GEOS_OceanbiogeochemGridCompMod
     VERIFY_(STATUS)
 
     call MAPL_AddExportSpec(GC,                               &
+    SHORT_NAME = 'PH',                                        &
+    LONG_NAME  = 'Surface pH',                                &
+    UNITS      = '',                                          &
+    DIMS       = MAPL_DimsHorzOnly,                           &
+    VLOCATION  = MAPL_VLocationNone,                          &
+    RC=STATUS  )
+    VERIFY_(STATUS)
+
+    call MAPL_AddExportSpec(GC,                               &
+    SHORT_NAME = 'DEP_IRON',                                  &
+    LONG_NAME  = 'dissolved_atm_iron_concentration',          &
+    UNITS      = 'nM',                                        &
+    DIMS       = MAPL_DimsHorzOnly,                           &
+    VLOCATION  = MAPL_VLocationCenter,                        &
+    RC=STATUS  )
+    VERIFY_(STATUS)
+
+    call MAPL_AddExportSpec(GC,                               &
     SHORT_NAME = 'BIO',                                       &
     LONG_NAME  = 'bio variables',                             &
     UNITS      = 'variable',                                  &
@@ -968,7 +986,9 @@ module GEOS_OceanbiogeochemGridCompMod
     logical :: IS_MIDNIGHT
 
     real    :: PCO
+    real    :: pHsfc
     real    :: CFLX
+    real    :: atmFesw
     real    :: DT
     real*8  :: DT8
 
@@ -1003,6 +1023,8 @@ module GEOS_OceanbiogeochemGridCompMod
 
     real, pointer, dimension(:,:)   :: PCO2 => null()
     real, pointer, dimension(:,:)   :: FCO2 => null()
+    real, pointer, dimension(:,:)   :: PH => null()
+    real, pointer, dimension(:,:)   :: DEP_IRON => null()
     real, pointer, dimension(:,:)   :: ppDIATOM => null()
     real, pointer, dimension(:,:)   :: ppCHLORO => null()
     real, pointer, dimension(:,:)   :: ppCYANO => null()
@@ -1109,6 +1131,10 @@ module GEOS_OceanbiogeochemGridCompMod
     call MAPL_GetPointer(EXPORT, PCO2,     'PCO2',     RC=STATUS)
     VERIFY_(STATUS)
     call MAPL_GetPointer(EXPORT, FCO2,     'FCO2',     RC=STATUS)
+    VERIFY_(STATUS)
+    call MAPL_GetPointer(EXPORT, PH,       'PH',       RC=STATUS)
+    VERIFY_(STATUS)
+    call MAPL_GetPointer(EXPORT, DEP_IRON, 'DEP_IRON', RC=STATUS)
     VERIFY_(STATUS)
     call MAPL_GetPointer(EXPORT, ppDIATOM, 'PPDIATOM', RC=STATUS)
     VERIFY_(STATUS)
@@ -1402,7 +1428,7 @@ BIO = max(BIO,0.0)    !reduce MOM4 propensity for negative values
                     State%axs,     State%rmumax,                    &
                     BIO, DH(i,j,:), Fe, fnoice, RIKD, GCMAX,        &
                     TIRRQ(i,j,:), CDOMABSQ(i,j,:), aco2, wspd, slp, &
-                    T(i,j,:)-MAPL_TICE, S(i,j,:), PCO, CFLX, PPZ)
+                    T(i,j,:)-MAPL_TICE, S(i,j,:), PCO, CFLX, PPZ, pHsfc, atmFesw)
 
 BIO = max(BIO,0.0)    !reduce MOM4 propensity for negative values
 
@@ -1443,6 +1469,8 @@ BIO = max(BIO,0.0)    !reduce MOM4 propensity for negative values
        if ( associated(ppPHAEO) )  ppPHAEO(i,j)  = PPZ(6)
        if ( associated(PCO2) ) PCO2(i,j) = PCO
        if ( associated(FCO2) ) FCO2(i,j) = CFLX
+       if ( associated(PH) ) PH(i,j) = pHsfc
+       if ( associated(DEP_IRON) ) DEP_IRON(i,j) = atmFesw
 
       endif
      enddo
@@ -1469,6 +1497,10 @@ BIO = max(BIO,0.0)    !reduce MOM4 propensity for negative values
       where ( MASK(:,:,1) == 0.0 ) PCO2 = MAPL_UNDEF
     if ( associated(FCO2) ) &
       where ( MASK(:,:,1) == 0.0 ) FCO2 = MAPL_UNDEF
+    if ( associated(PH) ) &
+      where ( MASK(:,:,1) == 0.0 ) PH = MAPL_UNDEF
+    if ( associated(DEP_IRON) ) &
+      where ( MASK(:,:,1) == 0.0 ) DEP_IRON = MAPL_UNDEF
 
     deallocate(COSZ  )
     deallocate(SLR   )

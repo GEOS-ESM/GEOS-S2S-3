@@ -4,7 +4,7 @@
         P,H,atmfe,fnoice,                                              &
         rikd,gcmax,                                                    &
         tirrq,cdomabsq,atmco2,wspd,slp,T,S,                            &
-        pco2,cflx,ppz)
+        pco2,cflx,ppz,pHsfc,atmFesw)
 !  Uncomment this to include rivers
 !      subroutine kloop(km,rlat,DT,solFe,remin,rkn,rks,rkf,cnratio,cfratio,  &
 !        pco2,cflx,ppz,dout,area)
@@ -24,7 +24,7 @@
       real gcmax(km),wssc(km)
       real H(km),tfac(km)
       real cchlratio(km)
-      real atmfe,fnoice,tzoo
+      real atmfe,fnoice,tzoo,atmFesw,atmFesw_tend
       real rikd(km,nchl)
       real rmuplsr(km,nchl)
       real tirrq(km),cdomabsq(km)
@@ -70,7 +70,7 @@
         regen,axs,                                                     &
         P(k,:),H(k),atmfe,fnoice,rikd(k,:),rmumax,gcmax(k),            &
         tirrq(k),cdomabsq(k),atmco2,wspd,slp,T(k),S(k),                &
-        P_tend(k,:),gronfix(k),ws(k,:),Hpst,picdis(k),pco2,cflx,pp2)
+        P_tend(k,:),gronfix(k),ws(k,:),Hpst,picdis(k),pco2,cflx,pp2,pHsfc,atmFesw_tend)
 !   Restore N from N-fixation into lower layers (reverse from uptake)
        kto = (kend-k)+1
        bn = cchlratio(k)/cnratio
@@ -81,6 +81,7 @@
 
       call sink(km,kend,H,ws,P,cnratio,P_tend)
       P = P + P_tend*DT
+      atmFesw = atmFesw_tend*DT
 
 !! Add nutrient in river discharge
 !       if (dout>0.0 .and. dout<0.1E16) then

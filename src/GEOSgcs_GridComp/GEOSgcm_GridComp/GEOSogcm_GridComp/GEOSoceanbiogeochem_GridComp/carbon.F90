@@ -1,6 +1,6 @@
       subroutine carbon(k,cnratio,cchlratio,bn,bf,remin,P,tfac,      &
        fnoice,tzoo,tirrq,cdomabsq,gro,picdis,                        &
-       atmco2,wspd,slp,T,S,H,P_tend,pco2,cflx)
+       atmco2,wspd,slp,T,S,H,P_tend,pco2,cflx,pHsfc)
 
 !  Computes carbon cycling.  Uses Aumont et al (2002; JGR) for
 !  semi-labile DOC (because of basic similarities in model
@@ -140,7 +140,7 @@
 !  Surface fluxes of carbon 
       if (k .eq. 1)then
 !  pCO2
-       call ppco2(slp,atmco2,T,S,P,ff,pco2)
+       call ppco2(slp,atmco2,T,S,P,ff,pco2,pHsfc)
 !  Update DIC for sea-air flux of CO2
        Ts = T
        scco2 = 2073.1 - 125.62*Ts + 3.6276*Ts**2 - 0.043219*Ts**3
