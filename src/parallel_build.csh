@@ -261,7 +261,7 @@ if ($SITE == NCCS) then
       # make -j48, (usually make -j10 and only asks for 10 tasks) but
       # this suppresses the warning.
       set ntaskspernode = '--ntasks-per-node=45'
-      set reservation = '--reservation=sles15_cas'
+#      set reservation = '--reservation=sles15_cas'
    endif
    if ($nT == mil) set proc = 'mil'
 
