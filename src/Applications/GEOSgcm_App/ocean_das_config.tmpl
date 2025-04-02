@@ -43,11 +43,17 @@ setenv ODAS_do_reinit       False             # True: input to anaice2rst.x is f
                                               #       hole free 
 setenv IN_LINE              False             # False: runs multiple observer jobs. NOT recomended for MILAN nodes
                                               # True: runs observers within model job. Model pauses until complete. Recomended for MILAN nodes
-setenv ODAS_CONSTR          "[cas]"       # Must be same node constraint as in gcm_run.j
-setenv BOMB_ON_SIGO         True             # True: BOMBS the model due to not meeting sigo ADT requirements (as before)
+setenv ODAS_CONSTR          "[cas]"           # Must be same node constraint as in gcm_run.j
+setenv BOMB_ON_SIGO         True              # True: BOMBS the model due to not meeting sigo ADT requirements (as before)
                                               # False: Skips ADT observations that fail sigo requirements. Does not bomb.
 
-
+setenv ODAS_MIN_REQ 	    "3073 5521 5351"  # Minimum requirement for type of observation.
+					      # String of int separated by spaces
+					      # Refer to ./ocean_das/UMD_etc/UMD_utils for a dic of observation types
+					      # Examples and sugested options
+					      # ""                # None
+					      # "3073"            #Tz,
+					      # "3073 5521 5351"  #Tz, Sz, ADT
 # Varibles used for salinity relaxation
 setenv SSSVAR                LEVITUSSC        # use SMAP seasonal cycle for SSS relaxation
                                               #   other options 
@@ -75,7 +81,7 @@ setenv ODAS_DIR_OLD_OBS     "/gpfsm/dnb42/projects/p17/ehackert/geos5/exp/eh020/
 setenv ODAS_OUTPUT_OMA      True                # output OMA observers in oda_run.j
 
 #List of observation platforms
-setenv ODAS_OBS_TYPE_1 "Argo M2-SST XBT-SYN-S CTD XBT TAO PIRATA RAMA Jason-1 Jason-2 Jason-3 Saral Sentinel-3a ERS-1 ERS-2 TOPEX GEOSAT-2 Envisat HY-2A CryoSat-2 TOPEX-N Envisat-N Jason-1-N Jason-1G Jason-2-N CryoSat-2-N NASA-TEAM-2 SMOS AQUARIUS SMAPV5.0"
+setenv ODAS_OBS_TYPE_1 "Argo M2-SST XBT-SYN-S CTD XBT TAO PIRATA RAMA Jason-1 Jason-2 Jason-3 Saral Sentinel-3a Sentinel-6a ERS-1 ERS-2 TOPEX GEOSAT-2 Envisat HY-2A CryoSat-2 TOPEX-N Envisat-N Jason-1-N Jason-1G Jason-2-N CryoSat-2-N NASA-TEAM-2 SMOS AQUARIUS SMAPV5.0"
 setenv HICE_DATADIR      /discover/nobackup/bzhao/ObservationData/CRYOSAT2/o1440x1080
 setenv HICE_HASMASK      True
 ######################### END USER INPUT ####################################################
