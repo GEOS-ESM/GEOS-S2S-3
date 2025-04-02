@@ -71,11 +71,11 @@ if( $GCMEMIP == TRUE ) then
     setenv  SCRDIR  $EXPDIR/scratch.$RSTDATE
 else
     setenv  SCRDIR  $EXPDIR/scratch
-    if( $SITE == NCCS ) then
-        if ( -l $SCRDIR ) unlink $SCRDIR
-        mkdir -p $TSE_TMPDIR/scratch
-        ln -s $TSE_TMPDIR/scratch $SCRDIR
-    endif 
+#    if( $SITE == NCCS ) then
+#        if ( -l $SCRDIR ) unlink $SCRDIR
+#        mkdir -p $TSE_TMPDIR/scratch
+#        ln -s $TSE_TMPDIR/scratch $SCRDIR
+#    endif 
 endif
 
 if (! -e $SCRDIR ) mkdir -p $SCRDIR
@@ -313,6 +313,7 @@ cat << _EOF_ > $FILE
 
 # Precip correction
 #/bin/ln -s /discover/nobackup/projects/gmao/share/gmao_ops/fvInput/merra_land/precip_CPCUexcludeAfrica-CMAP_corrected_MERRA/GEOSdas-2_1_4 ExtData/PCP
+>>>COUPLED_DUAL<<<rm -f ExtData/PCP
 
 >>>COUPLED_DUAL<<<# 1981-2014
 >>>COUPLED_DUAL<<<#/bin/ln -s /discover/nobackup/projects/gmao/share/gmao_ops/fvInput/merra_land/precip_CPCUexcludeAfrica-CMAP_corrected_MERRA/GEOSdas-2_1_4 ExtData/PCP
