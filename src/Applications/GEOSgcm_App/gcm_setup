@@ -1289,7 +1289,11 @@ EMISSIONS:
      endif
      endif
      if(  $EMISSIONS == OPS ) set EMISSIONS = ''
-
+     if ($EMISSIONS == NR) then
+      set PP_TAPER = ""
+     else
+      set PP_TAPER = "#"
+     endif
 # AERO Provider
 # -------------
      set AERO_PROVIDER = GOCART
@@ -2219,6 +2223,7 @@ s?@USE_DATA_ATM4OCN?$USE_DATA_ATM4OCN?g
 
 s?@RUN_DUAL?$RUN_DUAL?g
 
+s?@PP_TAPER?$PP_TAPER?g
 
 EOF
 
