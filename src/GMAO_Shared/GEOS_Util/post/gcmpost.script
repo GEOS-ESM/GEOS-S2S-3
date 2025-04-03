@@ -997,30 +997,31 @@ foreach collection ( $collections )
 
          endif  # End IFTEST for -e $SOURCE/holding/$collection/$date due to possible deletion from other archive job
       end
-      # Submit Archive Job
-      # ------------------
-      set test = `cat $archfile`
-      if( $#test != 0 ) then
-         cat $SOURCE/archive/gcm_archive.j $archfile > $SOURCE/archive/gcm_archive.$collection.$streamdates[1].j
-         cd  $SOURCE/archive
-         /bin/rm -f sedfile
-         /bin/mv -f gcm_archive.$collection.$streamdates[1].j tmpfile
-         cat > sedfile << EOF
-s/OUTPUT/gcm_archive.$collection.$streamdates[1].o/g
-EOF
-         sed -f sedfile tmpfile > gcm_archive.$collection.$streamdates[1].j
-         chmod +x gcm_archive.$collection.$streamdates[1].j
-         if( $HOST == 'pleiades' ) then
-                  ./gcm_archive.$collection.$streamdates[1].j > ./gcm_archive.$collection.$streamdates[1].o
-         else
-            $batch_cmd     gcm_archive.$collection.$streamdates[1].j
-         endif
-         /bin/rm -f $archfile
-         /bin/rm -f sedfile
-         /bin/rm -f tmpfile
-      else
-         /bin/rm -f $archfile
-      endif
+      # todo: gcm_archive.j is not in use neighter at NCCS nor NAS. Removed it (20250318 MC)
+#      # Submit Archive Job
+#      # ------------------
+#      set test = `cat $archfile`
+#      if( $#test != 0 ) then
+#         cat $SOURCE/archive/gcm_archive.j $archfile > $SOURCE/archive/gcm_archive.$collection.$streamdates[1].j
+#         cd  $SOURCE/archive
+#         /bin/rm -f sedfile
+#         /bin/mv -f gcm_archive.$collection.$streamdates[1].j tmpfile
+#         cat > sedfile << EOF
+#s/OUTPUT/gcm_archive.$collection.$streamdates[1].o/g
+#EOF
+#         sed -f sedfile tmpfile > gcm_archive.$collection.$streamdates[1].j
+#         chmod +x gcm_archive.$collection.$streamdates[1].j
+#         if( $HOST == 'pleiades' ) then
+#                  ./gcm_archive.$collection.$streamdates[1].j > ./gcm_archive.$collection.$streamdates[1].o
+#         else
+#            $batch_cmd     gcm_archive.$collection.$streamdates[1].j
+#         endif
+#         /bin/rm -f $archfile
+#         /bin/rm -f sedfile
+#         /bin/rm -f tmpfile
+#      else
+#         /bin/rm -f $archfile
+#      endif
 
    endif
 
