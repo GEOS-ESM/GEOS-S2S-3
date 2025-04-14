@@ -838,26 +838,37 @@ foreach  restart ($restarts)
 $GEOSBIN/stripname .${edate}.${GCMVER}.${BCTAG}_${BCRSLV}.\* '' $restart
 end
 
+# Move monthly collection checkpoints to restarts
+#------------------------------------------------
+set monthlies = `ls *chk`
+if ( $#monthlies > 0 ) then
+    echo 'check 3'
+    foreach ff (*chk)
+            mv $ff `basename $ff chk`rst
+    end
+endif
+wait
+
+# Copy Renamed monthly to RESTARTS directory
+# ----------------------------------------------------
+    set  restarts = `/bin/ls -1 *_tavg_1mo_glo_*_rst`
+foreach  restart ($restarts)
+echo restart
+/bin/cp $restart ${EXPDIR}/restarts
+end
 
 # TAR ARCHIVED RESTARTS
 # ---------------------
 cd $EXPDIR/restarts
     if( $FSEGMENT == 00000000 ) then
 	>>>DATAOCEAN<<<@TAREXEC cf  restarts.${edate}.tar $EXPID.*.${edate}.${GCMVER}.${BCTAG}_${BCRSLV}.*
-        >>>COUPLED<<<@TAREXEC cvf  restarts.${edate}.tar $EXPID.*.${edate}.${GCMVER}.${BCTAG}_${BCRSLV}.* RESTART.${edate}
+        >>>COUPLED<<<@TAREXEC cvf  restarts.${edate}.tar $EXPID.*.${edate}.${GCMVER}.${BCTAG}_${BCRSLV}.* *_tavg_1mo_glo_*_rst RESTART.${edate}
         /bin/rm -rf `/bin/ls -d -1     $EXPID.*.${edate}.${GCMVER}.${BCTAG}_${BCRSLV}.*`
+        /bin/rm -rf *_tavg_1mo_glo_*_rst
 	>>>COUPLED<<</bin/rm -rf RESTART.${edate}
     endif
 cd $SCRDIR
 
-# Move monthly collection checkpoints to restarts
-#------------------------------------------------
-set monthlies = `ls *chk` 
-if ( $#monthlies > 0 ) then
-    foreach ff (*chk)
-	    mv $ff `basename $ff chk`rst
-    end
-endif
 
 #######################################################################
 #               Move HISTORY Files to Holding Directory
