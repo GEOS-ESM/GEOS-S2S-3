@@ -76,9 +76,6 @@ if (($node =~ discover*) || ($node =~ borg*)  || \
 
    set site = "NCCS"
 
-   # NCCS now has both SLES15 and SLES12 machines
-   set OS_VERSION=`grep VERSION_ID /etc/os-release | cut -d= -f2 | cut -d. -f1 | sed 's/"//g'`
-
 else if (($node =~ pfe*) || ($node =~ afe*) || \
          ($node =~ r[0-9]*i[0-9]*n[0-9]*) || \
          ($node =~ r[0-9]*c[0-9]*t[0-9]*n[0-9]*)) then
@@ -136,35 +133,17 @@ if ( $site == NCCS ) then
 
    set mod1 = GEOSenv
 
-   if ( $OS_VERSION == 12 ) then
+   set mod2 = comp/gcc/12.3.0
+   set mod3 = comp/intel/2021.6.0
 
-      set mod2 = comp/gcc/6.5.0
-      set mod3 = comp/intel/18.0.5.274
+   # For IMPI 2021.13
+   set basedir = /discover/swdev/mathomp4/Baselibs/ESMA-Baselibs-4.0.11-SLES12/x86_64-unknown-linux-gnu/ifort_2021.6.0-intelmpi_2021.13.0-SLES15
+   set mod4 = mpi/impi/2021.13
 
-      # For IMPI 2021.2
-      set basedir = /discover/swdev/mathomp4/Baselibs/ESMA-Baselibs-4.0.11-SLES12/x86_64-unknown-linux-gnu/ifort_18.0.5.274-intelmpi_2021.2.0-nco_2020Apr09_snapshot
-      set mod4 = mpi/impi/2021.2.0
+   set mod5 = python/GEOSpyD/Min23.5.2-0_py3.11
 
-      set mod5 = python/GEOSpyD/Min23.5.2-0_py3.11
-
-      set mod6 = other/mpi4py/3.1.5-py3.11/ifort_18.0.5.274-intelmpi_2021.2.0-SLES12
-      set mod7 = other/ncap2/5.1.1
-
-   else
-
-      set mod2 = comp/gcc/12.3.0
-      set mod3 = comp/intel/2021.6.0
-
-      # For IMPI 2021.13
-      set basedir = /discover/swdev/mathomp4/Baselibs/ESMA-Baselibs-4.0.11-SLES12/x86_64-unknown-linux-gnu/ifort_2021.6.0-intelmpi_2021.13.0-SLES15
-      set mod4 = mpi/impi/2021.13
-
-      set mod5 = python/GEOSpyD/Min23.5.2-0_py3.11
-
-      set mod6 = other/mpi4py/3.1.5-py3.11/ifort_2021.6.0-intelmpi_2021.13.0-SLES15
-      set mod7 = other/ncap2/5.2.6
-
-   endif
+   set mod6 = other/mpi4py/3.1.5-py3.11/ifort_2021.6.0-intelmpi_2021.13.0-SLES15
+   set mod7 = other/ncap2/5.2.6
 
    set momdir = /home/yvikhlia/nobackup/mom5
 
@@ -397,11 +376,7 @@ if (-e $modinit) then
 
    if ($usemodules) then
       if ($site == NCCS) then
-         if ( $OS_VERSION == 12 ) then
-            module use -a /discover/swdev/gmao_SIteam/modulefiles-SLES12
-         else
-            module use -a /discover/swdev/gmao_SIteam/modulefiles-SLES15
-         endif
+         module use -a /discover/swdev/gmao_SIteam/modulefiles-SLES15
       endif
 
       if ($site == NAS) then
