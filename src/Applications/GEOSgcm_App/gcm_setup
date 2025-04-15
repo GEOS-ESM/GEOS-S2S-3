@@ -1289,7 +1289,6 @@ EMISSIONS:
      endif
      endif
      if(  $EMISSIONS == OPS ) set EMISSIONS = ''
-
 # AERO Provider
 # -------------
      set AERO_PROVIDER = GOCART
@@ -1394,7 +1393,8 @@ if( $SITE == 'NAS' ) then
               setenv CHMDIR     /nobackup/gmao_SIteam/ModelData/fvInput_nc3            # locations of Aerosol Chemistry BCs
               setenv WRKDIR     /nobackup/$LOGNAME                                     # user work directory
               setenv COUPLEDIR  /nobackup/gmao_SIteam/ModelData/coupled/Forcings       # Coupled Ocean/Atmos Forcing
-              setenv CPEXEC     cp                                                     # Copy utility for large copies
+              setenv COUPLE2DIR $COUPLEDIR                                             # For GRIDDIR2 path 
+	      setenv CPEXEC     cp                                                     # Copy utility for large copies
               setenv TAREXEC    tar                                                    # Tar utility for large archives
               set  G5LIBDIR=/nobackup/gmao_SIteam/Utilities/ocean-scripting/python/g5lib
 else if( $SITE == 'NCCS' ) then
@@ -1435,7 +1435,8 @@ else if( $SITE == 'NCCS' ) then
               setenv CHMDIR     $SHARE/gmao_ops/fvInput_4dvar                          # locations of Aerosol Chemistry BCs
               setenv WRKDIR     /discover/nobackup/$LOGNAME                            # user work directory
               setenv COUPLEDIR  /home/yvikhlia/nobackup/coupled/Forcings               # Coupled Ocean/Atmos Forcing
-              setenv CPEXEC     /bin/cp                                                # Copy utility for large copies
+              setenv COUPLE2DIR /discover/nobackup/projects/gmao/geos-s2s-3/regrid_bcs # For GRIDDIR2 path
+	      setenv CPEXEC     /bin/cp                                                # Copy utility for large copies
               setenv TAREXEC    tar                                                    # Tar utility for large archives
               set G5LIBDIR=/home/yvikhlia/python/g5lib
 else
@@ -1463,7 +1464,8 @@ else
               setenv CHMDIR     /ford1/share/gmao_SIteam/ModelData/fvInput_nc3         # locations of Aerosol Chemistry BCs
               setenv WRKDIR     /home/$LOGNAME                                         # user work directory
               setenv COUPLEDIR  /ford1/share/gmao_SIteam/ModelData/Forcings            # Coupled Ocean/Atmos Forcing
-              if( $CUBED == "TRUE" ) then
+              setenv COUPLE2DIR $COUPLEDIR                                             # For GRIDDIR2 path
+	      if( $CUBED == "TRUE" ) then
                  set NX = 1
                  set NY = 6
               else
@@ -2079,6 +2081,7 @@ s?@ICEFILE?$ICEFILE?g
 s?@KPARFILE?$KPARFILE?g
 s?@CHMDIR?$CHMDIR?g
 s?@COUPLEDIR?$COUPLEDIR?g
+s?@COUPLE2DIR?$COUPLE2DIR?g
 s?@EXPDIR?$EXPDIR?g
 s?@EXPDSC?$EXPDSC?g
 s?@HOMDIR?$HOMDIR?g
@@ -2208,7 +2211,6 @@ s?@ACTUAL_ATM4OCN?$ACTUAL_ATM4OCN?g
 s?@USE_DATA_ATM4OCN?$USE_DATA_ATM4OCN?g
 
 s?@RUN_DUAL?$RUN_DUAL?g
-
 
 EOF
 

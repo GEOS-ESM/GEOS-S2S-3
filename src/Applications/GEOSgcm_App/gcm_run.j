@@ -71,11 +71,11 @@ if( $GCMEMIP == TRUE ) then
     setenv  SCRDIR  $EXPDIR/scratch.$RSTDATE
 else
     setenv  SCRDIR  $EXPDIR/scratch
-    if( $SITE == NCCS ) then
-        if ( -l $SCRDIR ) unlink $SCRDIR
-        mkdir -p $TSE_TMPDIR/scratch
-        ln -s $TSE_TMPDIR/scratch $SCRDIR
-    endif 
+#    if( $SITE == NCCS ) then
+#        if ( -l $SCRDIR ) unlink $SCRDIR
+#        mkdir -p $TSE_TMPDIR/scratch
+#        ln -s $TSE_TMPDIR/scratch $SCRDIR
+#    endif 
 endif
 
 if (! -e $SCRDIR ) mkdir -p $SCRDIR
@@ -290,7 +290,10 @@ setenv DATELINE  DC
 setenv EMISSIONS @EMISSIONS
 
 >>>COUPLED<<<setenv GRIDDIR  @COUPLEDIR/a${AGCM_IM}x${AGCM_JM}_o${OGCM_IM}x${OGCM_JM}
+>>>COUPLED<<<if ($SITE == NAS) then
 >>>COUPLED<<<setenv GRIDDIR2  @COUPLEDIR/SST/MERRA2/${OGCM_IM}x${OGCM_JM}
+>>>COUPLED<<<else if( $SITE == NCCS ) then
+>>>COUPLED<<<setenv GRIDDIR2 @COUPLE2DIR/DE1440xPE0720_TM1440xTM1080
 >>>COUPLED<<<setenv BCTAG `basename $GRIDDIR`
 >>>DATAOCEAN<<<setenv BCTAG `basename $BCSDIR`
 
@@ -313,6 +316,7 @@ cat << _EOF_ > $FILE
 
 # Precip correction
 #/bin/ln -s /discover/nobackup/projects/gmao/share/gmao_ops/fvInput/merra_land/precip_CPCUexcludeAfrica-CMAP_corrected_MERRA/GEOSdas-2_1_4 ExtData/PCP
+>>>COUPLED_DUAL<<<rm -f ExtData/PCP
 
 >>>COUPLED_DUAL<<<# 1981-2014
 >>>COUPLED_DUAL<<<#/bin/ln -s /discover/nobackup/projects/gmao/share/gmao_ops/fvInput/merra_land/precip_CPCUexcludeAfrica-CMAP_corrected_MERRA/GEOSdas-2_1_4 ExtData/PCP
@@ -834,26 +838,37 @@ foreach  restart ($restarts)
 $GEOSBIN/stripname .${edate}.${GCMVER}.${BCTAG}_${BCRSLV}.\* '' $restart
 end
 
+# Move monthly collection checkpoints to restarts
+#------------------------------------------------
+set monthlies = `ls *chk`
+if ( $#monthlies > 0 ) then
+    echo 'check 3'
+    foreach ff (*chk)
+            mv $ff `basename $ff chk`rst
+    end
+endif
+wait
+
+# Copy Renamed monthly to RESTARTS directory
+# ----------------------------------------------------
+    set  restarts = `/bin/ls -1 *_tavg_1mo_glo_*_rst`
+foreach  restart ($restarts)
+echo restart
+/bin/cp $restart ${EXPDIR}/restarts
+end
 
 # TAR ARCHIVED RESTARTS
 # ---------------------
 cd $EXPDIR/restarts
     if( $FSEGMENT == 00000000 ) then
 	>>>DATAOCEAN<<<@TAREXEC cf  restarts.${edate}.tar $EXPID.*.${edate}.${GCMVER}.${BCTAG}_${BCRSLV}.*
-        >>>COUPLED<<<@TAREXEC cvf  restarts.${edate}.tar $EXPID.*.${edate}.${GCMVER}.${BCTAG}_${BCRSLV}.* RESTART.${edate}
+        >>>COUPLED<<<@TAREXEC cvf  restarts.${edate}.tar $EXPID.*.${edate}.${GCMVER}.${BCTAG}_${BCRSLV}.* *_tavg_1mo_glo_*_rst RESTART.${edate}
         /bin/rm -rf `/bin/ls -d -1     $EXPID.*.${edate}.${GCMVER}.${BCTAG}_${BCRSLV}.*`
+        /bin/rm -rf *_tavg_1mo_glo_*_rst
 	>>>COUPLED<<</bin/rm -rf RESTART.${edate}
     endif
 cd $SCRDIR
 
-# Move monthly collection checkpoints to restarts
-#------------------------------------------------
-set monthlies = `ls *chk` 
-if ( $#monthlies > 0 ) then
-    foreach ff (*chk)
-	    mv $ff `basename $ff chk`rst
-    end
-endif
 
 #######################################################################
 #               Move HISTORY Files to Holding Directory
