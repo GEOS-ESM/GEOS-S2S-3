@@ -34,6 +34,8 @@
 # *                         Jason-3
 # *                         Saral
 # *                         Sentinel-3a
+# *                         Sentinel-3b
+# *                         SWOT-nadir
 # *                         ERS-1
 # *                         ERS-2
 # *                         TOPEX
@@ -917,10 +919,22 @@ def sentinel3a(list_of_obs):        #S3A-Sentinel
     update_list_of_obs(list_of_obs, s3a_adt)
     return list_of_obs
 
+def sentinel3b(list_of_obs):        #S3A-Sentinel
+    fname=ADTOBSDIR+'ADT_TRK_S3B_'+yyyy+'.nc'
+    s3b_adt = Obs(yyyy, mm, dd, hh, fname=fname, id_obs=obsid_dict['id_eta_obs'], vartype='ADT',xsigo=xsigo_ssh, descriptor='Sentinel-3b-ADT', color='m')
+    update_list_of_obs(list_of_obs, s3b_adt)
+    return list_of_obs
+
 def sentinel6a(list_of_obs):        #S6A-Sentinel
     fname=ADTOBSDIR+'ADT_TRK_S6A_'+yyyy+'.nc'
     s6a_adt = Obs(yyyy, mm, dd, hh, fname=fname, id_obs=obsid_dict['id_eta_obs'], vartype='ADT',xsigo=xsigo_ssh, descriptor='Sentinel-6a-ADT', color='m')
     update_list_of_obs(list_of_obs, s6a_adt)
+    return list_of_obs
+
+def swotnadir(list_of_obs):        #SWOT nadir (not KaRN)
+    fname=ADTOBSDIR+'ADT_TRK_SWON_'+yyyy+'.nc'
+    swotnadir_adt = Obs(yyyy, mm, dd, hh, fname=fname, id_obs=obsid_dict['id_eta_obs'], vartype='ADT',xsigo=xsigo_ssh, descriptor='SWOT-nadir', color='m')
+    update_list_of_obs(list_of_obs, swotnadir_adt)
     return list_of_obs
 
 def jason1(list_of_obs):        #Jason-1
@@ -1145,7 +1159,9 @@ switch_obs = {
     "Jason-3N"    : jason3N,
     "Saral"       : saral,
     "Sentinel-3a" : sentinel3a,
+    "Sentinel-3b" : sentinel3b,
     "Sentinel-6a" : sentinel6a,
+    "SWOT-nadir"  : swotnadir,
     "ERS-1"       : ers1,
     "ERS-2"       : ers2,
     "TOPEX"       : topex_poseidon,
@@ -1198,7 +1214,9 @@ switch_inst_ids = {
     "Jason-3"     : 541,
     "Jason-3N"    : 545,
     "Sentinel-3a" : 542,
+    "Sentinel-3b" : 547,
     "Sentinel-6a" : 544,
+    "SWOT-nadir"  : 546,
     "SMOS"        : 555,
 #   "SMOSSUB"     : 555,
 #   "SMOSL3"      : 556,
@@ -1295,12 +1313,7 @@ if list_of_obs:
         fh.write(str(nobs)+'\n')
 
 #   check to make sure minimum observation types are in gmao- file
-    minreq=[3073, 5521, 5351]  #Tz, Sz, ADT
-#   minreq=[3073, 5351]  #Tz, ADT
-#   minreq=[3073]  #Tz,
-#   minreq[3073, 5521]  #Tz, Sz
-#   minreq=[5351]  #ADT
-
+    minreq = list(map(int, os.environ['ODAS_MIN_REQ'].split()))
     for oid in minreq:
         if oid in typ:
             print("Yes,found in List : ",oid, inv_dict(obsid_dict, oid))
