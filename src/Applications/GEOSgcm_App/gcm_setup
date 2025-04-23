@@ -1876,7 +1876,7 @@ cat > $HOMDIR/SETENV.commands << EOF
 # on Cascade Lake nodes. So we only set this
 # on the Milan nodes (which have 128 cores per node)
 set NUM_CORES=`grep processor /proc/cpuinfo | wc -l`
-if ( $NUM_CORES == 128 ) then
+if ( \$NUM_CORES == 128 ) then
     setenv I_MPI_OFI_PROVIDER psm3
 endif
 #    setenv I_MPI_FALLBACK 0
