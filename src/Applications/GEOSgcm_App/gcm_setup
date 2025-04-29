@@ -1394,7 +1394,7 @@ if( $SITE == 'NAS' ) then
               setenv WRKDIR     /nobackup/$LOGNAME                                     # user work directory
               setenv COUPLEDIR  /nobackup/gmao_SIteam/ModelData/coupled/Forcings       # Coupled Ocean/Atmos Forcing
               setenv COUPLE2DIR $COUPLEDIR                                             # For GRIDDIR2 path 
-	      setenv CPEXEC     cp                                                     # Copy utility for large copies
+              setenv CPEXEC     cp                                                     # Copy utility for large copies
               setenv TAREXEC    tar                                                    # Tar utility for large archives
               set  G5LIBDIR=/nobackup/gmao_SIteam/Utilities/ocean-scripting/python/g5lib
 else if( $SITE == 'NCCS' ) then
@@ -1436,7 +1436,7 @@ else if( $SITE == 'NCCS' ) then
               setenv WRKDIR     /discover/nobackup/$LOGNAME                            # user work directory
               setenv COUPLEDIR  /home/yvikhlia/nobackup/coupled/Forcings               # Coupled Ocean/Atmos Forcing
               setenv COUPLE2DIR /discover/nobackup/projects/gmao/geos-s2s-3/regrid_bcs # For GRIDDIR2 path
-	      setenv CPEXEC     /bin/cp                                                # Copy utility for large copies
+              setenv CPEXEC     /bin/cp                                                # Copy utility for large copies
               setenv TAREXEC    tar                                                    # Tar utility for large archives
               set G5LIBDIR=/home/yvikhlia/python/g5lib
 else
@@ -1465,7 +1465,7 @@ else
               setenv WRKDIR     /home/$LOGNAME                                         # user work directory
               setenv COUPLEDIR  /ford1/share/gmao_SIteam/ModelData/Forcings            # Coupled Ocean/Atmos Forcing
               setenv COUPLE2DIR $COUPLEDIR                                             # For GRIDDIR2 path
-	      if( $CUBED == "TRUE" ) then
+              if( $CUBED == "TRUE" ) then
                  set NX = 1
                  set NY = 6
               else
