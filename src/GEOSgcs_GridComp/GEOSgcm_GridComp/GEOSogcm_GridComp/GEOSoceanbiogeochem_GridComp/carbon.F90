@@ -1,6 +1,6 @@
       subroutine carbon(k,cnratio,cchlratio,bn,bf,remin,P,tfac,      &
        fnoice,tzoo,tirrq,cdomabsq,gro,picdis,                        &
-       atmco2,wspd,slp,T,S,H,P_tend,pco2,cflx)
+       atmco2,wspd,slp,T,S,H,P_tend,pco2,cflx,pHsfc)
 
 !  Computes carbon cycling.  Uses Aumont et al (2002; JGR) for
 !  semi-labile DOC (because of basic similarities in model
@@ -32,10 +32,15 @@
                                   !DOC excretion mg/m3(chl,assuming
                                   !C:chl ratio of 50))
       real, parameter :: frdoc=0.7      !fraction DOC:CDOC
-      real, parameter :: awan=0.337/(3.6E+5) !piston vel coeff., from 
-!                                     Wanninkhof 1992, but adjusted 
-!                                     by OCMIP, and converted from 
+!      real, parameter :: awan=0.337/(3.6E+5) !piston vel coeff., from
+!                                     Wanninkhof 1992, but adjusted
+!                                     by OCMIP, and converted from
 !                                     cm/hr to m/s
+      real, parameter :: awan=0.251/(3.6E+5) !piston vel coeff., from
+!                                     Wanninkhof 2014, but adjusted
+!                                     by OCMIP-BGC (Orr et al., 2017),
+!                                     and converted from cm/hr to m/s
+!                                     updated on May 13, 2025
       real, parameter :: stdslp=1013.25 !standard sea level pressure mb
 !      real, parameter :: atmco2=371.3  !uatm or ppmv (equivalent); 
 !                             global mean 2000-2003 from OCMIP
@@ -140,10 +145,11 @@
 !  Surface fluxes of carbon 
       if (k .eq. 1)then
 !  pCO2
-       call ppco2(slp,atmco2,T,S,P,ff,pco2)
+       call ppco2(slp,atmco2,T,S,P,ff,pco2,pHsfc)
 !  Update DIC for sea-air flux of CO2
        Ts = T
-       scco2 = 2073.1 - 125.62*Ts + 3.6276*Ts**2 - 0.043219*Ts**3
+!       scco2 = 2073.1 - 125.62*Ts + 3.6276*Ts**2 - 0.043219*Ts**3
+       scco2 = 2116.8 - 136.25*Ts + 4.7353*Ts**2 - 0.092307*Ts**3 + 0.0007555*Ts**4 !updated on May 13, 2025
        scco2arg = (scco2/660.0)**(-0.5)
        wssq = wspd*wspd
 !       rkwco2 = awan*(wssq+wspdvar)*scco2arg !units of m/s
