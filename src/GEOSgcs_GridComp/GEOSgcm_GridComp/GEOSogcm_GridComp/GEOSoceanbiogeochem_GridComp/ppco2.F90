@@ -1,4 +1,4 @@
-      subroutine ppco2(slp,atmco2,T,S,P,ff,pco2)
+      subroutine ppco2(slp,atmco2,T,S,P,ff,pco2,pHsfc)
  
 !  Computes pCO2 in the surface layer and delta pCO2 with the 
 !  atmosphere using OCMIP protocols.
@@ -13,6 +13,7 @@
  
       dtco2 = 0.0
       pco2 = 0.0
+      pHsfc = 0.0
 !      atmco2 = 371.3  !uatm or ppmv (equivalent); global mean
 !                      2000-2003 from OCMIP
 !  Constants
@@ -48,6 +49,7 @@
        pco2 = pco2surf
 !       dtco2(i) = dco2star
 !       pHsfc(i) = pH
+       pHsfc = pH
  
       return
       end
