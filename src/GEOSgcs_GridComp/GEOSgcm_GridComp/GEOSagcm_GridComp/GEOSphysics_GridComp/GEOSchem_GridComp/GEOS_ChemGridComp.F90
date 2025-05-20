@@ -337,6 +337,15 @@ contains
   if (myState%enable_GOCART .and. chemReg%doing_CO2) then
       call MAPL_AddExportSpec ( GC, SHORT_NAME = 'CO2SC001', &
                                 CHILD_ID = GOCART, __RC__ )
+  else
+       call MAPL_AddExportSpec(GC,                              &
+            SHORT_NAME         = 'CO2SC001',                          &
+            LONG_NAME          = 'CO2 Surface Concentration',         &
+            UNITS              = '1e-6',                              &
+            DIMS               = MAPL_DimsHorzOnly,                   &
+            VLOCATION          = MAPL_VLocationNone,                  &
+            RC=STATUS  )
+       VERIFY_(STATUS)
   end if
 
 ! Save this information in private state for later use. 
@@ -888,6 +897,16 @@ contains
   character(len=ESMF_MAXSTR)            :: CHILD_NAME
   real, pointer                         :: th(:,:,:) => NULL()
 
+  type(Chem_Registry)                   :: chemReg
+  real, external                        :: GETCO2
+  real, pointer, dimension(:,:)         :: CO2SC => null()
+  type (ESMF_Time)                      :: CURRENTTIME
+  integer                               :: YY, DOY
+  real                                  :: CO2
+  real, save :: CO2_0
+  data          CO2_0 /0.0/
+  character(len=ESMF_MAXSTR)            :: MSGSTRING
+
 !=============================================================================
 
 ! Begin... 
@@ -901,7 +920,6 @@ contains
    call MAPL_Get(MAPL, RUNALARM = ALARM, RC=STATUS )
    VERIFY_(STATUS)
 
-!  Start timers
 !  ------------
    call MAPL_TimerOn( MAPL, "TOTAL")
 
@@ -967,6 +985,35 @@ contains
         enddo !I
       endif
     endif ! alarm is ringing
+
+! Use time-varying co2 if CO2 GC is not running
+!---------------------
+
+    call MAPL_GetResource( MAPL, CO2, 'CO2:', RC=STATUS)
+    VERIFY_(STATUS)
+
+    if (CO2<0.0 .and. .not.chemReg%doing_CO2) then
+      call ESMF_ClockGet(CLOCK, currTIME=CURRENTTIME,       RC=STATUS)
+      VERIFY_(STATUS)
+      call ESMF_TimeGet (CURRENTTIME, YY=YY, DayOfYear=DOY, RC=STATUS)
+      VERIFY_(STATUS)
+
+      call MAPL_GetPointer(EXPORT, CO2SC,   'CO2SC001',   RC=STATUS)
+      VERIFY_(STATUS)
+
+      CO2 = GETCO2(YY,DOY)
+      if (associated(CO2SC)) CO2SC = CO2 * 1.00E+06
+      write(MSGSTRING,'(A,I4,A,I3,A,e12.5)') &
+           "Updated CO2 in Chem for year/day ", YY, "/", DOY, " is ", CO2
+      if( MAPL_AM_I_ROOT() ) then
+        if( CO2_0.ne.CO2 ) then
+          CO2_0  = CO2
+          print *
+          print *, trim(msgstring)
+          print *
+        endif
+      endif
+    endif
 
 !  Stop timers
 !  ------------
