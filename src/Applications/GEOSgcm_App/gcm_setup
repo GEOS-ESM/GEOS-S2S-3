@@ -1871,6 +1871,8 @@ if ( $SITE == 'NCCS' ) then
 cat > $HOMDIR/SETENV.commands << EOF
 
     setenv I_MPI_FABRICS shm:ofi
+    setenv I_MPI_ADJUST_GATHERV 3
+    setenv I_MPI_ADJUST_ALLREDUCE 12
 
 # Testing shows that the psm3 provider has issues
 # on Cascade Lake nodes. So we only set this
@@ -1885,10 +1887,8 @@ endif
 #    setenv I_MPI_ADJUST_SCATTER 2
 #    setenv I_MPI_ADJUST_SCATTERV 2
 #    setenv I_MPI_ADJUST_GATHER 2
-#    setenv I_MPI_ADJUST_GATHERV 3
 #    setenv I_MPI_ADJUST_ALLGATHER 3
 #    setenv I_MPI_ADJUST_ALLGATHERV 3
-#    setenv I_MPI_ADJUST_ALLREDUCE 12
 #    setenv I_MPI_ADJUST_REDUCE 10
 #    setenv I_MPI_ADJUST_BCAST 11
 #    setenv I_MPI_ADJUST_REDUCE_SCATTER 4
