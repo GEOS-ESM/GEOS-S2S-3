@@ -3,7 +3,7 @@
        regen,axs,                                                      &
        P,H,atmFe,fnoice,rikd,rmumax,gcmax,                             &
        tirrq,cdomabsq,atmco2,wspd,slp,T,S,                             &
-       P_tend,gronfix,ws,Hpst,picdis,pco2,cflx,pp2)
+       P_tend,gronfix,ws,Hpst,picdis,pco2,cflx,pp2,pHsfc,atmFesw_tend)
 
 !  Computes tendencies of biological particles.  Outputs as 
 !  units/h.
@@ -38,7 +38,7 @@
       real axs(ntyp,2)      !detrital sinking a and b coefs
       real P(ntyp)
       real H,tfac,fescav,wssc
-      real atmFe,fnoice,tzoo
+      real atmFe,fnoice,tzoo,atmFesw_tend
       real rikd(nchl)
       real rmuplsr(nchl)    !realized growth+respiration rate /s
       real rmumax(nchl)     !max phyto growth rate at 20oC, /d
@@ -116,7 +116,8 @@
 !  Start Model Space Loop
 !   Iron + atm iron: disperse in layer and convert to nM/s
       if (k .eq. 1)then
-       P_tend(4) = (atmFe*solFe)/H*0.001
+       atmFesw_tend = (atmFe*solFe)/H*0.001
+       P_tend(4) = atmFesw_tend
       endif
 !  Fe scavenging
       P4 = max(P(4),0.0)
@@ -361,7 +362,7 @@
 
       call carbon(k,cnratio,cchlratio,bn,bf,remin,P(:),tfac,          &
        fnoice,tzoo,tirrq,cdomabsq,gro(:),picdis,                      &
-       atmco2,wspd,slp,T,S,H,P_tend(:),pco2,cflx)
+       atmco2,wspd,slp,T,S,H,P_tend(:),pco2,cflx,pHsfc)
 
 !  Sinking rate temperature (viscosity) dependence (also convert
 !   to /s)
