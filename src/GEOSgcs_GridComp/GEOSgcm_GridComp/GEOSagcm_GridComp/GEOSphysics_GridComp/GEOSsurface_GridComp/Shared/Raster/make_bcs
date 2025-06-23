@@ -390,9 +390,9 @@ set JMO = `echo ${jmo}  | awk '{printf "%4.4i", $1}'`
 gmake clean
 cvs upd -d data
 /bin/rm -r data/MOM/720x410 data/MOM/360x200
-ln -s /home/yvikhlia/nobackup/coupled/Forcings/a90x540_o360x200/INPUT/ data/MOM/360x200
-ln -s /home/yvikhlia/nobackup/coupled/Forcings/a90x540_o720x410/INPUT/ data/MOM/720x410
-ln -s /home/yvikhlia/nobackup/coupled/Forcings/a180x1080_o1440x1080/INPUT/ data/MOM/1440x1080
+ln -s /discover/nobackup/projects/gmao/SIteam/coupled_files/Forcings/a90x540_o360x200/INPUT/ data/MOM/360x200
+ln -s /discover/nobackup/projects/gmao/SIteam/coupled_files/Forcings/a90x540_o720x410/INPUT/ data/MOM/720x410
+ln -s /discover/nobackup/projects/gmao/SIteam/coupled_files/Forcings/a180x1080_o1440x1080/INPUT/ data/MOM/1440x1080
 
 set             BCNAME = DC${IM}xPC${JM}_${DATENAME}${IMO}x${POLENAME}${JMO}
 set             BCDIR  = $BCNAME.scratch
@@ -504,9 +504,9 @@ set JMO = `echo ${jmo}  | awk '{printf "%4.4i", $1}'`
 gmake clean
 cvs upd -d data
 /bin/rm -r data/MOM/720x410 data/MOM/360x200
-ln -s /home/yvikhlia/nobackup/coupled/Forcings/a90x540_o360x200/INPUT/ data/MOM/360x200
-ln -s /home/yvikhlia/nobackup/coupled/Forcings/a90x540_o720x410/INPUT/ data/MOM/720x410
-ln -s /home/yvikhlia/nobackup/coupled/Forcings/a180x1080_o1440x1080/INPUT/ data/MOM/1440x1080
+ln -s /discover/nobackup/projects/gmao/SIteam/coupled_files/Forcings/a90x540_o360x200/INPUT/ data/MOM/360x200
+ln -s /discover/nobackup/projects/gmao/SIteam/coupled_files/Forcings/a90x540_o720x410/INPUT/ data/MOM/720x410
+ln -s /discover/nobackup/projects/gmao/SIteam/coupled_files/Forcings/a180x1080_o1440x1080/INPUT/ data/MOM/1440x1080
 
 set             BCNAME = CF${NC}x6C_${DATENAME}${IMO}x${POLENAME}${JMO}
 set             BCDIR  = $BCNAME.scratch
@@ -624,9 +624,9 @@ set JM  = `echo ${jm}   | awk '{printf "%4.4i", $1}'`
 gmake clean
 cvs upd -d data
 /bin/rm -r data/MOM/720x410 data/MOM/360x200
-ln -s /home/yvikhlia/nobackup/coupled/Forcings/a90x540_o360x200/INPUT/ data/MOM/360x200
-ln -s /home/yvikhlia/nobackup/coupled/Forcings/a90x540_o720x410/INPUT/ data/MOM/720x410
-ln -s /home/yvikhlia/nobackup/coupled/Forcings/a180x1080_o1440x1080/INPUT/ data/MOM/1440x1080
+ln -s /discover/nobackup/projects/gmao/SIteam/coupled_files/Forcings/a90x540_o360x200/INPUT/ data/MOM/360x200
+ln -s /discover/nobackup/projects/gmao/SIteam/coupled_files/Forcings/a90x540_o720x410/INPUT/ data/MOM/720x410
+ln -s /discover/nobackup/projects/gmao/SIteam/coupled_files/Forcings/a180x1080_o1440x1080/INPUT/ data/MOM/1440x1080
 
 set             BCNAME = SMAP_${EVERSION}_${MGRID}
 set             BCDIR  = $BCNAME.scratch

@@ -160,7 +160,7 @@ echo RESCALE RESTARTS IN ndata and pdata
 if ( -e  ${XBVDIR}/perturb.out) then
  /bin/rm ${XBVDIR}/perturb.out
 endif
-ln -sf /home/yvikhlia/nobackup/coupled/Forcings/a288x181_o720x410/INPUT/dave/grid_spec.nc grid_spec.nc
+ln -sf /discover/nobackup/projects/gmao/SIteam/coupled_files/Forcings/a288x181_o720x410/INPUT/dave/grid_spec.nc grid_spec.nc
 ln -sf  ${odasRUNS}/RESTART/${bdate}_2100z.ocean_temp_salt.res.nc exp1.nc
 ln -sf  ${odasRUNS}/RESTART/${cdate}_2100z.ocean_temp_salt.res.nc exp2.nc
 $GEOSS2S/pert/cal_norm4rst_savebv.exe
