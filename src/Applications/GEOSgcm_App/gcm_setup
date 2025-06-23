@@ -1438,7 +1438,7 @@ else if( $SITE == 'NCCS' ) then
               setenv COUPLE2DIR /discover/nobackup/projects/gmao/geos-s2s-3/regrid_bcs # For GRIDDIR2 path
               setenv CPEXEC     /bin/cp                                                # Copy utility for large copies
               setenv TAREXEC    tar                                                    # Tar utility for large archives
-              set G5LIBDIR=/home/yvikhlia/python/g5lib
+              set G5LIBDIR=/discover/nobackup/projects/gmao/SIteam/coupled_files/ocean-scripting/python/g5lib
 else
 # These are defaults for the desktop
               setenv BATCH_GROUP "SBATCH -A "                                          # PBS Syntax for GROUP
