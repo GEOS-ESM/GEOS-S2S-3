@@ -27,10 +27,10 @@ mv tmp gcm_run.j
 ####################################################################
 # Add tile files
 set line1 = 'Pfafstetter.til tile_hist.data'
-set line2 = '/bin/ln -s /discover/nobackup/yvikhlia/coupled/Forcings/a360x181_o720x410/DC0360xPC0181_TM0720xTM0410-Pfafstetter.til tile_hist_360x180.data'
+set line2 = '/bin/ln -s /discover/nobackup/projects/gmao/SIteam/coupled_files/Forcings/a360x181_o720x410/DC0360xPC0181_TM0720xTM0410-Pfafstetter.til tile_hist_360x180.data'
 sed "/${line1}/a ${line2}" gcm_run.j > tmp
 mv tmp gcm_run.j
-set line2 = '/bin/ln -s /discover/nobackup/yvikhlia/coupled/Forcings/a720x361_o720x410/DC0720xPC0361_TM0720xTM0410-Pfafstetter.til tile_hist_720x361.data'
+set line2 = '/bin/ln -s /discover/nobackup/projects/gmao/SIteam/coupled_files/Forcings/a720x361_o720x410/DC0720xPC0361_TM0720xTM0410-Pfafstetter.til tile_hist_720x361.data'
 sed "/${line1}/a ${line2}" gcm_run.j > tmp
 mv tmp gcm_run.j
 set line2 = '/bin/ln -s /discover/nobackup/projects/gmao/share/gmao_ops/fvInput/merra_land/precip_CPCUexcludeAfrica-CMAP_corrected_MERRA/GEOSdas-2_1_4 ExtData/PCP'

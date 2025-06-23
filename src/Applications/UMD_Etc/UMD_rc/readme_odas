@@ -43,9 +43,9 @@ gcm_run.j
 013: #SBATCH -o EXPID.o%j
 014: #SBATCH -e EXPID.e%j
 
-196: /bin/ln -s /discover/nobackup/yvikhlia/coupled/Forcings/a360x181_o720x410/D
+196: /bin/ln -s /discover/nobackup/projects/gmao/SIteam/coupled_files/Forcings/a360x181_o720x410/D
 C0360xPC0181_TM0720xTM0410-Pfafstetter.til tile_hist_360x180.data
-197: /bin/ln -s /discover/nobackup/yvikhlia/coupled/Forcings/a720x361_o720x410/D
+197: /bin/ln -s /discover/nobackup/projects/gmao/SIteam/coupled_files/Forcings/a720x361_o720x410/D
 C0720xPC0361_TM0720xTM0410-Pfafstetter.til tile_hist_720x361.data
 /bin/ln -s /discover/nobackup/projects/gmao/share/gmao_ops/fvInput/merra_land/pr
 ecip_CPCUexcludeAfrica-CMAP_corrected_MERRA/GEOSdas-2_1_4 ExtData/PCP

@@ -183,7 +183,7 @@ set MK_RSTDIR = "/discover/nobackup/projects/gmao/m2oasf/build/geos-s2s/GEOSodas
 cmp /discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/g5gcm/bcs/Ganymed-4_0/Ganymed-4_0_MERRA-2/CF0180x6C_DE1440xPE0720/CF0180x6C_DE1440xPE0720-Pfafstetter.til $RSTMERDIRS/InData/CF0180x6C_DE1440xPE0720-Pfafstetter.til
 set tileCOMP1 = $status
 if ($tileCOMP1 > 0 ) exit
-cmp /discover/nobackup/yvikhlia/coupled/Forcings/a180x1080_o720x410/CF0180x6C_TM0720xTM0410-Pfafstetter.til $RSTMERDIRS/OutData/CF0180x6C_TM0720xTM0410-Pfafstetter.til
+cmp /discover/nobackup/projects/gmao/SIteam/coupled_files/Forcings/a180x1080_o720x410/CF0180x6C_TM0720xTM0410-Pfafstetter.til $RSTMERDIRS/OutData/CF0180x6C_TM0720xTM0410-Pfafstetter.til
 set tileCOMP2 = $status
 if ($tileCOMP2 > 0 ) exit
 

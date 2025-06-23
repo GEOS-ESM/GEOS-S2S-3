@@ -48,7 +48,7 @@ set executable = $UMD_Utils/anaice2rst_subX.x
 
 #TILEFILE
 # all 3 the same, but executable needs the hardwired name of tile (tile_a180x1080_o720x41.data)
-#              /discover/nobackup/yvikhlia/coupled/Forcings/a180x1080_o720x410/CF0180x6C_TM0720xTM0410-Pfafstetter.til
+#              /discover/nobackup/projects/gmao/SIteam/coupled_files/Forcings/a180x1080_o720x410/CF0180x6C_TM0720xTM0410-Pfafstetter.til
 #              /discover/nobackup/projects/gmao/t2ssp/h54/c180_o05/restart/MERRA2/OutData/CF0180x6C_TM0720xTM0410-Pfafstetter.til
 set tilefile = tile_a180x1080_o720x41.data
 

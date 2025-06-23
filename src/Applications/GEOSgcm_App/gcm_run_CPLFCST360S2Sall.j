@@ -197,7 +197,7 @@ cat << _EOF_ > $FILE
 >>>COUPLED<<</bin/ln -sf $GRIDDIR/${ATMOStag}_${OCEANtag}-Pfafstetter.TRN   runoff.bin
 >>>COUPLED<<</bin/ln -sf $GRIDDIR/tripolar_${OGCM_IM}x${OGCM_JM}.ascii .
 >>>COUPLED<<</bin/ln -sf $GRIDDIR/vgrid${OGCM_LM}.ascii ./vgrid.ascii
->>>COUPLED<<</bin/ln -s /discover/nobackup/yvikhlia/coupled/Forcings/a${HIST_IM}x${HIST_JM}_o${OGCM_IM}x${OGCM_JM}/${HISTtag}_${OCEANtag}-Pfafstetter.til tile_hist.data
+>>>COUPLED<<</bin/ln -s /discover/nobackup/projects/gmao/SIteam/coupled_files/Forcings/a${HIST_IM}x${HIST_JM}_o${OGCM_IM}x${OGCM_JM}/${HISTtag}_${OCEANtag}-Pfafstetter.til tile_hist.data
 
 >>>DATAOCEAN<<</bin/ln -sf $BCSDIR/$BCRSLV/${BCRSLV}-Pfafstetter.til  tile.data
 >>>DATAOCEAN<<<if(     -e  $BCSDIR/$BCRSLV/${BCRSLV}-Pfafstetter.TIL) then
@@ -215,7 +215,7 @@ cat << _EOF_ > $FILE
 >>>COUPLED<<</bin/ln -sf $GRIDDIR/visdf.dat visdf.dat
 >>>COUPLED<<</bin/ln -sf $GRIDDIR/nirdf.dat nirdf.dat
 >>>VEGMERR<<</bin/ln -sf /discover/nobackup/projects/gmao/t2ssp/h54/c180_o05/restart/MERRA2/OutData/vegdyn_internal_rst vegdyn.data
->>>VEGCPLD<<</bin/ln -sf /discover/nobackup/yvikhlia/coupled/Forcings/a180x1080_o720x410/vegdyn.data vegdyn.data
+>>>VEGCPLD<<</bin/ln -sf /discover/nobackup/projects/gmao/SIteam/coupled_files/Forcings/a180x1080_o720x410/vegdyn.data vegdyn.data
 >>>COUPLED<<</bin/ln -sf $GRIDDIR/lai.dat lai.data
 >>>COUPLED<<</bin/ln -sf $GRIDDIR/green.dat green.data
 /bin/ln -sf $BCSDIR/$BCRSLV/topo_DYN_ave_@RES_DATELINE.data topo_dynave.data

@@ -114,7 +114,7 @@ def lon_lat_to_cartesian(lon, lat, R = 1):
 
 def get_grid(): #reads lat lon for tripolar ocean grid 
     ##ncfile=Dataset('/gpfsm/dnb42/projects/p17/gvernier/SAND_BOXES/PLOT_ODAS/DATA/grid_spec_720x410x40.nc', "r")
-    ncfile=Dataset('/discover/nobackup/yvikhlia/coupled/Forcings/Ganymed/a90x540_o720x410/INPUT/grid_spec.nc',"r")
+    ncfile=Dataset('/discover/nobackup/projects/gmao/SIteam/coupled_files/Forcings/Ganymed/a90x540_o720x410/INPUT/grid_spec.nc',"r")
     #ncfile=Dataset('/gpfsm/dnb42/projects/p17/bzhao/cp100/scratch/INPUT/grid_spec.nc',"r")
     LON     = ncfile.variables['x_T'][:]
     LAT     = ncfile.variables['y_T'][:]

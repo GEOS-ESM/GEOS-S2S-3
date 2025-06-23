@@ -289,8 +289,8 @@ setenv BCRSLV    CF0180x6C_DE0360xPE0180
 setenv DATELINE  DC
 setenv EMISSIONS MERRA2
 
-setenv GRIDDIR  /discover/nobackup/yvikhlia/coupled/Forcings/a${AGCM_IM}x${AGCM_JM}_o${OGCM_IM}x${OGCM_JM}
-#setenv GRIDDIR2  /discover/nobackup/yvikhlia/coupled/Forcings/SST/MERRA2/${OGCM_IM}x${OGCM_JM}
+setenv GRIDDIR  /discover/nobackup/projects/gmao/SIteam/coupled_files/Forcings/a${AGCM_IM}x${AGCM_JM}_o${OGCM_IM}x${OGCM_JM}
+#setenv GRIDDIR2  /discover/nobackup/projects/gmao/SIteam/coupled_files/Forcings/SST/MERRA2/${OGCM_IM}x${OGCM_JM}
 setenv GRIDDIR2  /discover/nobackup/projects/gmao/ssd/aogcm/ocean_bcs/SST/MERRA2/${OGCM_IM}x${OGCM_JM}
 setenv BCTAG `basename $GRIDDIR`
 
@@ -308,8 +308,8 @@ cat << _EOF_ > $FILE
 /bin/ln -sf $GRIDDIR/CF0180x6C_TM1440xTM1080-Pfafstetter.TRN   runoff.bin
 /bin/ln -sf $GRIDDIR/tripolar_${OGCM_IM}x${OGCM_JM}.ascii .
 /bin/ln -sf $GRIDDIR/vgrid${OGCM_LM}.ascii ./vgrid.ascii
-/bin/ln -s /discover/nobackup/yvikhlia/coupled/Forcings/a720x361_o${OGCM_IM}x${OGCM_JM}/DC0720xPC0361_TM1440xTM1080-Pfafstetter.til tile_hist.data
-/bin/ln -s /discover/nobackup/yvikhlia/coupled/Forcings/a1440x721_o1440x1080/DC1440xPC0721_TM1440xTM1080-Pfafstetter.til tile_hist_1440x721.data
+/bin/ln -s /discover/nobackup/projects/gmao/SIteam/coupled_files/Forcings/a720x361_o${OGCM_IM}x${OGCM_JM}/DC0720xPC0361_TM1440xTM1080-Pfafstetter.til tile_hist.data
+/bin/ln -s /discover/nobackup/projects/gmao/SIteam/coupled_files/Forcings/a1440x721_o1440x1080/DC1440xPC0721_TM1440xTM1080-Pfafstetter.til tile_hist_1440x721.data
 
 # Precip correction
 #/bin/ln -s /discover/nobackup/projects/gmao/share/gmao_ops/fvInput/merra_land/precip_CPCUexcludeAfrica-CMAP_corrected_MERRA/GEOSdas-2_1_4 ExtData/PCP

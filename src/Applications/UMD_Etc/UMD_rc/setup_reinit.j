@@ -184,7 +184,7 @@ setenv BCRSLV    ${ATMOStag}_DE0360xPE0180
 setenv DATELINE  DC
 setenv EMISSIONS MERRA2
 
-setenv GRIDDIR  /discover/nobackup/yvikhlia/coupled/Forcings/a${AGCM_IM}x${AGCM_JM}_o${OGCM_IM}x${OGCM_JM}
+setenv GRIDDIR  /discover/nobackup/projects/gmao/SIteam/coupled_files/Forcings/a${AGCM_IM}x${AGCM_JM}_o${OGCM_IM}x${OGCM_JM}
 setenv BCTAG `basename $GRIDDIR`
 
 set             FILE = linkbcs
@@ -273,8 +273,8 @@ if( ${OCEANtag} == DE1440xPE0720 | \
     endif
 endif
 
-/bin/ln -s /discover/nobackup/yvikhlia/coupled/Forcings/a720x361_o720x410/DC0720xPC0361_TM0720xTM0410-Pfafstetter.til tile_hist_720x361.data
-/bin/ln -s /discover/nobackup/yvikhlia/coupled/Forcings/a${HIST_IM}x${HIST_JM}_o${OGCM_IM}x${OGCM_JM}/${HISTtag}_${OCEANtag}-Pfafstetter.til tile_hist.data
+/bin/ln -s /discover/nobackup/projects/gmao/SIteam/coupled_files/Forcings/a720x361_o720x410/DC0720xPC0361_TM0720xTM0410-Pfafstetter.til tile_hist_720x361.data
+/bin/ln -s /discover/nobackup/projects/gmao/SIteam/coupled_files/Forcings/a${HIST_IM}x${HIST_JM}_o${OGCM_IM}x${OGCM_JM}/${HISTtag}_${OCEANtag}-Pfafstetter.til tile_hist.data
 /bin/ln -sf $GRIDDIR/${ATMOStag}_${OCEANtag}-Pfafstetter.til   tile.data
 
 if (! -e tile.bin) then

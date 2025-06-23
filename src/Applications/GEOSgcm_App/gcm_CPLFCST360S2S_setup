@@ -1146,7 +1146,7 @@ else if( $SITE == 'NCCS' ) then
               endif
               setenv CHMDIR     $SHARE/dao_ops/fvInput_nc3                             # locations of Aerosol Chemistry BCs
               setenv WRKDIR     /discover/nobackup/$LOGNAME                            # user work directory
-              setenv COUPLEDIR  /discover/nobackup/yvikhlia/coupled/Forcings           # Coupled Ocean/Atmos Forcing
+              setenv COUPLEDIR  /discover/nobackup/projects/gmao/SIteam/coupled_files/Forcings           # Coupled Ocean/Atmos Forcing
 else if( $SITE == 'JIBB' ) then
               setenv BATCH_GROUP "SBATCH -A "                                          # PBS Syntax for GROUP
               setenv     RUN_FT "06:00:00"                                             # Wallclock Time   for gcm_forecast.j

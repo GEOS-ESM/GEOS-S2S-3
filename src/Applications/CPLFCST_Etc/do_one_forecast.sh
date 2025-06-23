@@ -171,7 +171,7 @@ if ( $loca == GMAO2016FCST ) then
 echo "Use vegdyn from MERRA2 - by default forecast setting uses coupled run vegdyn"
 cd $runhdir
 /bin/mv gcm_run.j tmp_run.j
-set CPLVEGDYN = "/discover/nobackup/yvikhlia/coupled/Forcings/a180x1080_o720x410/vegdyn.data"
+set CPLVEGDYN = "/discover/nobackup/projects/gmao/SIteam/coupled_files/Forcings/a180x1080_o720x410/vegdyn.data"
 set MERVEGDYN = "/discover/nobackup/projects/gmao/t2ssp/h54/c180_o05/restart/MERRA2/OutData/vegdyn_internal_rst"
 cat tmp_run.j | sed -e "s|${CPLVEGDYN}|${MERVEGDYN}|g" > gcm_run.j
 endif

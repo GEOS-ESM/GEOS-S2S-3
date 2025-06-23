@@ -1139,7 +1139,7 @@ else if( $SITE == 'NCCS' ) then
               endif
               setenv CHMDIR     $SHARE/dao_ops/fvInput_nc3                             # locations of Aerosol Chemistry BCs
               setenv WRKDIR     /discover/nobackup/$LOGNAME                            # user work directory
-              setenv COUPLEDIR  /discover/nobackup/yvikhlia/coupled/Forcings           # Coupled Ocean/Atmos Forcing
+              setenv COUPLEDIR  /discover/nobackup/projects/gmao/SIteam/coupled_files/Forcings           # Coupled Ocean/Atmos Forcing
               setenv CPEXEC     /bin/cp                                                # Copy utility for large copies
               setenv TAREXEC    /bin/tar                                               # Tar utility for large archives
 else
