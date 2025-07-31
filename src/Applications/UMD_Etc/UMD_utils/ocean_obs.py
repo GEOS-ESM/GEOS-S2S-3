@@ -1401,8 +1401,9 @@ if list_of_obs:
 #          print 'return is',returned_value
             if (returned_value != 0):
 #                cmd = "/discover/swdev/gmao_SIteam/Baselibs/latest-mpiuni-SLES12/Linux/bin/ncap2 -s 'instid[$nobs]=-999.' "+infile+' '+outfile
-                # cmd = f"/discover/swdev/gmao_SIteam/Baselibs/latest-mpiuni-SLES{SLN}/Linux/bin/ncap2 -s 'instid[$nobs]=-999.' "+infile+' '+outfile
-                cmd = f"/discover/swdev/gmao_SIteam/Baselibs/latest-mpiuni-SLES15/Linux/bin/ncap2 -s 'instid[$nobs]=-999.' "+infile+' '+outfile
+#                cmd = f"/discover/swdev/gmao_SIteam/Baselibs/latest-mpiuni-SLES{SLN}/Linux/bin/ncap2 -s 'instid[$nobs]=-999.' "+infile+' '+outfile
+#                cmd = f"/discover/swdev/gmao_SIteam/Baselibs/latest-mpiuni-SLES15/Linux/bin/ncap2 -s 'instid[$nobs]=-999.' "+infile+' '+outfile
+                cmd = f"ncap2 -s 'instid[$nobs]=-999.' "+infile+' '+outfile
 #                  print cmd
                 print('ADDING INST_ID TO NETCDF FILE')
                 os.system(cmd)

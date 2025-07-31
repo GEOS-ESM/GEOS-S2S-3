@@ -1,0 +1,18 @@
+from matplotlib import colors
+import scipy as sp
+
+class MyCmap(colors.Colormap):
+    def __init__(self,cmap,name='my_cmap',black=None):
+        self.cmap = cmap
+        self.black = black
+        self.monochrome=cmap.monochrome
+        colors.Colormap.__init__(self,name,cmap.N)
+
+    def __call__(self, X, alpha=1.0, bytes=False):
+
+        rgba=sp.array(self.cmap( X, alpha=1.0, bytes=False))
+        rgba[...,0] = sp.where(sp.logical_and(X>=self.black[0],X<=self.black[1]), 1.0, rgba[...,0])
+        rgba[...,1] = sp.where(sp.logical_and(X>=self.black[0],X<=self.black[1]), 1.0, rgba[...,1])
+        rgba[...,2] = sp.where(sp.logical_and(X>=self.black[0],X<=self.black[1]), 1.0, rgba[...,2])
+        return rgba
+

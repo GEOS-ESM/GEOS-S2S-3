@@ -133,7 +133,7 @@ if ( $site == NCCS ) then
 
    set mod1 = GEOSenv
 
-   set mod2 = comp/gcc/9.5.0
+   set mod2 = comp/gcc/12.3.0
    set mod3 = comp/intel/19.1.3.304
 
    # For IMPI 2021.13
@@ -143,9 +143,9 @@ if ( $site == NCCS ) then
    set mod5 = python/GEOSpyD/Min23.5.2-0_py3.11
 
    set mod6 = other/mpi4py/3.1.5-py3.11/ifort_19.1.3.304-intelmpi_2021.6.0-SLES15
-   set mod7 = other/ncap2/5.2.6-gcc-9.5.0
+   set mod7 = other/ncap2/5.2.6
 
-   set momdir = /home/yvikhlia/nobackup/mom5
+#  set momdir = /home/yvikhlia/nobackup/mom5
 
    set mods = ( $mod1 $mod2 $mod3 $mod4 $mod5 $mod6 $mod7 )
    set modinit = /usr/share/modules/init/csh
@@ -168,7 +168,7 @@ else if ( $site == NAS ) then
    set mod6 = git/2.40.1
    set mod7 = cmake/3.28.3
 
-   set momdir = /nobackup/gmao_SIteam/ModelData/mom5
+#  set momdir = /nobackup/gmao_SIteam/ModelData/mom5
 
    set mods = ( $mod1 $mod2 $mod3 $mod4 $mod5 $mod6 $mod7 )
    set modinit = /usr/share/modules/init/tcsh
@@ -188,7 +188,7 @@ else if ( $site == GMAO.janus ) then
 
    setenv GPU_CC_REV cc20
 
-   set momdir = /ford1/share/gmao_SIteam/ModelData/mom5
+#  set momdir = /ford1/share/gmao_SIteam/ModelData/mom5
 
    set mods = ( $mod1 $mod2 $mod3 $mod4 $mod5 )
    set modinit = /usr/share/Modules/init/tcsh
@@ -237,7 +237,7 @@ else if ( $site == GMAO.desktop ) then
    set mod4 = other/python/canopy
    set mod5 = other/git/latest
 
-   set momdir = /ford1/share/gmao_SIteam/ModelData/mom5
+#  set momdir = /ford1/share/gmao_SIteam/ModelData/mom5
 
    setenv ESMA_FC gfortran
 
@@ -264,8 +264,8 @@ if ( $#argv > 0 ) then
    if ( $1 == basedir ) then
       echo $basedir
 
-   else if ( $1 == momdir ) then
-      echo $momdir
+#  else if ( $1 == momdir ) then
+#     echo $momdir
 
    else if ( $1 == modules ) then
       echo $mods
@@ -325,16 +325,16 @@ endif
 
 # setenv MOMDIR
 #--------------
-if ($?momdir) then
-   if (! $wrapper) echo -n " and MOMDIR"
-   setenv MOMDIR $momdir
-else if ($?MOMDIR) then
-   if (! $wrapper) echo -n " and MOMDIR found in environment"
-else
-   echo
-   echo "MOMDIR not found in environment or set by ${scriptname}"
-   exit 4
-endif
+#f ($?momdir) then
+#  if (! $wrapper) echo -n " and MOMDIR"
+#  setenv MOMDIR $momdir
+#lse if ($?MOMDIR) then
+#  if (! $wrapper) echo -n " and MOMDIR found in environment"
+#lse
+#  echo
+#  echo "MOMDIR not found in environment or set by ${scriptname}"
+#  exit 4
+#ndif
 
 # add BASEDIR lib to LD_LIBRARY_PATH, if not already there
 #---------------------------------------------------------
@@ -407,9 +407,9 @@ if ($wrapper) then
    if ($?BASEDIR) then
       echo "export BASEDIR=$BASEDIR"                     >! $outfil
    endif
-   if ($?MOMDIR) then
-      echo "export MOMDIR=$MOMDIR"                       >> $outfil
-   endif
+#  if ($?MOMDIR) then
+#     echo "export MOMDIR=$MOMDIR"                       >> $outfil
+#  endif
    if ($?LD_LIBRARY_PATH) then
       echo "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH"     >> $outfil
    endif

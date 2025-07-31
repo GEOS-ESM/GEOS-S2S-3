@@ -1,0 +1,13 @@
+subroutine g2g(datain,iin,jin,iout,jout,frac,dataout,imin,jmin,imout,jmout,km,ntiles)
+  implicit none
+
+  integer, intent(in) :: imin,jmin,imout,jmout,km,ntiles
+  real, intent(in) :: datain(imin,jmin,km), iin(ntiles), jin(ntiles),&
+       iout(ntiles), jout(ntiles), frac(ntiles)
+  real, intent(out) :: dataout(imout,jmout,km)
+
+  !f2py intent(in) :: datain, iin, jin, iout, jout, frac, imout, jmout
+  !f2py intent(out) :: dataout
+  !f2py intent(hide) :: imin, jmin, km, ntiles
+
+end subroutine g2g
