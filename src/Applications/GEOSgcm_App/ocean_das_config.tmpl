@@ -1,9 +1,9 @@
-#!/bin/csh -v
+#!/bin/csh -fv
 
 ######################### USER INPUT #######################################################
-setenv  EXPID   @EXPID
-setenv  EXPDIR  @EXPDIR
-setenv  GEOSDIR @GEOSDIR
+#setenv  EXPID   @EXPID
+#setenv  EXPDIR  @EXPDIR
+#setenv  GEOSDIR @GEOSDIR
 
 setenv ODAS_group           @sponsorCode
 setenv ODAS_qos             gmaofcst
@@ -14,7 +14,8 @@ setenv ODAS_Nz              50                #
 setenv ODAS_NPE_ocean       256               # Number of core used for oceanda.x
 setenv ODAS_NPE_cice        256               # Number of core used for oceanda.x when assimilating sea-ice
 #setenv ODAS_RC              /gpfsm/dnb78s2/projects/p26/ehackert/GEOSodas-V3/RC/OCEAN_DAS_RC_V2_INTERP_TO_V3/  # Location of static members, mappings, grids, FOR THE V2 INTERPED TO V3
-setenv ODAS_RC              /gpfsm/dnb78s2/projects/p26/ehackert/GEOSodas-V3/RC/OCEAN_DAS_RC_BASE_3_ALL_MONTHS/  # Location of static members, mappings, grids, FOR KAZUMI's BASE_3 FORECASTS
+#setenv ODAS_RC              /gpfsm/dnb78s2/projects/p26/ehackert/GEOSodas-V3/RC/OCEAN_DAS_RC_BASE_3_ALL_MONTHS/  # Location of static members, mappings, grids, FOR KAZUMI's BASE_3 FORECASTS
+setenv ODAS_RC              /discover/nobackup/projects/gmao/bcs_shared/legacy_bcs/GEOS-S2S-3/OCEAN_DAS_RC_BASE_3_ALL_MONTHS/  # Location of static members, mappings, grids, FOR KAZUMI's BASE_3 FORECASTS
 setenv ODAS_GRID_TYPE       reg               # type of grid, tri (tripolar) or reg (regular lat-lon) !!!!! OBSOLETE, not supporting tripolar !!!!!
 setenv ODAS_logit_transform False             # logit transform for ice fraction                      !!!!! OBSOLETE, not supporting logit transform !!!!!
 setenv ODAS_regrid          True              # regrid from analysis grid to model grid               !!!!! OBSOLETE, always assumes the need to regrid !!!!!
@@ -43,7 +44,7 @@ setenv ODAS_do_reinit       False             # True: input to anaice2rst.x is f
                                               #       hole free 
 setenv IN_LINE              False             # False: runs multiple observer jobs. NOT recomended for MILAN nodes
                                               # True: runs observers within model job. Model pauses until complete. Recomended for MILAN nodes
-setenv ODAS_CONSTR          "[cas]"           # Must be same node constraint as in gcm_run.j
+setenv ODAS_CONSTR          "[mil]"           # Must be same node constraint as in gcm_run.j
 setenv BOMB_ON_SIGO         True              # True: BOMBS the model due to not meeting sigo ADT requirements (as before)
                                               # False: Skips ADT observations that fail sigo requirements. Does not bomb.
 
@@ -93,7 +94,7 @@ setenv HICE_HASMASK      True
 #setenv    ODAS_GRID        $ODAS_RC/BKGERR/anom-
 setenv    SCRDIR           $EXPDIR/scratch
 setenv    ODAS_BIN         $GEOSDIR/Linux/bin
-setenv    UMD_LETKFRC      $EXPDIR/ocean_das/UMD_Etc/UMD_rc/
+#setenv    UMD_LETKFRC      $EXPDIR/ocean_das/UMD_Etc/UMD_rc/
 setenv    UMD_LETKFUTILS   $EXPDIR/ocean_das/UMD_Etc/UMD_utils/
 setenv    UMD_LETKFSCRIPTS $EXPDIR/ocean_das/UMD_Etc/scripts/
 setenv    UMD_LETKFSRC     $EXPDIR/ocean_das/UMD_Etc/UMD_oletkf/

@@ -290,10 +290,8 @@ setenv DATELINE  DC
 setenv EMISSIONS @EMISSIONS
 
 >>>COUPLED<<<setenv GRIDDIR  @COUPLEDIR/a${AGCM_IM}x${AGCM_JM}_o${OGCM_IM}x${OGCM_JM}
->>>COUPLED<<<if ($SITE == NAS) then
->>>COUPLED<<<setenv GRIDDIR2  @COUPLEDIR/SST/MERRA2/${OGCM_IM}x${OGCM_JM}
->>>COUPLED<<<else if( $SITE == NCCS ) then
->>>COUPLED<<<setenv GRIDDIR2 @COUPLE2DIR/DE1440xPE0720_TM1440xTM1080
+#####>>>COUPLED<<<setenv GRIDDIR2 @COUPLE2DIR/DE1440xPE0720_TM1440xTM1080
+>>>COUPLED<<<setenv GRIDDIR2 @COUPLE2DIR/1440x1080
 >>>COUPLED<<<setenv BCTAG `basename $GRIDDIR`
 >>>DATAOCEAN<<<setenv BCTAG `basename $BCSDIR`
 
@@ -963,6 +961,17 @@ else
 endif
 
 >>>COUPLED<<<@CPEXEC -rf RESTART $EXPDIR
+
+>>>withODAS<<< cd  $HOMDIR
+
+>>>withODAS<<< echo "Checking ODAS by Screening Number of Ocean Observations"
+>>>withODAS<<< $GEOSUTIL/plots/odas_plots/check_ODAS_ready.py
+
+>>>withODAS<<< # add the stat plot check
+>>>withODAS<<< echo "Running plot_V3_rt.csh"
+>>>withODAS<<< $GEOSUTIL/plots/odas_plots/plot_V3_rt.csh
+
+>>>withODAS<<< exit
 
 if ( $rc == 0 ) then
       cd  $HOMDIR
