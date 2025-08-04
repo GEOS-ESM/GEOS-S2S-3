@@ -1118,7 +1118,7 @@ AODAS:
             set   rstREF_TIME  = 210000
          endif
 
-         set OGCM_NX = 40
+         set OGCM_NX = 60
          set OGCM_NY = 36
          set NX = 20
          set NY = 72
