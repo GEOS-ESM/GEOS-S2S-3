@@ -1,4 +1,4 @@
-#!/bin/csh
+#!/bin/csh -fv
 
 @anadir/clim/sst.py @expid
 @anadir/clim/sst_tp.py @expid

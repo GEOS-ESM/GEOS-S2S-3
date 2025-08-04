@@ -1,4 +1,4 @@
-#!/bin/csh 
+#!/bin/csh -fv
 #SBATCH --job-name=@PLOT_T
 #SBATCH --ntasks=20
 #SBATCH --time=12:00:00 
