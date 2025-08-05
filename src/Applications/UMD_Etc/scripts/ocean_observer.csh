@@ -64,6 +64,7 @@ ln -s ${ODAS_RC}/BKGERR/anom-${ODAS_Nx}x${ODAS_Ny}x${ODAS_Nz}-${ODAS_GRID_TYPE}/
 #ln -s ${ODAS_RC}/BKGERR/anom-${ODAS_Nx}x${ODAS_Ny}x${ODAS_Nz}-${ODAS_GRID_TYPE}/ocean_temp_salt_mask_${ODAS_Nx}x${ODAS_Ny}x${ODAS_Nz}.nc .     # Link Ocean mask
     
 #cp -f $UMD_LETKFRC/* .                    # Copy namelists
+cp -f $UMD_LETKFSRC/recenter_tmp.nml .
 cp -f $UMD_LETKFSRC/oceanda.x .           # LETKF
 cp -f $UMD_LETKFSRC/oceanobsop.x .        # Observing operator
 cp -f $UMD_LETKFSRC/oceanobs_nc2bin.x .   # gmao obs format to binary readable by oceanobsop.x 

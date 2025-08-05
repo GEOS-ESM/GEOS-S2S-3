@@ -24,22 +24,12 @@ cd src/
 ./parallel_build.csh
 ```
 
-#### Building at NCCS
+#### Specific Option for Building at NCCS
 
-NCCS currently has two different operating systems, SLES12 (which is where the Cascade Lake nodes currently are) and SLES15 (which is what the Milan nodes run on). Because these are different operating systems, you *must* build the model for the operating system you intend to run on. To run on Cascade Lake, you must build on SLES12, and to run on Milan, you must build on SLES15.
+The NCCS build will currently default to building on Milan nodes. 
+Although at present this build will work on Cascade Lake nodes as well, one can use the following command to specifically build on the Cascade Lake nodes:
 
-To build for SLES12, use the following command:
-
-```
-cd src/
 ./parallel_build.csh -cas
-```
-
-To build on SLES15, use the following command:
-
-```
-cd src/
-./parallel_build.csh -mil
 ```
 
 ### Manual Build
