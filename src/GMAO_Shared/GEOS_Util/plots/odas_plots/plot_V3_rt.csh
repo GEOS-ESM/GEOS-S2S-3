@@ -16,12 +16,12 @@ set incr_date = $incr_date'_00'
 set model_path = $EXPDIR/ocean_das
 echo 'Increment Date and Final Restart: '$incr_date
 rm -f ODAS_Check.txt
-plot_increment.v3.py $model_path/oana-$incr_date/mean_ana_restart/incr.nc 'temp' '1' 'Tinc' 4. -4. Tinc.png
+$GEOSUTIL/plots/odas_plots/plot_increment.v3.py $model_path/oana-$incr_date/mean_ana_restart/incr.nc 'temp' '1' 'Tinc' 4. -4. Tinc.png
 
-plot_stats.latest.v3.py Tprof glb 0 300
-plot_stats.latest.v3.py Sprof glb 0 300
-plot_stats.latest.v3.py ADT glb 0 300
-plot_v3_odas_ObsNum_daily.py
+$GEOSUTIL/plots/odas_plots/plot_stats.latest.v3.py Tprof glb 0 300
+$GEOSUTIL/plots/odas_plots/plot_stats.latest.v3.py Sprof glb 0 300
+$GEOSUTIL/plots/odas_plots/plot_stats.latest.v3.py ADT glb 0 300
+$GEOSUTIL/plots/odas_plots/plot_v3_odas_ObsNum_daily.py
 
 set p0 = Tinc.png
 set p1 = stats_Tprof.png
