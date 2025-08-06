@@ -736,6 +736,12 @@ if ($SITE == NAS) then
    endif
 endif
 
+# populate the incr_date file for the odas plots with the start of segment date
+# ----------------------------------
+cp $HOMDIR/cap_restart $HOMDIR/incr_date
+
+
+
 # Run GEOSgcm.x
 # -------------
 if( $USE_SHMEM == 1 ) $GEOSBIN/RmShmKeys_sshmpi.csh

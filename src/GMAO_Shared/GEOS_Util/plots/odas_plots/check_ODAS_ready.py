@@ -32,7 +32,7 @@ from datetime import date
 import datetime
 import matplotlib.dates as mdates
 import matplotlib.cm as cm
-
+import os
 
 switch_obs = {
      'SZ'   : 5521, # Salinity
@@ -215,12 +215,13 @@ mm   = '??'
 dd   = '??'
 hh   = '12'
 
+expdir=os.environ.get('EXPDIR')
 
-with open("incr_date", "r") as file:
+with open(f'{expdir}/incr_date', "r") as file: 
      content = file.read()
 obsdatebeg=content[0:8]
 
-with open("cap_restart", "r") as file:
+with open(f'{expdir}/cap_restart', "r") as file:
      content = file.read()
 obsdateend=content
 
@@ -294,7 +295,7 @@ tz_max = 4309
 sz_min = 1338
 sz_max = 3456
 
-sss_min = 111216
+sss_min = 111216/2
 sss_max = 218318
 
 
