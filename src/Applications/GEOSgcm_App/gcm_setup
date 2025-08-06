@@ -1120,7 +1120,7 @@ AODAS:
 
          set OGCM_NX = 60
          set OGCM_NY = 36
-         set NX = 20
+         set NX = 30
          set NY = 72
          @  OGCM_NPROCS = $OGCM_NX * $OGCM_NY
 
