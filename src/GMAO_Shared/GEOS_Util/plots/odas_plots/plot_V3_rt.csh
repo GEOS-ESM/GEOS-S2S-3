@@ -39,7 +39,7 @@ convert p0.png p1.png p2.png p3.png p4.png  -background white -append timeseries
 rm -f p*png
 pwd
 echo "GiOcean-NRT ODAS Stats" > mail.txt
-/usr/bin/mailx -s "GiOcean-NRT ODAS stats" -a timeseries.png li.ren@nasa.gov,kazumi.nakada@nasa.gov < mail.txt
+/usr/bin/mailx -s "GiOcean-NRT ODAS stats" -a timeseries.png li.ren@nasa.gov,kazumi.nakada@nasa.gov,andrea.m.molod@nasa.gov< mail.txt
 
 
 
