@@ -33,6 +33,7 @@ def get_command(Ne, fname, PATH_TO_OBSERVER, ANADIR, GROUP, QOS, seq=1, inovatio
         print(f'IN_LINE is {in_line}')
         print('Generating job command')
         command='sbatch --time=1:00:00 -n '+str(Ne)+' --constraint='+CONSTRAINT+' --ntasks-per-node=27 --job-name='+job_name+\
+                ' --qos='+QOS+\
                 ' -o '+job_name+'.o '+\
                 ' -e '+job_name+'.e '+\
                 ' -A '+GROUP+' --partition=compute '+PATH_TO_OBSERVER+'/ocean_observer.csh '+\
