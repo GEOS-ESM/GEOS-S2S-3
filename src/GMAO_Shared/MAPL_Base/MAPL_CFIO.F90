@@ -2257,7 +2257,6 @@ contains
 
          else
             Gout = Gin
-            write(*,*)'bmaa shavesend: ',maxval(gin),maxval(gout)
          endif
          deallocate(Gin)
          nullify   (Gin)
@@ -2447,7 +2446,6 @@ contains
                 VERIFY_(STATUS)
 
                 call StrToInt(date,nymd,nhms)
-                write(*,*)'bmaa before write ',maxval(Gptr2Out)
                 call ESMF_CFIOVarWrite(MCFIO%CFIO, trim(MCFIO%VARNAME(L)), &
                                        Gptr2Out, timeString=DATE,  RC=STATUS)
                 VERIFY_(STATUS)
