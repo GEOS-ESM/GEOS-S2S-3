@@ -26,7 +26,7 @@
      PP  := -fpp
      BIG_ENDIAN := -convert big_endian
      BYTERECLEN := -assume byterecl
-     FPE = -fpe0 -fp-model source -heap-arrays 32 -assume noold_maxminloc
+     FPE = -fpe0 -fp-model consistent -assume noold_maxminloc
      ALIGNCOM = -align dcommons
      MCMODEL = -mcmodel medium  -shared-intel
      FREAL4 =
@@ -41,7 +41,7 @@
      ifeq ("$(BOPT)","fast")
         include $(ESMACFG)/vectorize.mk
      else
-        FOPT = $(FOPT3) -qopt-report0 -ftz -align all -fno-alias
+        FOPT = $(FOPT2) -qopt-report0 -ftz -align all -fno-alias
 
         ifneq ($(IFORT_MAJOR),15)
            # Intel 17 has a new fp-model
