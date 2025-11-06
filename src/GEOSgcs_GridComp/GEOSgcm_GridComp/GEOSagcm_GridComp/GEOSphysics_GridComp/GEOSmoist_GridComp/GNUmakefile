@@ -92,6 +92,10 @@ ifeq ($(ESMA_FC), pgfortran)
    endif
 endif
 
+# Testing shows that with Intel we need to compile GEOS_MoistGridComp.F90
+# at -O1 to get layout regression. Note: This assumes FOPT is using
+# -O2 which is what we've found is also needed
+GEOS_MoistGridComp.o: FOPT := $(subst $(FOPT2),$(FOPT1),$(FOPT))
 
 vpath % $(MOD_DIRS)
 
