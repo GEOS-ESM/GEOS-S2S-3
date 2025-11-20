@@ -41,7 +41,7 @@
      ifeq ("$(BOPT)","fast")
         include $(ESMACFG)/vectorize.mk
      else
-        FOPT = $(FOPT2) -qopt-report0 -ftz -align all -fno-alias
+        FOPT = $(FOPT3) -qopt-report0 -ftz -align all -fno-alias
 
         ifneq ($(IFORT_MAJOR),15)
            # Intel 17 has a new fp-model
