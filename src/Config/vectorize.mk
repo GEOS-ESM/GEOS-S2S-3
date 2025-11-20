@@ -12,18 +12,18 @@
 
      # For vectorizing on Sandybridge and higher processors with AVX and AVX2 instructions
      # NOTE: No guarantee of zero-diff between *bridge and *well/*lake processors
-     #FOPT := $(FOPT2) -axAVX,CORE-AVX2 -fma -qopt-report0 -ftz -align all -fno-alias -align array32byte
+     #FOPT := $(FOPT1) -axAVX,CORE-AVX2 -fma -qopt-report0 -ftz -align all -fno-alias -align array32byte
 
      ifeq ($(CPUARCH),Intel)
         # For vectorizing on Haswell and higher processors with AVX2 instructions
-        FOPT := $(FOPT2) -xCORE-AVX2 -fma -qopt-report0 -ftz -align all -fno-alias -align array32byte
+        FOPT := $(FOPT1) -xCORE-AVX2 -fma -qopt-report0 -ftz -align all -fno-alias -align array32byte
      else
         # For vectorizing on Haswell and higher processors with AVX2 instructions Works with AMD
-        FOPT := $(FOPT2) -march=core-avx2 -fma -qopt-report0 -ftz -align all -fno-alias -align array32byte 
+        FOPT := $(FOPT1) -march=core-avx2 -fma -qopt-report0 -ftz -align all -fno-alias -align array32byte 
      endif
 
      # For vectorizing on Skylake and higher processors with CORE-AVX512 instructions
-     #FOPT := $(FOPT2) -xCORE-AVX512 -qopt-zmm-usage=high -fma -qopt-report0 -ftz -align all -fno-alias -align array64byte
+     #FOPT := $(FOPT1) -xCORE-AVX512 -qopt-zmm-usage=high -fma -qopt-report0 -ftz -align all -fno-alias -align array64byte
 
      # Add common FOPT flags
      FOPT += -traceback -assume realloc_lhs
