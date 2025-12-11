@@ -23,9 +23,6 @@ fi
 # Basedir
 export BASEDIR=$(csh $g5modules basedir)
 
-# MOMDIR
-export MOMDIR=$(csh $g5modules momdir)
-
 # Modules
 source $MODULESHOME/init/bash
 module purge

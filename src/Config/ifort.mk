@@ -26,7 +26,7 @@
      PP  := -fpp
      BIG_ENDIAN := -convert big_endian
      BYTERECLEN := -assume byterecl
-     FPE = -fpe0 -fp-model source -heap-arrays 32 -assume noold_maxminloc
+     FPE = -fpe0 -fp-model consistent -assume noold_maxminloc
      ALIGNCOM = -align dcommons
      MCMODEL = -mcmodel medium  -shared-intel
      FREAL4 =

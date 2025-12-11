@@ -92,6 +92,11 @@ ifeq ($(ESMA_FC), pgfortran)
    endif
 endif
 
+# Testing shows that this is needed for all resolutions
+# to give good results and layout regress with ifort 19 and 21
+ifeq ($(ESMA_FC), ifort)
+   GEOS_MoistGridComp.o: FOPT += -init=zero,arrays
+endif
 
 vpath % $(MOD_DIRS)
 
