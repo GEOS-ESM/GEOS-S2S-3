@@ -347,7 +347,7 @@ cat << _EOF_ > $FILE
 # -----------------------------
 #/bin/ln -sf $BCSDIR/Shared/pchem.species.CMIP-5.MERRA2OX.197902-201706.z_91x72.nc4 species.data
 
-/bin/ln -sf /discover/nobackup/projects/gmao/SIteam/CEDS-Tile-Files/bin/*bin .
+/bin/ln -sf @CEDSDIR/bin/*bin .
 
 /bin/ln -sf $BCSDIR/Shared/*bin .
 /bin/ln -sf $BCSDIR/Shared/*c2l*.nc4 .
