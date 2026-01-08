@@ -1395,6 +1395,7 @@ if( $SITE == 'NAS' ) then
               setenv WRKDIR     /nobackup/$LOGNAME                                     # user work directory
               setenv COUPLEDIR  /nobackup/gmao_SIteam/ModelData/coupled/Forcings       # Coupled Ocean/Atmos Forcing
               setenv COUPLE2DIR $COUPLEDIR                                             # For GRIDDIR2 path 
+              setenv CEDSDIR    /nobackup/gmao_SIteam/ModelData/CEDS-Tile-Files        # Extra Tiles for CEDS emissions
               setenv CPEXEC     cp                                                     # Copy utility for large copies
               setenv TAREXEC    tar                                                    # Tar utility for large archives
               set  G5LIBDIR=/nobackup/gmao_SIteam/Utilities/ocean-scripting/python/g5lib
@@ -1438,6 +1439,7 @@ else if( $SITE == 'NCCS' ) then
               setenv COUPLEDIR  /discover/nobackup/projects/gmao/bcs_shared/legacy_bcs/GEOS-S2S-3/Forcings               # Coupled Ocean/Atmos Forcing
 #             setenv COUPLE2DIR /discover/nobackup/projects/gmao/geos-s2s-3/regrid_bcs # For GRIDDIR2 path
               setenv COUPLE2DIR /discover/nobackup/projects/gmao/share/dao_ops/fvInput/g5gcm/bcs/SST/ # For GRIDDIR2 path
+              setenv CEDSDIR    /discover/nobackup/projects/gmao/SIteam/CEDS-Tile-Files/       # Extra Tiles for CEDS emissions
               setenv CPEXEC     /bin/cp                                                # Copy utility for large copies
               setenv TAREXEC    tar                                                    # Tar utility for large archives
 #             set G5LIBDIR=/home/yvikhlia/python/g5lib
@@ -1467,6 +1469,7 @@ else
               setenv WRKDIR     /home/$LOGNAME                                         # user work directory
               setenv COUPLEDIR  /ford1/share/gmao_SIteam/ModelData/Forcings            # Coupled Ocean/Atmos Forcing
               setenv COUPLE2DIR $COUPLEDIR                                             # For GRIDDIR2 path
+              setenv CEDSDIR    /ford1/share/gmao_SIteam/ModelData/CEDS-Tile-Files     # Extra Tiles for CEDS emissions
               if( $CUBED == "TRUE" ) then
                  set NX = 1
                  set NY = 6
@@ -2091,6 +2094,7 @@ s?@KPARFILE?$KPARFILE?g
 s?@CHMDIR?$CHMDIR?g
 s?@COUPLEDIR?$COUPLEDIR?g
 s?@COUPLE2DIR?$COUPLE2DIR?g
+s?@CEDSDIR?$CEDSDIR?g
 s?@EXPDIR?$EXPDIR?g
 s?@EXPDSC?$EXPDSC?g
 s?@HOMDIR?$HOMDIR?g
