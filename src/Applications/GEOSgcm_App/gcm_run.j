@@ -37,7 +37,7 @@ setenv GCMVER           @GCMVER
 source $GEOSBIN/g5_modules
 
 if( $SITE == NAS ) then
-    module swap mpi-hpe/mpt.2.23 mpi-hpe/mpt.2.25
+#   module swap mpi-hpe/mpt.2.23 mpi-hpe/mpt.2.25
 endif
 
 setenv LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:${BASEDIR}/${ARCH}/lib
@@ -596,18 +596,18 @@ endif
 set yearc = `echo $nymdc | cut -c1-4`
 set yearf = `echo $nymdf | cut -c1-4`
 
-# For Non-Reynolds SST, Modify local CAP.rc Ending date if Finish time exceeds Current year boundary
-# --------------------------------------------------------------------------------------------------
-if( @OCEANtag != DE0360xPE0180 ) then
-    if( $yearf > $yearc ) then
-       @ yearf = $yearc + 1
-       @ nymdf = $yearf * 10000 + 0101
-        set oldstring = `cat CAP.rc | grep END_DATE:`
-        set newstring = "END_DATE: $nymdf $nhmsf"
-        /bin/mv CAP.rc CAP.tmp
-        cat CAP.tmp | sed -e "s?$oldstring?$newstring?g" > CAP.rc
-    endif
-endif
+>>>DATAOCEAN<<<# For Non-Reynolds SST, Modify local CAP.rc Ending date if Finish time exceeds Current year boundary
+>>>DATAOCEAN<<<# --------------------------------------------------------------------------------------------------
+>>>DATAOCEAN<<<if( @OCEANtag != DE0360xPE0180 ) then
+>>>DATAOCEAN<<<    if( $yearf > $yearc ) then
+>>>DATAOCEAN<<<       @ yearf = $yearc + 1
+>>>DATAOCEAN<<<       @ nymdf = $yearf * 10000 + 0101
+>>>DATAOCEAN<<<        set oldstring = `cat CAP.rc | grep END_DATE:`
+>>>DATAOCEAN<<<        set newstring = "END_DATE: $nymdf $nhmsf"
+>>>DATAOCEAN<<<        /bin/mv CAP.rc CAP.tmp
+>>>DATAOCEAN<<<        cat CAP.tmp | sed -e "s?$oldstring?$newstring?g" > CAP.rc
+>>>DATAOCEAN<<<    endif
+>>>DATAOCEAN<<<endif
 
 # Select proper MERRA-2 GOCART Emission RC Files
 # (NOTE: MERRA2-DD has same transition date)
@@ -748,7 +748,7 @@ if( $USE_SHMEM == 1 ) $GEOSBIN/RmShmKeys_sshmpi.csh
        @  NPES = $NX * $NY
 
 >>>noODAS<<<if( $NAS_BATCH == TRUE ) then
->>>noODAS<<<   setenv MPI_IB_RAILS 2
+>>>noODAS<<<   #setenv MPI_IB_RAILS 2
 >>>noODAS<<<   $RUN_CMD $NPES ./GEOSgcm.x >& $HOMDIR/gcm_run.$PBS_JOBID.$nymdc.out
 >>>noODAS<<<else
 >>>noODAS<<<   $RUN_CMD $NPES ./GEOSgcm.x

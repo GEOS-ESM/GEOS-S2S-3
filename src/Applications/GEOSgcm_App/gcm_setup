@@ -1366,8 +1366,8 @@ if( $SITE == 'NAS' ) then
                  set MODEL = "san_gpu"                                                 # Model of CPU
                  set QTYPE = "gpu_k40"                                                 # Queue to use
               else
-                 set NCPUS = 40                                                        # CPUS per node
-                 set MODEL = "sky_ele"                                                 # Model of CPU
+                 set NCPUS = 120                                                       # CPUS per node
+                 set MODEL = "rom_ait"                                                 # Model of CPU
                  set QTYPE = "normal"                                                  # Queue to use
               endif
               @ NCUS  = `echo "($NPES + $NCPUS - 1)/$NCPUS" | bc`

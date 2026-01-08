@@ -258,8 +258,8 @@ if( $ARCH == 'Linux'  ) then
                               setenv MASTOR lfe
                               setenv MASDIR /u/$LOGNAME/GEOS5.0/$expid
                               setenv BATCHQ normal
-                              set scpvar = "scp"
-                              set cpvar  = "cp"
+                              set scpvar = "scp -a"
+                              set cpvar  = "cp -a"
                               set mytar  = "tar"
                               set batch_cmd  = "qsub"
     endif
@@ -268,7 +268,7 @@ if( $ARCH == 'Linux'  ) then
                               setenv MASDIR /archive/u/$LOGNAME/GEOS5.0/$expid
                               setenv BATCHQ general
                               set scpvar = "bbscp -r3 -z"
-                              set cpvar  = "/bin/cp"
+                              set cpvar  = "/bin/cp -p"
                               set mytar  = "tar"
                               set batch_cmd  = "sbatch"
     endif
@@ -778,6 +778,11 @@ foreach collection ( $collections )
                   $mytar cf $expid.${collection}.daily.$date.$ext.tar $locals
                   set locals = $expid.${collection}.daily.$date.$ext.tar
                   @ daily_date_node  = $date_node + 1                 # Since daily is simply appended to collection name
+               endif
+
+               #$cpvar $expid.${collection}.daily.$date.$ext.tar $SOURCE/$collection
+               if( -e $expid.${collection}.daily.$date.$ext.tar ) then
+                   $cpvar $expid.${collection}.daily.$date.$ext.tar $SOURCE/$collection
                endif
 
                foreach local ($locals)
