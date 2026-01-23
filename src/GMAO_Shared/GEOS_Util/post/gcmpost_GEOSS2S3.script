@@ -262,8 +262,8 @@ if( $ARCH == 'Linux'  ) then
                               setenv MASDIR /u/$LOGNAME/GEOS5.0/$expid
                               setenv MASDIRPARENT /archive/u/$LOGNAME/GEOSS2S3/GEOS_fcst
                               setenv BATCHQ normal
-                              set scpvar = "scp"
-                              set cpvar  = "cp"
+                              set scpvar = "scp -a"
+                              set cpvar  = "cp -a"
                               set mytar  = "tar"
                               set batch_cmd  = "qsub"
     endif
@@ -1043,37 +1043,39 @@ foreach collection ( $collections )
          /bin/rm -f $archfile
       end
 
-      if ( -e $archfile );then 
-          # Submit Archive Job
-          # ------------------
-          set test = `cat $archfile`
+      if ( -e $archfile ) /bin/rm -f $archfile
 
-          if( $#test != 0 ) then
-             cat $SOURCE/archive/gcm_archive.j $archfile > $SOURCE/archive/gcm_archive.$collection.$streamdates[1].j
-             cd  $SOURCE/archive
-             /bin/rm -f sedfile
-             /bin/mv -f gcm_archive.$collection.$streamdates[1].j tmpfile
-             cat > sedfile << EOF
-s/OUTPUT/gcm_archive.$collection.$streamdates[1].o/g
-s/@\<COLLECTION\>/$collection/g
-s/@\<YYYYMM\>/$streamdates[1]/g
-EOF
-             sed -f sedfile tmpfile > gcm_archive.$collection.$streamdates[1].j
-             chmod +x gcm_archive.$collection.$streamdates[1].j
-             if( $HOST == 'pleiades' ) then
-                #./gcm_archive.$collection.$streamdates[1].j > ./gcm_archive.$collection.$streamdates[1].o
-                echo
-             else if( $HOST == 'discover' ) then
-                $batch_cmd     gcm_archive.$collection.$streamdates[1].j
-                #echo
-             endif
-             /bin/rm -f $archfile
-             /bin/rm -f sedfile
-             /bin/rm -f tmpfile
-          else
-             /bin/rm -f $archfile
-          endif
-      endif 
+#      if ( -e $archfile );then 
+#          # Submit Archive Job
+#          # ------------------
+#          set test = `cat $archfile`
+#
+#          if( $#test != 0 ) then
+#             cat $SOURCE/archive/gcm_archive.j $archfile > $SOURCE/archive/gcm_archive.$collection.$streamdates[1].j
+#             cd  $SOURCE/archive
+#             /bin/rm -f sedfile
+#             /bin/mv -f gcm_archive.$collection.$streamdates[1].j tmpfile
+#             cat > sedfile << EOF
+#s/OUTPUT/gcm_archive.$collection.$streamdates[1].o/g
+#s/@\<COLLECTION\>/$collection/g
+#s/@\<YYYYMM\>/$streamdates[1]/g
+#EOF
+#             sed -f sedfile tmpfile > gcm_archive.$collection.$streamdates[1].j
+#             chmod +x gcm_archive.$collection.$streamdates[1].j
+#             if( $HOST == 'pleiades' ) then
+#                #./gcm_archive.$collection.$streamdates[1].j > ./gcm_archive.$collection.$streamdates[1].o
+#                echo
+#             else if( $HOST == 'discover' ) then
+#                #$batch_cmd     gcm_archive.$collection.$streamdates[1].j
+#                echo
+#             endif
+#             /bin/rm -f $archfile
+#             /bin/rm -f sedfile
+#             /bin/rm -f tmpfile
+#          else
+#             /bin/rm -f $archfile
+#          endif
+#      endif 
    endif
 
    @ begloc = $endloc + 1
