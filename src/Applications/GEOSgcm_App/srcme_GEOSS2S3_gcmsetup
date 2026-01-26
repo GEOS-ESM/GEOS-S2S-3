@@ -1,8 +1,11 @@
 #!/bin/tcsh -f
+set BLS2S3FCSTNRT    = @BLFCSTNRT
+set BLQOS            = @BLQOS
 set BLS2S3FCST       = @BLFCST
+set HOSTARC_GCMARC   = @HOSTARC_GCMARC
 set BLLEAVEOUT       = @BLLEAVEOUT
+set BLLEAVEALL       = @BLLEAVEALL
 set BLRSYNC          = @BLRSYNC
-set BLBBSCP          = @BLBBSCP
 set FCSTBLD          = @DBUILD 
 set DFCST            = @DFCST
 set DARCH            = @DARCH
@@ -10,9 +13,11 @@ set FCSTDATE         = @FCSTDATE
 set ENSM             = @ENSEMBLE_MEMBER
 set setupFNM         = @GCMSETUPFILE
 set FCSTQFEDCLIM     = @QFEDCLIM
+set END_DAT0         = "@END_DAT0"
 set END_DAT1         = "@END_DAT1"
 set END_DAT2         = "@END_DAT2"
 set fcstsegm         = @FCSTSEGM
+set fcstnumsgmt      = @FCSTNUMSEGM
 set AOEGCMRUN        = @AOEGCMRUN
 set AOEGCMPOST       = @AOEGCMPOST
 set AOEGCMARCH       = @AOEGCMARCH
@@ -26,11 +31,18 @@ set OGCM_NY_GEOSS2S3 = @OGCM_NY_GEOSS2S3
 set NCPUS            = @NCPUS
 set MODEL            = "@MODELNAME"
 set NUMC             = @NUMC
+set NCPUS            = @NUMC
 set ASYNCNODE        = @ASYNCNODE
 set GCMEMIP          = @GCMEMIP
 set MODELPOST        = "@MODELNAMEPST"
 set NCPUSPOST        = @NCPUSPST
-setenv     RUN_T  "@WALLTIMEGCMRUN"  # Wallclock Time   for gcm_run.j
-setenv     POST_T "@WALLTIMEGCMPST"  # Wallclock Time   for gcm_post.j
+set MODELS2SMKDYMEAN = @MODELS2SMKDYMEAN
+set NCPUSS2SMKDYMEAN = @NCPUSS2SMKDYMEAN
+set USEIOSERVER      = @USEIOSERVER
+set COLL_FORMAT      = @COLL_FORMAT
+setenv RUN_T                "@WALLTIMEGCMRUN"       # Wallclock Time for gcm_run.j
+setenv POST_T               "@WALLTIMEGCMPST"       # Wallclock Time for gcm_post.j
+setenv S2SMKDYMEAN_WALLTIME "@S2SMKDYMEAN_WALLTIME" # Wallclock time for s2smkdymean_GEOSS2S3.j
+setenv S2SMKDYMEAN_BLQOS    "@S2SMKDYMEAN_BLQOS"    # QOS for s2smkdymean_GEOSS2S3.j
 
 

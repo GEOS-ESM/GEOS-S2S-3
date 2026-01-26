@@ -12,8 +12,9 @@
 #@GEOSS2S3_OPT1
 #@BATCH_JOBNAMER@FCSTDATE@ENSEMBLE_MEMBER
 #@GEOSS2S3_OPT2
+#@GEOSS2S3_OPT3
 #@BATCH_GROUP
-#@BATCH_OUTPUTNAME_GEOSS2S3@GCMOUT
+#@BATCHOUTPUTNAME_GEOSS2S3@GCMOUT
 #@BATCH_JOINOUTERR
 
 #######################################################################
@@ -39,7 +40,9 @@ setenv GCMVER           @GCMVER
 
 source $GEOSBIN/g5_modules
 
-module swap mpi-hpe/mpt.2.23 mpi-hpe/mpt.2.25
+#if( $SITE == NAS ) then
+#   module swap mpi-hpe/mpt.2.23 mpi-hpe/mpt.2.25
+#endif
 module list
 
 setenv LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:${BASEDIR}/${ARCH}/lib
@@ -76,6 +79,11 @@ if( $GCMEMIP == TRUE ) then
     setenv  SCRDIR  $EXPDIR/scratch.$RSTDATE
 else
     setenv  SCRDIR  $EXPDIR/scratch
+#    if( $SITE == NCCS ) then
+#        if ( -l $SCRDIR ) unlink $SCRDIR
+#        mkdir -p $TSE_TMPDIR/scratch
+#        ln -s $TSE_TMPDIR/scratch $SCRDIR
+#    endif 
 endif
 
 if (! -e $SCRDIR ) mkdir -p $SCRDIR
@@ -86,10 +94,10 @@ if (! -e $SCRDIR ) mkdir -p $SCRDIR
 #######################################################################
 #                   Set Experiment Run Parameters
 #######################################################################
-set QFEDCLIM = @FCSTQFEDCLIM
-set    RERUN = @RERUN
-set     numc = @NUMC
-set    anode = @ASYNCNODE
+set        RERUN = @RERUN
+set         numc = @NUMC
+set        anode = @ASYNCNODE
+set use_ioserver = `grep "^USE_IOSERVER:" $HOMDIR/CAP.rc | tr -s '[:space:]' | cut -d' ' -f2`
 
 set       NX  = `grep      "^ *NX:" $HOMDIR/AGCM.rc | cut -d':' -f2`
 set       NY  = `grep      "^ *NY:" $HOMDIR/AGCM.rc | cut -d':' -f2`
@@ -153,7 +161,6 @@ set month = `echo $RSTDATE | cut -d_ -f1 | cut -b5-6`
 # ---------------------
 @CPEXEC /discover/nobackup/projects/gmao/g6dev/ltakacs/MERRA2/restarts/AMIP/M${month}/restarts.${year}${month}.tar .
 @TAREXEC xf  restarts.${year}${month}.tar
-#shiftc --create-tar --wait restarts.${year}${month}.tar
 /bin/rm restarts.${year}${month}.tar
 /bin/rm MERRA2*bin
 
@@ -206,15 +213,18 @@ cat CAP.tmp | sed -e "s?$oldstring?$newstring?g" > CAP.rc
 
 endif
 
+#Link files needed for OBIO
+#--------------------------
+@COMMENT_OBIO/bin/ln -sf /discover/nobackup/mmehari/DATA/MISCEL/lidata/*  $EXPDIR/RC
+
 #######################################################################
 #   Move to Scratch Directory and Copy RC Files from Home Directory
 #######################################################################
-#knnote:    symlinks for files in RC_s2sv3 have to be created AFTER
-#           symlinks are crated for ones in RC to overwrite ones from RC.
+
 cd $SCRDIR
 /bin/rm -rf *
                              /bin/ln -sf $EXPDIR/RC/* .
-                             /bin/ln -sf $EXPDIR/RC_s2sv3/*_ExtData.rc .
+#                             /bin/ln -sf $EXPDIR/RC_s2sv3/*_ExtData.rc .
                              @CPEXEC     $EXPDIR/cap_restart .
                              @CPEXEC -f  $HOMDIR/*.rc .
                              @CPEXEC -f  $HOMDIR/*.rc.tmpl .
@@ -286,14 +296,14 @@ done:
 setenv BCSDIR    @BCSDIR
 >>>DATAOCEAN<<<setenv SSTDIR    @SSTDIR
 setenv CHMDIR    @CHMDIR
-setenv FVINPUT   @FVINPUT
 >>>DATAOCEAN<<<setenv BCRSLV    @ATMOStag_@OCEANtag
 >>>COUPLED<<<setenv BCRSLV    @ATMOStag_DE0360xPE0180
 setenv DATELINE  DC
 setenv EMISSIONS @EMISSIONS
 
 >>>COUPLED<<<setenv GRIDDIR  @COUPLEDIR/a${AGCM_IM}x${AGCM_JM}_o${OGCM_IM}x${OGCM_JM}
->>>COUPLED<<<setenv GRIDDIR2  @COUPLEDIR/SST/MERRA2/${OGCM_IM}x${OGCM_JM}
+#####>>>COUPLED<<<setenv GRIDDIR2 @COUPLE2DIR/DE1440xPE0720_TM1440xTM1080
+>>>COUPLED<<<setenv GRIDDIR2 @COUPLE2DIR/1440x1080
 >>>COUPLED<<<setenv BCTAG `basename $GRIDDIR`
 >>>DATAOCEAN<<<setenv BCTAG `basename $BCSDIR`
 
@@ -316,26 +326,26 @@ cat << _EOF_ > $FILE
 
 # Precip correction
 #/bin/ln -s /discover/nobackup/projects/gmao/share/gmao_ops/fvInput/merra_land/precip_CPCUexcludeAfrica-CMAP_corrected_MERRA/GEOSdas-2_1_4 ExtData/PCP
-
-#knnote:    these qfed data are for s2sv3
-/bin/ln -s $FVINPUT/g5chem/sfc/QFED/v2.5r1/0.25/climatology/qfed2.emis_bc.006.x1152_y721_t12.2003-2016.nc4 .
-/bin/ln -s $FVINPUT/g5chem/sfc/QFED/v2.5r1/0.25/climatology/qfed2.emis_oc.006.x1152_y721_t12.2003-2016.nc4 .
-/bin/ln -s $FVINPUT/g5chem/sfc/QFED/v2.5r1/0.25/climatology/qfed2.emis_co.006.x1152_y721_t12.2003-2016.nc4 .
-/bin/ln -s $FVINPUT/g5chem/sfc/QFED/v2.5r1/0.25/climatology/qfed2.emis_so2.006.x1152_y721_t12.2003-2016.nc4 .
-/bin/ln -s $FVINPUT/g5chem/sfc/QFED/v2.5r1/0.25/climatology/qfed2.emis_nh3.006.x1152_y721_t12.2003-2016.nc4 .
+>>>COUPLED_DUAL<<<rm -f ExtData/PCP
 
 >>>COUPLED_DUAL<<<# 1981-2014
->>>COUPLED_DUAL<<</bin/ln -s /discover/nobackup/projects/gmao/share/gmao_ops/fvInput/merra_land/precip_CPCUexcludeAfrica-CMAP_corrected_MERRA/GEOSdas-2_1_4 ExtData/PCP
+>>>COUPLED_DUAL<<<#/bin/ln -s /discover/nobackup/projects/gmao/share/gmao_ops/fvInput/merra_land/precip_CPCUexcludeAfrica-CMAP_corrected_MERRA/GEOSdas-2_1_4 ExtData/PCP
+
 >>>COUPLED_DUAL<<<#2015
->>>COUPLED_DUAL<<<#/bin/ln -s /gpfsm/dnb52/projects/p10/gmao_ops/fvInput/merra_land/precip_CPCUexcludeAfrica-CMAP_corrected_MERRA/GEOSdas-2_1_4 ExtData/PCP
+>>>COUPLED_DUAL<<<#/bin/ln -s /discover/nobackup/projects/gmao/share/gmao_ops/fvInput/merra_land/precip_CPCUexcludeAfrica-CMAP_corrected_MERRA/GEOSdas-2_1_4 ExtData/PCP
+
 >>>COUPLED_DUAL<<<# 2017
->>>COUPLED_DUAL<<<#/bin/ln -s /gpfsm/dnb52/projects/p10/gmao_ops/fvInput/merra_land/precip_CPCUexcludeAfrica-CMAP_corrected_MERRA/GEOSadas-5_12_4 ExtData/PCP
+>>>COUPLED_DUAL<<</bin/ln -s /discover/nobackup/projects/gmao/share/gmao_ops/fvInput/merra_land/precip_CPCUexcludeAfrica-CMAP_corrected_MERRA/GEOSadas-5_12_4 ExtData/PCP
+
 >>>COUPLED_DUAL<<<# Fortuna from Qing
 >>>COUPLED_DUAL<<<#/discover/nobackup/qliu/merra_land/precip_corr_SSD_near-present/f516_fp/diag/Y2017/
 >>>COUPLED_DUAL<<<# PRECIP_FILE: ExtData/PCP/f516_fp/diag/Y%y4/M%m2/f516_fp.tavg1_2d_lfo_Nx_corr.%y4%m2%d2_%h230z.nc
 >>>COUPLED_DUAL<<<# /bin/ln -s  /discover/nobackup/qliu/merra_land/precip_corr_SSD_near-present ExtData/PCP
+
 >>>COUPLED_DUAL<<<# Precip 2017 realtime
 >>>COUPLED_DUAL<<<#/bin/ln -s  /discover/nobackup/dao_ops/PrecipCorr/CMAPcorr/ ExtData/PCP
+
+
 >>>DATAOCEAN<<</bin/ln -sf $BCSDIR/$BCRSLV/${BCRSLV}-Pfafstetter.til  tile.data
 >>>DATAOCEAN<<<if(     -e  $BCSDIR/$BCRSLV/${BCRSLV}-Pfafstetter.TIL) then
 >>>DATAOCEAN<<</bin/ln -sf $BCSDIR/$BCRSLV/${BCRSLV}-Pfafstetter.TIL  tile.bin
@@ -348,6 +358,8 @@ cat << _EOF_ > $FILE
 # MERRA-2 Ozone Data (39-Years)
 # -----------------------------
 /bin/ln -sf $BCSDIR/Shared/pchem.species.CMIP-5.MERRA2OX.197902-201706.z_91x72.nc4 species.data
+
+/bin/ln -sf @CEDSDIR/bin/*bin .
 
 /bin/ln -sf $BCSDIR/Shared/*bin .
 /bin/ln -sf $BCSDIR/Shared/*c2l*.nc4 .
@@ -414,6 +426,8 @@ set rst_file_names = `cat AGCM.rc | grep "RESTART_FILE"    | grep -v VEGDYN | gr
 set chk_files      = `cat AGCM.rc | grep "CHECKPOINT_FILE" | grep -v "#" | cut -d ":" -f1 | cut -d "_" -f1-2`
 set chk_file_names = `cat AGCM.rc | grep "CHECKPOINT_FILE" | grep -v "#" | cut -d ":" -f2`
 
+set monthly_chk_names = `cat $EXPDIR/HISTORY.rc | grep -v '^[\t ]*#' | sed -n 's/\([^\t ]\+\).monthly:[\t ]*1.*/\1/p' | sed 's/$/_rst/' `
+
 # Remove possible bootstrap parameters (+/-)
 # ------------------------------------------
 set dummy = `echo $rst_file_names`
@@ -433,13 +447,10 @@ if( $GCMEMIP == TRUE ) then
       if(-e $EXPDIR/restarts/$RSTDATE/$rst ) @CPEXEC $EXPDIR/restarts/$RSTDATE/$rst . &
     end
 else
-    foreach rst ( $rst_file_names )
+    foreach rst ( $rst_file_names $monthly_chk_names )
       if(-e $EXPDIR/$rst ) @CPEXEC $EXPDIR/$rst . &
     end
 >>>withODAS<<<      /bin/cp -f $EXPDIR/*_glo_*_rst . &
->>>COUPLED<<<    foreach collection ( $collections )
->>>COUPLED<<<      if (-e $EXPDIR/${collection}_rst ) mcp -a $EXPDIR/${collection}_rst .  &
->>>COUPLED<<<    end 
 endif
 wait
 
@@ -450,7 +461,7 @@ wait
 >>>withODAS<<<#cp /discover/nobackup/bzhao/ObservationData/CM2.5/global_0.25_degree_NYF/INPUT/salt_sfc_restore_new_woa18.nc $SCRDIR/INPUT/salt_sfc_restore.nc
 >>>withODAS<<<# USE MY FLOODED WOA18 PRODUCT INSTEAD
 >>>withODAS<<<#/bin/cp -f /gpfsm/dnb42/projects/p17/ehackert/geos5/exp/WOA18/eh015_ocean_sponge_output/test_salt_sfc_restore_new_woa18.nc INPUT/salt_sfc_restore.nc
->>>withODAS<<</bin/cp -f /gpfsm/dnb78s2/projects/p26/ehackert/GEOSodas-V3/RC/OCEAN_DAS_RC_BASE_3_ALL_MONTHS/test_salt_sfc_restore_new_woa18.nc INPUT/salt_sfc_restore.nc
+>>>withODAS<<<#/bin/cp -f /gpfsm/dnb78s2/projects/p26/ehackert/GEOSodas-V3/RC/OCEAN_DAS_RC_BASE_3_ALL_MONTHS/test_salt_sfc_restore_new_woa18.nc INPUT/salt_sfc_restore.nc
 >>>withODAS<<<####################################################################
 
 # Copy and Tar Initial Restarts to Restarts Directory
@@ -511,6 +522,30 @@ if( $GCMEMIP == TRUE ) then
     @CPEXEC -f  $EXPDIR/restarts/$RSTDATE/CAP.rc .
 else
     @CPEXEC -f $HOMDIR/CAP.rc .
+
+######################################################################
+#   Use 6-day JOB_SGMT (02/25-03/02) for leap year
+######################################################################
+set nymdc2 = `cat cap_restart | cut -c1-11`
+set nyears  = `echo $nymdc2 | cut -c1-4`
+set nmonths = `echo $nymdc2 | cut -c5-6`
+set ndays   = `echo $nymdc2 | cut -c7-8`
+
+if( $nmonths == 02 & \
+    $ndays   == 25 ) then
+    @ yr = 1 * $nyears
+    @ yr1 =($yr - 1) / 4
+    @ yr2 = $yr / 4
+
+if( $yr2 > $yr1 ) then
+
+    echo "Year: " $yr
+    /bin/cp -f  $HOMDIR/CAP.rc_6dy CAP.rc
+
+endif
+endif
+######################################################################
+
 endif
 
 ./strip CAP.rc
@@ -526,9 +561,10 @@ set nhmss = `cat CAP.rc | grep JOB_SGMT:     | cut -d: -f2 | cut -c11-16`
 
 >>>COUPLED_DUAL<<<# Set currmonth for discharge adjust
 >>>COUPLED_DUAL<<<# ---------------------------------------------------------------------
->>>COUPLED_DUAL<<<set currmonth = `cat cap_restart | cut -c5-6`
+set currmonth = `cat cap_restart | cut -c5-6`
 >>>COUPLED_DUAL<<<#ln -sf /discover/nobackup/projects/gmao/merra2-ocean/fordischarge/evallM$currmonth.nc4  evall.nc4
 >>>COUPLED_DUAL<<< ln -sf /discover/nobackup/projects/gmao/merra2-ocean/fordischarge/evallANN.nc4          evall.nc4
+
 >>>withODAS<<<# Compute Start Time for plotting 
 >>>withODAS<<<# ---------------------------------------------------------------------
 >>>withODAS<<<set nymdc2 = `cat cap_restart | cut -c1-11`
@@ -536,6 +572,7 @@ set nhmss = `cat CAP.rc | grep JOB_SGMT:     | cut -d: -f2 | cut -c11-16`
 >>>withODAS<<<set nmonths  = `echo $nymdc2 | cut -c5-6`
 >>>withODAS<<<set ndays    = `echo $nymdc2 | cut -c7-8`
 >>>withODAS<<<set nhours   = `echo $nymdc2 | cut -c10-11`
+
 # Compute Time Variables at the Finish_(f) of current segment
 # -----------------------------------------------------------
 set nyear   = `echo $nymds | cut -c1-4`
@@ -554,6 +591,7 @@ set nhmsf =  $date[2]
 set year  = `echo $nymdf | cut -c1-4`
 set month = `echo $nymdf | cut -c5-6`
 set day   = `echo $nymdf | cut -c7-8`
+set hour  = `echo $nhmsf | cut -c1-2`
 
      @  month = $month + $nmonth
 while( $month > 12 )
@@ -571,26 +609,25 @@ endif
 set yearc = `echo $nymdc | cut -c1-4`
 set yearf = `echo $nymdf | cut -c1-4`
 
-## For Non-Reynolds SST, Modify local CAP.rc Ending date if Finish time exceeds Current year boundary
-## --------------------------------------------------------------------------------------------------
-#if( @OCEANtag != DE0360xPE0180 ) then
-#    if( $yearf > $yearc ) then
-#       @ yearf = $yearc + 1
-#       @ nymdf = $yearf * 10000 + 0101
-#        set oldstring = `cat CAP.rc | grep END_DATE:`
-#        set newstring = "END_DATE: $nymdf $nhmsf"
-#        /bin/mv CAP.rc CAP.tmp
-#        cat CAP.tmp | sed -e "s?$oldstring?$newstring?g" > CAP.rc
-#    endif
-#endif
+>>>DATAOCEAN<<<# For Non-Reynolds SST, Modify local CAP.rc Ending date if Finish time exceeds Current year boundary
+>>>DATAOCEAN<<<# --------------------------------------------------------------------------------------------------
+>>>DATAOCEAN<<<if( @OCEANtag != DE0360xPE0180 ) then
+>>>DATAOCEAN<<<    if( $yearf > $yearc ) then
+>>>DATAOCEAN<<<       @ yearf = $yearc + 1
+>>>DATAOCEAN<<<       @ nymdf = $yearf * 10000 + 0101
+>>>DATAOCEAN<<<        set oldstring = `cat CAP.rc | grep END_DATE:`
+>>>DATAOCEAN<<<        set newstring = "END_DATE: $nymdf $nhmsf"
+>>>DATAOCEAN<<<        /bin/mv CAP.rc CAP.tmp
+>>>DATAOCEAN<<<        cat CAP.tmp | sed -e "s?$oldstring?$newstring?g" > CAP.rc
+>>>DATAOCEAN<<<    endif
+>>>DATAOCEAN<<<endif
 
 # Select proper MERRA-2 GOCART Emission RC Files
 # (NOTE: MERRA2-DD has same transition date)
 # ----------------------------------------------
-if( $QFEDCLIM == FALSE ) then
 if( ${EMISSIONS} == MERRA2 | \
     ${EMISSIONS} == MERRA2-DD ) then
-    set MERRA2_Transition_Date = 30000401
+    set MERRA2_Transition_Date = 20000401
 
     if( $nymdc < ${MERRA2_Transition_Date} ) then
          set MERRA2_EMISSIONS_DIRECTORY = $GEOSDIR/$ARCH/etc/$EMISSIONS/19600101-20000331
@@ -618,7 +655,47 @@ if( ${EMISSIONS} == MERRA2 | \
     endif
 
 endif
+
+#-------------------------------------
+#--> Begin setting GAAS file paths
+#-------------------------------------
+set startYear = `cat cap_restart | cut -c1-4`
+
+if( $startYear >= 1998 && $startYear <= 2007 ) then
+    set sYear  = 1998
+#   set MERRA2type = d5294_geosit_jan98
+    set MERRA2type = d5294_geositocn_may01
+    set data_Transition_Date = 20080101
+else if( $startYear >= 2008 && $startYear <= 2017 ) then
+    set sYear  = 2008
+    set MERRA2type = d5294_geosit_jan08
+    set data_Transition_Date = 20180101
+else if( $startYear >= 2018                       ) then
+    set sYear  = 2018
+    set MERRA2type = d5294_geosit_jan18
+    set data_Transition_Date = 20280101
 endif
+
+# Edit the GAAS_GridComp.rc file
+#-------------------------------
+set tFILE = tmpfile
+rm -f $tFILE
+cat GAAS_GridComp.rc.tmpl > $tFILE
+set sFILE = sedfile
+rm -f $sFILE
+
+cat << EOF > $sFILE 
+s/@MERRA2type/$MERRA2type/g
+EOF
+
+sed -f $sFILE $tFILE > GAAS_GridComp.rc
+chmod 755  GAAS_GridComp.rc
+rm -f $tFILE
+rm -f $sFILE
+
+#-----------------------------
+##--> End setting GAAS file paths
+#-----------------------------
 
 if(-e ExtData.rc )    /bin/rm -f   ExtData.rc
 set  extdata_files = `/bin/ls -1 *_ExtData.rc`
@@ -671,28 +748,31 @@ if ($SITE == NAS) then
       set NAS_BATCH = TRUE
    endif
 
-    #knnote: caculate async cores
-    @  NPES = $NX * $NY
-    @  numn = $NPES / $numc
-    @  totc = $numn * $numc
-    @  diffc = $totc - $NPES
-    while ( $diffc < 0 )
-        @ numn = $numn + 1
+    if ($use_ioserver == 0) then
+        @ APES = $NPES
+        @ EPES = 0
+    else
+        #knnote: caculate async cores
+        @  numn = $NPES / $numc
         @  totc = $numn * $numc
         @  diffc = $totc - $NPES
-    end
-    @ EPES =  $numc * $anode + $diffc
-    @ APES = $NPES + $EPES
+        while ( $diffc < 0 )
+            @ numn = $numn + 1
+            @  totc = $numn * $numc
+            @  diffc = $totc - $NPES
+        end
+        @ EPES =  $numc * $anode + $diffc
+        @ APES = $NPES + $EPES
+    endif
 
 else if( $SITE == NCCS ) then
     #knnote: caculate async cores
-    @  NPES = $NX * $NY
     @ EPES =  $numc * $anode
     @ APES = $NPES + $EPES
 
 endif
 
-echo "calculated async cores:"
+echo "calculated async cores: ( APES, NPES, EPES ) ="
 echo $APES $NPES $EPES
 echo
 
@@ -705,19 +785,31 @@ echo
 if( $USE_SHMEM == 1 ) $GEOSBIN/RmShmKeys_sshmpi.csh
        @  NPES = $NX * $NY
 
->>>noODAS<<<if ( $SITE == NAS ) then
->>>noODAS<<<    set path=($path /u/scicon/tools/bin)
->>>noODAS<<<    mpiexec -np $APES mbind.x -c3-127 -gm ./GEOSgcm.x
->>>noODAS<<<else if( $SITE == NCCS ) then
+>>>noODAS<<<if( $NAS_BATCH == TRUE ) then
+
+>>>noODAS<<<    #setenv MPI_IB_RAILS 2
+>>>noODAS<<<    #$RUN_CMD $NPES ./GEOSgcm.x >& $HOMDIR/gcm_run.$PBS_JOBID.$nymdc.out
+
+>>>noODAS<<<    $RUN_CMD $APES ./GEOSgcm.x
+>>>noODAS<<<else
 >>>noODAS<<<    $RUN_CMD $APES ./GEOSgcm.x
 >>>noODAS<<<endif
+
 >>>withODAS<<<# RUN ODAS HERE
 >>>withODAS<<<#$EXPDIR/ocean_das/UMD_Etc/scripts/oda_run.j $NX $NY > $EXPDIR/ocean_das/oda_run.out
 >>>withODAS<<<$EXPDIR/ocean_das/UMD_Etc/scripts/oda_run.j $NX $NY
+>>>withODAS<<<
+>>>withODAS<<<set ODARUNSTATUS = $status
+>>>withODAS<<<if ($ODARUNSTATUS == 1) then
+>>>withODAS<<<   echo "BAD ODA_RUN.j "
+>>>withODAS<<<   exit(1)
+>>>withODAS<<<endif
+>>>withODAS<<<
 >>>withODAS<<<echo "OUTOF ODA_RUN.J CAP_RESTART "
 >>>withODAS<<<more cap_restart
 >>>withODAS<<<pwd
 >>>withODAS<<<echo "OUTOF ODA_RUN.J CAP_RESTART "
+
 if( $USE_SHMEM == 1 ) $GEOSBIN/RmShmKeys_sshmpi.csh
 
 @GPUEND
@@ -750,6 +842,7 @@ set edate  = e`cat cap_restart | cut -c1-8`_`cat cap_restart | cut -c10-11`z
 # Move Intermediate Checkpoints to RESTARTS directory
 # ---------------------------------------------------
 >>>withODAS<<</bin/mv -f  ${EXPID}_agcm_import*  ${EXPDIR}/agcm_import/
+
 set   checkpoints  =    `/bin/ls -1 *_checkpoint.*`
 if( $#checkpoints != 0 ) /bin/mv -f *_checkpoint.* ${EXPDIR}/restarts
 
@@ -796,27 +889,37 @@ foreach  restart ($restarts)
 $GEOSBIN/stripname .${edate}.${GCMVER}.${BCTAG}_${BCRSLV}.\* '' $restart
 end
 
+# Move monthly collection checkpoints to restarts
+#------------------------------------------------
+set monthlies = `ls *chk`
+if ( $#monthlies > 0 ) then
+    echo 'check 3'
+    foreach ff (*chk)
+            mv $ff `basename $ff chk`rst
+    end
+endif
+wait
+
+# Copy Renamed monthly to RESTARTS directory
+# ----------------------------------------------------
+    set  restarts = `/bin/ls -1 *_tavg_1mo_glo_*_rst`
+foreach  restart ($restarts)
+echo restart
+/bin/cp $restart ${EXPDIR}/restarts
+end
 
 # TAR ARCHIVED RESTARTS
 # ---------------------
 cd $EXPDIR/restarts
     if( $FSEGMENT == 00000000 ) then
 	>>>DATAOCEAN<<<@TAREXEC cf  restarts.${edate}.tar $EXPID.*.${edate}.${GCMVER}.${BCTAG}_${BCRSLV}.*
-        >>>COUPLED<<<@TAREXEC cvf  restarts.${edate}.tar $EXPID.*.${edate}.${GCMVER}.${BCTAG}_${BCRSLV}.* RESTART.${edate}
-        #      shiftc --create-tar --wait $EXPID.*.${edate}.${GCMVER}.${BCTAG}_${BCRSLV}.* RESTART.${edate} restarts.${edate}.tar
+        >>>COUPLED<<<@TAREXEC cvf  restarts.${edate}.tar $EXPID.*.${edate}.${GCMVER}.${BCTAG}_${BCRSLV}.* *_tavg_1mo_glo_*_rst RESTART.${edate}
         /bin/rm -rf `/bin/ls -d -1     $EXPID.*.${edate}.${GCMVER}.${BCTAG}_${BCRSLV}.*`
+        /bin/rm -rf *_tavg_1mo_glo_*_rst
 	>>>COUPLED<<</bin/rm -rf RESTART.${edate}
     endif
 cd $SCRDIR
 
-# Move monthly collection checkpoints to restarts
-#------------------------------------------------
-set monthlies = `ls *chk` 
-if ( $#monthlies > 0 ) then
-    foreach ff (*chk)
-	    mv $ff `basename $ff chk`rst
-    end
-endif
 
 #######################################################################
 #               Move HISTORY Files to Holding Directory
@@ -848,10 +951,12 @@ end
 #######################################################################
 #                 Run Post-Processing and Forecasts
 #######################################################################
+
 $GEOSUTIL/post/gcmpost_GEOSS2S3.script -source $EXPDIR -movefiles
 
 >>>withODAS<<<#  new plotting of OMF/OMA stats from ERIC 3/19/21
->>>withODAS<<<$EXPDIR/oda_plots.csh $EXPDIR $nyears $nmonths $ndays $nhours $year $month $day $hour
+>>>withODAS<<<$GEOSUTIL/plots/oda_plots.csh $EXPDIR $nyears $nmonths $ndays $nhours $year $month $day $hour $GEOSUTIL/plots
+
 if( $FSEGMENT != 00000000 ) then
      set REPLAY_BEG_DATE = `grep BEG_REPDATE: $HOMDIR/CAP.rc | cut -d':' -f2`
      set REPLAY_END_DATE = `grep END_REPDATE: $HOMDIR/CAP.rc | cut -d':' -f2`
@@ -897,7 +1002,6 @@ if( $GCMEMIP == TRUE ) then
      wait
      @CPEXEC cap_restart $EXPDIR/restarts/$RSTDATE/cap_restart
 >>>COUPLED<<<     @CPEXEC -rf RESTART $EXPDIR
->>>COUPLED<<<     sleep 900s
 else
      foreach rst ( `/bin/ls -1 *_rst` )
         /bin/rm -f $EXPDIR/$rst
@@ -909,7 +1013,6 @@ else
      wait
      @CPEXEC cap_restart $EXPDIR/cap_restart
 >>>COUPLED<<<     @CPEXEC -rf RESTART $EXPDIR
->>>COUPLED<<<     sleep 900s
 
     cd  $HOMDIR
     set flinkpath = `readlink -f CAP.rc`
@@ -929,8 +1032,18 @@ else
 
 endif
 
->>>COUPLED<<<# @CPEXEC -rf RESTART $EXPDIR
-#sleep 900s
+>>>COUPLED<<<#@CPEXEC -rf RESTART $EXPDIR
+
+>>>withODAS<<< cd  $HOMDIR
+
+>>>withODAS<<< echo "Checking ODAS by Screening Number of Ocean Observations"
+>>>withODAS<<< $GEOSUTIL/plots/odas_plots/check_ODAS_ready.py
+
+>>>withODAS<<< # add the stat plot check
+>>>withODAS<<< echo "Running plot_V3_rt.csh"
+>>>withODAS<<< $GEOSUTIL/plots/odas_plots/plot_V3_rt.csh
+
+>>>withODAS<<< exit
 
 if ( $rc == 0 ) then
     cd  $HOMDIR
@@ -983,7 +1096,3 @@ if ( $rc == 0 ) then
         endif
     endif
 endif
-
-
-
-

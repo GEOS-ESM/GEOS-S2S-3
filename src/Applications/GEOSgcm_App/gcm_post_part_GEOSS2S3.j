@@ -1,4 +1,4 @@
-#!/bin/csh -x
+#!/bin/csh -f
 
 #######################################################################
 #                Batch Parameters for Post-Processing Job
