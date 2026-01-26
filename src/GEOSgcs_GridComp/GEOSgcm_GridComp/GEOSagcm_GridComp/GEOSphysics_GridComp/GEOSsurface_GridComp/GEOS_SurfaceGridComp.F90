@@ -3083,6 +3083,30 @@ module GEOS_SurfaceGridCompMod
     call MAPL_TimerAdd(GC,    name="-RUN2"   ,RC=STATUS)
     VERIFY_(STATUS)
 
+    ! Fine-grained RUN2 timers
+    call MAPL_TimerAdd(GC,    name="--RUN2_Setup"   ,RC=STATUS)
+    VERIFY_(STATUS)
+    call MAPL_TimerAdd(GC,    name="--RUN2_GetPointers"   ,RC=STATUS)
+    VERIFY_(STATUS)
+    call MAPL_TimerAdd(GC,    name="--RUN2_PrecipHandling"   ,RC=STATUS)
+    VERIFY_(STATUS)
+    call MAPL_TimerAdd(GC,    name="--RUN2_SolarCalc"   ,RC=STATUS)
+    VERIFY_(STATUS)
+    call MAPL_TimerAdd(GC,    name="--RUN2_AllocTiles"   ,RC=STATUS)
+    VERIFY_(STATUS)
+    call MAPL_TimerAdd(GC,    name="--RUN2_TransformToTiles"   ,RC=STATUS)
+    VERIFY_(STATUS)
+    call MAPL_TimerAdd(GC,    name="--RUN2_ChildrenLoop"   ,RC=STATUS)
+    VERIFY_(STATUS)
+    call MAPL_TimerAdd(GC,    name="---RUN2_Ocean"   ,RC=STATUS)
+    VERIFY_(STATUS)
+    call MAPL_TimerAdd(GC,    name="---RUN2_Discharge"   ,RC=STATUS)
+    VERIFY_(STATUS)
+    call MAPL_TimerAdd(GC,    name="--RUN2_TransformToGrid"   ,RC=STATUS)
+    VERIFY_(STATUS)
+    call MAPL_TimerAdd(GC,    name="--RUN2_Cleanup"   ,RC=STATUS)
+    VERIFY_(STATUS)
+
     do I=1,NUM_CHILDREN
        call MAPL_TimerAdd(GC,    name="--RUN2_"//trim(GCNames(I))  ,RC=STATUS)
        VERIFY_(STATUS)
@@ -5347,6 +5371,8 @@ module GEOS_SurfaceGridCompMod
 ! Get parameters from generic state.
 !-----------------------------------
 
+    call MAPL_TimerOn(MAPL,"--RUN2_Setup")
+
     call MAPL_Get(MAPL,             &
          LOCSTREAM = LOCSTREAM,                  &
          GCS       = GCS,                        &
@@ -5382,8 +5408,12 @@ module GEOS_SurfaceGridCompMod
     call MAPL_GetResource ( MAPL, RUN_ROUTE, Label="RUN_ROUTE:", DEFAULT=0, RC=STATUS)
     VERIFY_(STATUS)
 
+    call MAPL_TimerOff(MAPL,"--RUN2_Setup")
+
 ! Pointers to gridded imports
 !----------------------------
+
+    call MAPL_TimerOn(MAPL,"--RUN2_GetPointers")
 
     call MAPL_GetPointer(IMPORT  , PS      , 'PS'     ,  RC=STATUS); VERIFY_(STATUS)
     call MAPL_GetPointer(IMPORT  , DZ      , 'DZ'     ,  RC=STATUS); VERIFY_(STATUS)
@@ -5691,8 +5721,12 @@ module GEOS_SurfaceGridCompMod
     call MAPL_GetPointer(IMPORT, SNOFL   , 'SNO'    ,  RC=STATUS); VERIFY_(STATUS)
     call MAPL_GetPointer(IMPORT, TA      , 'TA'     ,  RC=STATUS); VERIFY_(STATUS)
 
+    call MAPL_TimerOff(MAPL,"--RUN2_GetPointers")
+
 ! This is the default behavior, with all surface components seeing uncorrected precip
 !------------------------------------------------------------------------------------
+
+    call MAPL_TimerOn(MAPL,"--RUN2_PrecipHandling")
 
     RCU = PCU
     RLS = PLS
@@ -5816,8 +5850,12 @@ module GEOS_SurfaceGridCompMod
 
     end if REPLACE_PRECIP
 
+    call MAPL_TimerOff(MAPL,"--RUN2_PrecipHandling")
+
 ! Pointers to gridded internals
 !------------------------------
+
+    call MAPL_TimerOn(MAPL,"--RUN2_GetPointers")
 
     call MAPL_GetPointer(INTERNAL, CM      , 'CM'     ,  RC=STATUS); VERIFY_(STATUS)
     call MAPL_GetPointer(INTERNAL, CT      , 'CT'     ,  RC=STATUS); VERIFY_(STATUS)
@@ -6086,8 +6124,12 @@ module GEOS_SurfaceGridCompMod
 !ALT       VERIFY_(STATUS)
     end if
 
+    call MAPL_TimerOff(MAPL,"--RUN2_GetPointers")
+
 ! Allocate some work arrays in grid and tile space
 !-------------------------------------------------
+
+    call MAPL_TimerOn(MAPL,"--RUN2_AllocTiles")
 
     NT = size(TILETYPE)
 
@@ -6130,8 +6172,12 @@ module GEOS_SurfaceGridCompMod
     allocate(  DQSTILE(NT), STAT=STATUS)
     VERIFY_(STATUS)
 
+    call MAPL_TimerOff(MAPL,"--RUN2_AllocTiles")
+
 ! Get the insolation and zenith angle on grid and tiles
 !------------------------------------------------------
+
+    call MAPL_TimerOn(MAPL,"--RUN2_SolarCalc")
 
     call ESMF_ClockGet(CLOCK,     TIMESTEP=DELT, RC=STATUS)
     VERIFY_(STATUS)
@@ -6187,8 +6233,12 @@ module GEOS_SurfaceGridCompMod
 
     ZTHTILE = max(0.0,ZTHTILE)
 
+    call MAPL_TimerOff(MAPL,"--RUN2_SolarCalc")
+
 ! We need atmsopheric version of the run1 outputs put back on tiles
 !------------------------------------------------------------------
+
+    call MAPL_TimerOn(MAPL,"--RUN2_AllocTiles")
 
     allocate(   TSTILE(NT), STAT=STATUS)
     VERIFY_(STATUS)
@@ -6208,6 +6258,10 @@ module GEOS_SurfaceGridCompMod
     VERIFY_(STATUS)
     allocate(   CMTILE(NT), STAT=STATUS)
     VERIFY_(STATUS)
+
+    call MAPL_TimerOff(MAPL,"--RUN2_AllocTiles")
+
+    call MAPL_TimerOn(MAPL,"--RUN2_TransformToTiles")
 
     call MAPL_LocStreamTransform( LOCSTREAM, THTILE, TH, RC=STATUS); VERIFY_(STATUS)
     call MAPL_LocStreamTransform( LOCSTREAM, QHTILE, QH, RC=STATUS); VERIFY_(STATUS)
@@ -6717,8 +6771,12 @@ module GEOS_SurfaceGridCompMod
 
     FRTILE = 0.0
 
+    call MAPL_TimerOff(MAPL,"--RUN2_TransformToTiles")
+
 !  Cycle through all continental children (skip ocean),
 !   collecting RUNOFFTILE exports.
+
+    call MAPL_TimerOn(MAPL,"--RUN2_ChildrenLoop")
 
     if (associated(RUNOFFTILE)) RUNOFFTILE       = 0.0
 
@@ -6736,6 +6794,7 @@ module GEOS_SurfaceGridCompMod
 !  between the globally tiled discharge and the ocean only tiled discharge.
 !--------------------------------------------------------------
 
+    call MAPL_TimerOn(MAPL,"---RUN2_Discharge")
     if(associated(DISCHARGETILE)) then
 
        ! Create discharge at exit tiles by routing runoff
@@ -6809,17 +6868,24 @@ module GEOS_SurfaceGridCompMod
        end if
 
     endif
+    call MAPL_TimerOff(MAPL,"---RUN2_Discharge")
 
 ! Run the Ocean
 !--------------
 
+    call MAPL_TimerOn(MAPL,"---RUN2_Ocean")
     call DOTYPE(TYPE=OCEAN, RC=STATUS)
     VERIFY_(STATUS)
+    call MAPL_TimerOff(MAPL,"---RUN2_Ocean")
+
+    call MAPL_TimerOff(MAPL,"--RUN2_ChildrenLoop")
 
 
 ! Total precipitation diagnostic from SurfaceGridComp,
 !  including any correction. The uncorrected comes from moist.
 !-------------------------------------------------------------
+
+    call MAPL_TimerOn(MAPL,"--RUN2_TransformToGrid")
 
     call MAPL_GetPointer(EXPORT, PRECTOT, 'PRECTOT', RC=STATUS)
     VERIFY_(STATUS)
@@ -7786,8 +7852,12 @@ module GEOS_SurfaceGridCompMod
 !          where ( FRLANDICE > 0.9 ) SNOMAS = 4
 !      endif
 
+    call MAPL_TimerOff(MAPL,"--RUN2_TransformToGrid")
+
 ! Clean-up
 !---------
+
+    call MAPL_TimerOn(MAPL,"--RUN2_Cleanup")
 
     deallocate(TMP)
     deallocate(TTM)
@@ -8081,6 +8151,8 @@ module GEOS_SurfaceGridCompMod
 
     call ESMF_VMBarrier(VMG, rc=status)
     VERIFY_(STATUS)
+
+    call MAPL_TimerOff(MAPL,"--RUN2_Cleanup")
 
     call MAPL_TimerOff(MAPL,"-RUN2" )
     call MAPL_TimerOff(MAPL,"TOTAL")
