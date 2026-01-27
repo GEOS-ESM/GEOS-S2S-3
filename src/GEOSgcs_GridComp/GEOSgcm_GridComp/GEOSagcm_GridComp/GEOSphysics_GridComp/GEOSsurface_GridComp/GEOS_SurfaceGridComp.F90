@@ -105,7 +105,7 @@ module GEOS_SurfaceGridCompMod
   type T_Routing
      integer :: srcTileID, dstTileID,     &
                 srcIndex=-1, dstIndex=-1, &
-                srcPE=-1, dstPE=-1 
+                srcPE=-1, dstPE=-1, SeqIdx=-1
      real    :: weight
   end type T_Routing
 
@@ -3681,7 +3681,7 @@ module GEOS_SurfaceGridCompMod
     ! now everybody has blocksizes(nDEs)
 
     ntotal = sum(blocksizes) ! should be same as # of paired sources and sinks (npairs)
-    _ASSERT(ntotal==numRoutings, 'Number source/sinks does not match')
+    ASSERT_(ntotal==numRoutings)
     allocate (karray(numRoutings), stat=STATUS) !declare as target!!!
     VERIFY_(STATUS)
     karray = 0
@@ -3695,7 +3695,7 @@ module GEOS_SurfaceGridCompMod
        displ(n)=ksum
     end do
     ! as another sanity check: ksum should be the same as npairs
-    _ASSERT(displ(nDEs)==ntotal, 'Displ source/sinks does not match')
+    ASSERT_(displ(nDEs)==ntotal)
 
     allocate(kseq(nsdx), stat=STATUS)
     VERIFY_(STATUS)
@@ -9522,8 +9522,10 @@ module GEOS_SurfaceGridCompMod
       Discharge   = 0.0
 
       n=size(kdx)
-      allocate(td(n), _STAT)
-      allocate(tarray(displ(nDEs)), _STAT)
+      allocate(td(n), stat=STATUS)
+      VERIFY_(STATUS)
+      allocate(tarray(displ(nDEs)), stat=STATUS)
+      VERIFY_(STATUS)
       do k=1,n
          i=kdx(k)
 
@@ -9543,8 +9545,10 @@ module GEOS_SurfaceGridCompMod
             Discharge(Routing(i)%DstIndex) = Discharge(Routing(i)%DstIndex) + TileDischarge
          end if
       end do
-      deallocate(td, _STAT)
-      deallocate(tarray, _STAT)
+      deallocate(td, stat=STATUS)
+      VERIFY_(STATUS)
+      deallocate(tarray, stat=STATUS)
+      VERIFY_(STATUS)
 
       RETURN_(ESMF_SUCCESS)
     end subroutine RouteRunoff
