@@ -203,12 +203,12 @@ def count_single_sensor(instid_list, obstyp, obs, target_instid, required_obstyp
 
 
 
-#if len(sys.argv) >= 1:
+if len(sys.argv) >= 1:
 
-#    obstyp   = sys.argv[1]      # 'TZ'
+    cyear   = int(sys.argv[1])      # year
     
 #yyyy = '201[8-9]'
-yyyy = '202[4-5]'
+#yyyy = '202[4-5]'
 #yyyy = '2025'
 #year = '????'
 mm   = '??'
@@ -219,10 +219,20 @@ hh   = '12'
 
 
 #flist=glob.glob('ocean_obs*/obs-*.nc')
-directory = '/gpfsm/dnb42/projects/p17/production/geos5/exp/S2S-2_1_ANA_002/ocean_das/oana-*/ocean_obs*/'
-directory = '/gpfsm/dnb07/projects/p236/GiOcean-NRT/ocean_das/oana-*/ocean_obs*/' 
-flist=glob.glob(str(directory)+'obs-'+yyyy+mm+dd+'_'+hh+'.nc')
+#directory = '/gpfsm/dnb42/projects/p17/production/geos5/exp/S2S-2_1_ANA_002/ocean_das/oana-*/ocean_obs*/'
+directory = '/gpfsm/dnb07/projects/p236/GiOcean-NRT/ocean_das/oana-*' 
+flist = []
+for year in (cyear-1, cyear):
+    yyyy = f"{year}"
+    path2files = (
+       f"{directory}/ocean_observer_*/obs-{yyyy}{mm}{dd}_{hh}.nc"
+    )
+    flist.extend(glob.glob(path2files))
+
 flist.sort()
+
+#flist=glob.glob(str(directory)+'obs-'+yyyy+mm+dd+'_'+hh+'.nc')
+#flist.sort()
 #    print 'directory is ', directory
 
 #    print(flist)
