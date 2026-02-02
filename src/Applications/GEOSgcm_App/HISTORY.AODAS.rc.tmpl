@@ -1,12 +1,12 @@
 EXPID:  @EXPID
 EXPDSC: @EXPDSC
 EXPSRC: @EXPSRC
-
-COLLECTIONS: 'iau_inst_6hr_glo_L720x361_v72'
+                 
+COLLECTIONS: 'atm_inst_6hr_glo_L720x361_p49'
              'iau_tavg_1mo_glo_L720x361_p49'
-             'atm_inst_6hr_glo_L720x361_p49'
-             'sfc_tavg_3hr_glo_L720x361_sfc'
+             'iau_inst_6hr_glo_L720x361_v72'
              'sfc_tavg_1hr_glo_L720x361_sfc'
+             'sfc_tavg_3hr_glo_L720x361_sfc'
              'mjo_tavg_1dy_glo_L720x361_slv'
              'rad_tavg_1mo_glo_L720x361_p49'
              'mst_tavg_1mo_glo_L720x361_p49'
@@ -40,45 +40,17 @@ COLLECTIONS: 'iau_inst_6hr_glo_L720x361_v72'
              'ith_tavg_1dy_glo_T1440x1080_slv'
     	     'aof_tavg_1mo_glo_T1440x1080_slv'
              'ias_tavg_1dy_glo_T1440x1080_slv'
-             'sst_tavg_1dy_glo_L720x361_slv'
+#            'sst_tavg_1dy_glo_L720x361_slv'
              'glc_tavg_1mo_glo_L720x361_slv'
              'aci_tavg_1dy_glo_L360x181_p27'
              'aci_tavg_1dy_glo_L720x361_sfc'
              'mod_inst_6hr_glo_L720x361_sfc'
              'ice_inst_6hr_glo_T1440x1080_slv'
-@COMMENT_OBIO             'bio_tavg_1mo_L720x361_z50'
+             'rad_tavg_3hr_glo_L720x361_sfc'
+             'dis_tavg_1dy_glo_T1440x1080_slv'
+             'at2_inst_6hr_glo_L720x361_p25'
+#            'bio_tavg_1mo_L720x361_z50'
              ::
-
-  iau_inst_6hr_glo_L720x361_v72.template:  '%y4%m2%d2_%h2%n2z.nc4',
-  iau_inst_6hr_glo_L720x361_v72.archive:   '%c/Y%y4',
-  iau_inst_6hr_glo_L720x361_v72.format:    'CFIO',
-  iau_inst_6hr_glo_L720x361_v72.frequency:  060000,
-  iau_inst_6hr_glo_L720x361_v72.ref_time:   000000,
-  iau_inst_6hr_glo_L720x361_v72.resolution: @HIST_IM @HIST_JM,
-  iau_inst_6hr_glo_L720x361_v72.mode:      'instantaneous' ,
-  iau_inst_6hr_glo_L720x361_v72.fields: 'DMDTANA'   , 'DYN'          , 'DPDTANA'    ,
-                     'DUDT_ANA'  , 'AGCM'         , 'DUDTANA'    ,
-                     'DVDT_ANA'  , 'AGCM'         , 'DVDTANA'    ,
-                     'DTDT_ANA'  , 'AGCM'         , 'DTDTANA'    ,
-                     'DQVDT_ANA' , 'AGCM'         , 'DQDTANA'    ,
-                     ::
-
-  iau_tavg_1mo_glo_L720x361_p49.template:  '%y4%m2%d2_%h2%n2z.nc4',
-  iau_tavg_1mo_glo_L720x361_p49.archive:   '%c/Y%y4',
-  iau_tavg_1mo_glo_L720x361_p49.mode:      'time-averaged',
-  iau_tavg_1mo_glo_L720x361_p49.monthly:    1,
-  iau_tavg_1mo_glo_L720x361_p49.format:    'CFIO',
-  iau_tavg_1mo_glo_L720x361_p49.frequency:  060000,
-  iau_tavg_1mo_glo_L720x361_p49.resolution: @HIST_IM @HIST_JM,
-  iau_tavg_1mo_glo_L720x361_p49.vscale:     100.0,
-  iau_tavg_1mo_glo_L720x361_p49.vunit:     'hPa',
-  iau_tavg_1mo_glo_L720x361_p49.vvars:     'log(PLE)' , 'DYN'          ,
-  iau_tavg_1mo_glo_L720x361_p49.levels:     1000 975 950 925 900 875 850 825 800 775 750 725 700 650 600 550 500 450 400 350 300 250 200 150 100 85 70 50 40 30 20 10 7 5 4 3 2 1 0.7 0.5 0.4 0.3 0.2 0.1 0.07 0.05 0.04 0.03 0.02,
-  iau_tavg_1mo_glo_L720x361_p49.fields: 'DUDT_ANA;DVDT_ANA'   , 'AGCM'         , 'DUDTANA;DVDTANA'    ,
-                          'DTDT_ANA'            , 'AGCM'         , 'DTDTANA'    ,
-                          'DQVDT_ANA'           , 'AGCM'         , 'DQDTANA'    ,
-                          'DMDTANA'             , 'DYN'          , 'DMDTANA'    ,
-                          ::
 
   atm_inst_6hr_glo_L720x361_p49.template:  '%y4%m2%d2_%h2%n2z.nc4',
   atm_inst_6hr_glo_L720x361_p49.archive:   '%c/Y%y4',
@@ -102,6 +74,59 @@ COLLECTIONS: 'iau_inst_6hr_glo_L720x361_v72'
                           'RH2'      , 'MOIST'        , 'RH'  ,
                           'O3'       , 'CHEMISTRY'    ,
                           ::
+
+  iau_tavg_1mo_glo_L720x361_p49.template:  '%y4%m2%d2_%h2%n2z.nc4',
+  iau_tavg_1mo_glo_L720x361_p49.archive:   '%c/Y%y4',
+  iau_tavg_1mo_glo_L720x361_p49.mode:      'time-averaged',
+  iau_tavg_1mo_glo_L720x361_p49.monthly:    1,
+  iau_tavg_1mo_glo_L720x361_p49.format:    'CFIO',
+  iau_tavg_1mo_glo_L720x361_p49.frequency:  060000,
+  iau_tavg_1mo_glo_L720x361_p49.resolution: @HIST_IM @HIST_JM,
+  iau_tavg_1mo_glo_L720x361_p49.vscale:     100.0,
+  iau_tavg_1mo_glo_L720x361_p49.vunit:     'hPa',
+  iau_tavg_1mo_glo_L720x361_p49.vvars:     'log(PLE)' , 'DYN'          ,
+  iau_tavg_1mo_glo_L720x361_p49.levels:     1000 975 950 925 900 875 850 825 800 775 750 725 700 650 600 550 500 450 400 350 300 250 200 150 100 85 70 50 40 30 20 10 7 5 4 3 2 1 0.7 0.5 0.4 0.3 0.2 0.1 0.07 0.05 0.04 0.03 0.02,
+  iau_tavg_1mo_glo_L720x361_p49.fields: 'DUDT_ANA;DVDT_ANA'   , 'AGCM'         , 'DUDTANA;DVDTANA'    ,
+                          'DTDT_ANA'            , 'AGCM'         , 'DTDTANA'    ,
+                          'DQVDT_ANA'           , 'AGCM'         , 'DQDTANA'    ,
+                          'DMDTANA'             , 'DYN'          , 'DMDTANA'    ,
+                          ::
+
+  iau_inst_6hr_glo_L720x361_v72.template:  '%y4%m2%d2_%h2%n2z.nc4',
+  iau_inst_6hr_glo_L720x361_v72.archive:   '%c/Y%y4',
+  iau_inst_6hr_glo_L720x361_v72.format:    'CFIO',
+  iau_inst_6hr_glo_L720x361_v72.frequency:  060000,
+  iau_inst_6hr_glo_L720x361_v72.ref_time:   000000,
+  iau_inst_6hr_glo_L720x361_v72.resolution: @HIST_IM @HIST_JM,
+  iau_inst_6hr_glo_L720x361_v72.mode:      'instantaneous' ,
+  iau_inst_6hr_glo_L720x361_v72.fields: 'DMDTANA'   , 'DYN'          , 'DPDTANA'    ,
+                     'DUDT_ANA'  , 'AGCM'         , 'DUDTANA'    ,
+                     'DVDT_ANA'  , 'AGCM'         , 'DVDTANA'    ,
+                     'DTDT_ANA'  , 'AGCM'         , 'DTDTANA'    ,
+                     'DQVDT_ANA' , 'AGCM'         , 'DQDTANA'    ,
+                     ::
+
+  sfc_tavg_1hr_glo_L720x361_sfc.template:  '%y4%m2%d2_%h2%n2z.nc4',
+  sfc_tavg_1hr_glo_L720x361_sfc.archive:   '%c/Y%y4',
+  sfc_tavg_1hr_glo_L720x361_sfc.format:    'CFIO',
+  sfc_tavg_1hr_glo_L720x361_sfc.frequency:  010000,
+  sfc_tavg_1hr_glo_L720x361_sfc.resolution: @HIST_IM @HIST_JM,
+  sfc_tavg_1hr_glo_L720x361_sfc.mode: 'time-averaged',
+  sfc_tavg_1hr_glo_L720x361_sfc.fields: 'TPREC'    , 'MOIST'       ,
+                             'RUNOFF'   , 'SURFACE'     ,
+                             'EVAP'     , 'SURFACE'     ,
+                             'PS'       , 'DYN'         , 'ps'  ,
+                             'U2M'      , 'SURFACE'     ,
+                             'V2M'      , 'SURFACE'     ,
+                             'T2M'      , 'SURFACE'     ,
+                             'Q2M'      , 'SURFACE'     ,
+                             'RH2M'     , 'SURFACE'     ,
+                             'U10M'     , 'SURFACE'     ,
+                             'V10M'     , 'SURFACE'     ,
+                             'T10M'     , 'SURFACE'     ,
+                             'Q10M'     , 'SURFACE'     ,
+                             'TPREC'    , 'MOIST'       , 'PRECTOT' ,
+                             ::
 
   sfc_tavg_3hr_glo_L720x361_sfc.template:  '%y4%m2%d2_%h2%n2z.nc4',
   sfc_tavg_3hr_glo_L720x361_sfc.archive:   '%c/Y%y4',
@@ -250,28 +275,6 @@ COLLECTIONS: 'iau_inst_6hr_glo_L720x361_v72'
                           'CWP'          , 'MOIST'    ,
                           'IWP'          , 'MOIST'    ,
                           ::
-
-  sfc_tavg_1hr_glo_L720x361_sfc.template:  '%y4%m2%d2_%h2%n2z.nc4',
-  sfc_tavg_1hr_glo_L720x361_sfc.archive:   '%c/Y%y4',
-  sfc_tavg_1hr_glo_L720x361_sfc.format:    'CFIO',
-  sfc_tavg_1hr_glo_L720x361_sfc.frequency:  010000,
-  sfc_tavg_1hr_glo_L720x361_sfc.resolution: @HIST_IM @HIST_JM,
-  sfc_tavg_1hr_glo_L720x361_sfc.mode: 'time-averaged',
-  sfc_tavg_1hr_glo_L720x361_sfc.fields: 'TPREC'    , 'MOIST'       ,
-                             'RUNOFF'   , 'SURFACE'     ,
-                             'EVAP'     , 'SURFACE'     ,
-                             'PS'       , 'DYN'         , 'ps'  ,
-                             'U2M'      , 'SURFACE'     ,
-                             'V2M'      , 'SURFACE'     ,
-                             'T2M'      , 'SURFACE'     ,
-                             'Q2M'      , 'SURFACE'     ,
-                             'RH2M'     , 'SURFACE'     ,
-                             'U10M'     , 'SURFACE'     ,
-                             'V10M'     , 'SURFACE'     ,
-                             'T10M'     , 'SURFACE'     ,
-                             'Q10M'     , 'SURFACE'     ,
-                             'TPREC'    , 'MOIST'       , 'PRECTOT' ,
-                             ::
 
   mjo_tavg_1dy_glo_L720x361_slv.template:  '%y4%m2%d2_%h2%n2z.nc4', 
   mjo_tavg_1dy_glo_L720x361_slv.archive:   '%c', 
@@ -1097,7 +1100,7 @@ COLLECTIONS: 'iau_inst_6hr_glo_L720x361_v72'
   ifx_tavg_1mo_glo_T1440x1080_slv.monthly:     1,
   ifx_tavg_1mo_glo_T1440x1080_slv.frequency:   240000,
   ifx_tavg_1mo_glo_T1440x1080_slv.regrid_exch:'tile.bin',
-  ifx_tavg_1mo_glo_T1440x1080_slv.regrid_name:'@OGCM_GRIDNAME',
+  ifx_tavg_1mo_glo_T1440x1080_slv.regrid_name:'PE1440x1080-TM',
   ifx_tavg_1mo_glo_T1440x1080_slv.fields: 'LWDNSRF'             , 'SEAICETHERMO',
                            'SWDNSRF'             , 'SEAICETHERMO',
                            'HLWUPICE'            , 'SEAICETHERMO',
@@ -1117,7 +1120,7 @@ COLLECTIONS: 'iau_inst_6hr_glo_L720x361_v72'
   ifx_tavg_1dy_glo_T1440x1080_slv.mode:       'time-averaged',
   ifx_tavg_1dy_glo_T1440x1080_slv.frequency:   240000,
   ifx_tavg_1dy_glo_T1440x1080_slv.regrid_exch:'tile.bin',
-  ifx_tavg_1dy_glo_T1440x1080_slv.regrid_name:'@OGCM_GRIDNAME',
+  ifx_tavg_1dy_glo_T1440x1080_slv.regrid_name:'PE1440x1080-TM',
   ifx_tavg_1dy_glo_T1440x1080_slv.fields: 'LWDNSRF'             , 'SEAICETHERMO',
                            'SWDNSRF'             , 'SEAICETHERMO',
                            'HLWUPICE'            , 'SEAICETHERMO',
@@ -1137,7 +1140,7 @@ COLLECTIONS: 'iau_inst_6hr_glo_L720x361_v72'
   iin_tavg_1dy_glo_T1440x1080_zi4.mode:       'time-averaged',
   iin_tavg_1dy_glo_T1440x1080_zi4.frequency:   240000,
   iin_tavg_1dy_glo_T1440x1080_zi4.regrid_exch:'tile.bin',
-  iin_tavg_1dy_glo_T1440x1080_zi4.regrid_name:'@OGCM_GRIDNAME',
+  iin_tavg_1dy_glo_T1440x1080_zi4.regrid_name:'PE1440x1080-TM',
   iin_tavg_1dy_glo_T1440x1080_zi4.fields: 'TINZ'           , 'SEAICETHERMO', 'tinz'    ,
                            ::
 
@@ -1147,7 +1150,7 @@ COLLECTIONS: 'iau_inst_6hr_glo_L720x361_v72'
   ith_tavg_1dy_glo_T1440x1080_slv.mode:       'time-averaged',
   ith_tavg_1dy_glo_T1440x1080_slv.frequency:   240000,
   ith_tavg_1dy_glo_T1440x1080_slv.regrid_exch:'tile.bin',
-  ith_tavg_1dy_glo_T1440x1080_slv.regrid_name:'@OGCM_GRIDNAME',
+  ith_tavg_1dy_glo_T1440x1080_slv.regrid_name:'PE1440x1080-TM',
   ith_tavg_1dy_glo_T1440x1080_slv.fields: 'DVIDTT'              , 'SEAICETHERMO',  'dvidtt',
                            'DAIDTT'              , 'SEAICETHERMO',  'daidtt',
                            'FBOT'                , 'SEAICETHERMO',  'fbot',
@@ -1173,7 +1176,7 @@ COLLECTIONS: 'iau_inst_6hr_glo_L720x361_v72'
   aof_tavg_1mo_glo_T1440x1080_slv.monthly:     1,
   aof_tavg_1mo_glo_T1440x1080_slv.frequency:   240000,
   aof_tavg_1mo_glo_T1440x1080_slv.regrid_exch:'tile.bin',
-  aof_tavg_1mo_glo_T1440x1080_slv.regrid_name:'@OGCM_GRIDNAME',
+  aof_tavg_1mo_glo_T1440x1080_slv.regrid_name:'PE1440x1080-TM',
   aof_tavg_1mo_glo_T1440x1080_slv.fields: 'TS_FOUND'    , 'OPENWATER',
                             'SS_FOUND'    , 'OPENWATER',
                             'PENUVR'      , 'SEAICETHERMO',   'PENUVRi' ,
@@ -1234,7 +1237,7 @@ COLLECTIONS: 'iau_inst_6hr_glo_L720x361_v72'
   glc_tavg_1mo_glo_L720x361_slv.frequency:  240000,
   glc_tavg_1mo_glo_L720x361_slv.ref_time:   000000,
   glc_tavg_1mo_glo_L720x361_slv.regrid_exch: 'tile.bin', 
-  glc_tavg_1mo_glo_L720x361_slv.regrid_name: '@AGCM_GRIDNAME',
+  glc_tavg_1mo_glo_L720x361_slv.regrid_name: 'PE180x1080-CF',
   glc_tavg_1mo_glo_L720x361_slv.resolution: @HIST_IM @HIST_JM,
   glc_tavg_1mo_glo_L720x361_slv.fields:       'SNOWDP_GL'  , 'LANDICE'  ,
                                 'SNOMAS_GL'  , 'LANDICE'  ,
@@ -1323,10 +1326,49 @@ COLLECTIONS: 'iau_inst_6hr_glo_L720x361_v72'
                               'DRAFT'       , 'SEAICE',
                               ::
 
+  rad_tavg_3hr_glo_L720x361_sfc.template:  '%y4%m2%d2_%h2%n2z.nc4',
+  rad_tavg_3hr_glo_L720x361_sfc.archive:   '%c/Y%y4',
+  rad_tavg_3hr_glo_L720x361_sfc.format:    'CFIO',
+  rad_tavg_3hr_glo_L720x361_sfc.mode:      'time-averaged',
+  rad_tavg_3hr_glo_L720x361_sfc.frequency:  030000,
+  rad_tavg_3hr_glo_L720x361_sfc.resolution: 720 361,
+  rad_tavg_3hr_glo_L720x361_sfc.fields: 'LWS'       , 'IRRAD'        ,
+                          'LCS'       , 'IRRAD'        , 'LWSC'      ,
+                          'SFCEM'     , 'IRRAD'        ,
+                          'SLRSF'     , 'SOLAR'        , 'SWGDWN'    ,
+                          'SLRSFC'    , 'SOLAR'        , 'SWGDWNC'   ,
+                          'RSRS'      , 'SOLAR'        , 'SWGNET'    ,
+                          'RSCS'      , 'SOLAR'        , 'SWGNETC'   ,
+                          'EMIS'      , 'SURFACE'      ,
+                          ::
+
+  dis_tavg_1dy_glo_T1440x1080_slv.template:  '%y4%m2%d2_%h2%n2z.nc4',
+  dis_tavg_1dy_glo_T1440x1080_slv.archive:   '%c/Y%y4',
+  dis_tavg_1dy_glo_T1440x1080_slv.mode:      'time-averaged',
+  dis_tavg_1dy_glo_T1440x1080_slv.format:    'CFIO',
+  dis_tavg_1dy_glo_T1440x1080_slv.frequency:  240000,
+  dis_tavg_1dy_glo_T1440x1080_slv.fields: 'DISCHARGE' , 'OCEAN',
+                   ::
+
+  at2_inst_6hr_glo_L720x361_p25.template:  '%y4%m2%d2_%h2%n2z.nc4',
+  at2_inst_6hr_glo_L720x361_p25.archive:   '%c/Y%y4',
+  at2_inst_6hr_glo_L720x361_p25.format:    'CFIO',
+  at2_inst_6hr_glo_L720x361_p25.frequency:  060000,
+  at2_inst_6hr_glo_L720x361_p25.resolution: 720 361,
+  at2_inst_6hr_glo_L720x361_p25.vscale:     100.0,
+  at2_inst_6hr_glo_L720x361_p25.vunit:     'hPa',
+  at2_inst_6hr_glo_L720x361_p25.vvars:     'log(PLE)' , 'DYN'          ,
+  at2_inst_6hr_glo_L720x361_p25.levels:     1000 975 950 925 900 875 850 825 800 775 750 725 700 650 600 550 500 450 400 350 300 250 200 150 100,
+  at2_inst_6hr_glo_L720x361_p25.fields: 'PHIS'     , 'AGCM'         ,
+                          'QRTOT'    , 'MOIST'         , 'QR'  ,
+                          'QSTOT'    , 'MOIST'         , 'QS'  ,
+                          'FCLD'     , 'MOIST'         , 
+                          ::
+
   bio_tavg_1mo_L720x361_z50.template:  '%y4%m2%d2_%h2%n2z.nc4',
   bio_tavg_1mo_L720x361_z50.mode:      'time-averaged',
   bio_tavg_1mo_L720x361_z50.format:    'CFIO',
-  bio_tavg_1mo_L720x361_z50.resolution: 720 361,
+  bio_tavg_1mo_L720x361_z50.resolution: @HIST_IM @HIST_JM,
   bio_tavg_1mo_L720x361_z50.monthly:        1 ,
 #  bio_tavg_1mo_L720x361_z50.frequency: 240000,
 #  bio_tavg_1mo_L720x361_z50.duration:  240000,

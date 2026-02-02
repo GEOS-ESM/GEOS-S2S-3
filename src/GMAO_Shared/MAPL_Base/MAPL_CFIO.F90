@@ -2628,6 +2628,9 @@ contains
     call MAPL_CFIOWriteBundleWrite( MCFIO, CLOCK, RC=status)
     VERIFY_(STATUS)
 
+    call MAPL_CFIOClose( MCFIO, RC=status)
+    VERIFY_(STATUS)
+
     RETURN_(ESMF_SUCCESS)
   end subroutine MAPL_CFIOWriteBundle
 
