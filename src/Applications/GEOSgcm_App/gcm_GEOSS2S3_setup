@@ -2141,7 +2141,9 @@ endif
 #######################################################################
 #knnote (2024/11/13):    copy a data file required for s2smkdymean.sh
 if(! -e $EXPDIR/s2s_util  ) mkdir -p $EXPDIR/s2s_util
-if(  -e data_s2smkdymean_GEOSS2S3_coll ) /bin/cp data_s2smkdymean_GEOSS2S3_coll $EXPDIR/s2s_util/data_s2smkdymean_coll
+if(  -e data_s2smkdymean_GEOSS2S3_coll         ) /bin/cp data_s2smkdymean_GEOSS2S3_coll         $EXPDIR/s2s_util/data_s2smkdymean_coll
+if(  -e data_gcmarch_GEOSS2S3_collpost_lst     ) /bin/cp data_gcmarch_GEOSS2S3_collpost_lst     $EXPDIR/archive/data_gcmarch_collpost_lst
+if(  -e data_gcmarch_GEOSS2S3_collpost_savedy3 ) /bin/cp data_gcmarch_GEOSS2S3_collpost_savedy3 $EXPDIR/archive/data_gcmarch_collpost_savedy3
 
 set FILES = "gcm_run_GEOSS2S3.j          \
              gcm_run_GEOSS2S3_2017p.j    \

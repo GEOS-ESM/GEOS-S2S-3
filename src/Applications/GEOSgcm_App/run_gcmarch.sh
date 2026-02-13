@@ -27,8 +27,6 @@ setvars() {
     local   _fhis2=$_dexp/HISTORY_2.rc
     local  strmapl="01_0000z.nc4"
 
-    local arrfname=()
-
     strrst=restarts
     strmom=MOM_Output
     strmom_search=ocean_daily
@@ -98,7 +96,9 @@ setvars() {
         capric_yyyymm=$( echo $capric_yyyymmdd | cut -c1-6 )
         capric_yyyy=$( echo $capric_yyyymmdd | cut -c1-4 )
         capric_hhmmss=$( cat $_fcapric | head -1 | tr -s '[:space:]' | cut -d' ' -f2 )
+        capric_hh=$( echo $capric_hhmmss | cut -c1-2 )
         bllastdayofthemonth=$( fcal_lastdayofthemonth $capric_yyyymmdd )
+        blfirstdayofthemonth=$( fcal_firstdayofthemonth $capric_yyyymmdd )
     fi
 
     if [[ -f $_fcapend ]];then
@@ -112,11 +112,33 @@ setvars() {
     arrmon_3mo=( $capric_yyyymm ${arrmfull_3mo[@]} )
     arrmon_10mo=( $capric_yyyymm ${arrmfull_10mo[@]} )
 
+    arrmonrst_3mo=( $capric_yyyymmdd $end3_yyyymmdd )
+
+    #note:  "4" is for 4-month run for the second segment
+    #       "3" is for 3-month run for the last   segment
+    arrmonrst_10mo=( ${arrmonrst_3mo[@]} )
+    local _yyyymm=$end3_yyyymm
+    for x in 4 3;do
+        for i in $( seq 1 $x );do
+            _yyyymm=$( fcal_nextmonth $_yyyymm ) 
+        done
+        arrmonrst_10mo+=( ${_yyyymm}01 )   
+    done
+
+    arrmonmom_3mo=( $end3_yyyymmdd ) 
+    arrmonmom_10mo=( ${arrmonrst_10mo[@]:1} ) 
+
+    (( $capr_yyyymmdd == $realend_yyyymmdd )) && bl10morun=true || bl10morun=false
+    $bl10morun && arrmonthfull=( ${arrmfull_10mo[@]} )  || arrmonthfull=( ${arrmfull_3mo[@]} )
+    $bl10morun &&     arrmonth=( ${arrmon_10mo[@]} )    ||     arrmonth=( ${arrmon_3mo[@]} )
+    $bl10morun && arrmonth_rst=( ${arrmonrst_10mo[@]} ) || arrmonth_rst=( ${arrmonrst_3mo[@]} )
+    $bl10morun && arrmonth_mom=( ${arrmonmom_10mo[@]} ) || arrmonth_mom=( ${arrmonmom_3mo[@]} )
+
     [[ -f $_fhis1 ]] && arrcollmonpost_sstincl=($( exp_getcollfreq n $_fhis1 ))
 
-    #todo:  calculate a total number of mom outputs 
     if [[ -n $fcstdate ]];then 
 
+        #todo:  calculate a total number of mom outputs *BASED ON CAP_RESTART* 
         local _arr3mo_endseg_yyyymmdd=($( calc_seg_endyyyymmdd $capric_yyyymmdd $end3_yyyymmdd )) 
         numfmom_3mon_calc=${#_arr3mo_endseg_yyyymmdd[@]} 
 
@@ -128,103 +150,79 @@ setvars() {
         fi
 
         numfmom_calc=$_numsegtot
+
+        
+        #todo:  calculate a total number of restarts ***BASED ON CAP_RESTART***
+        local _rst_yyyymmdd
+        numfrst_calc=($( printf '%s\n' ${arrmonrst_10mo[@]} | while read _rst_yyyymmdd;do
+                                                                  (( $_rst_yyyymmdd <= $capr_yyyymmdd )) && echo $_rst_yyyymmdd
+                                                              done | wc -l ))
+
+        numfrst_3mon_calc=($( printf '%s\n' ${arrmonrst_10mo[@]} | while read _rst_yyyymmdd;do
+                                                                  (( $_rst_yyyymmdd <= $end3_yyyymmdd )) && echo $_rst_yyyymmdd
+                                                              done | wc -l ))
     fi
 
     if $blmkdy;then 
         local _fdata_mkdy=$dutl/data_${strmkdy}_coll
-        arrcolldmean=($( misc_readfbyline $_fdata_mkdy )) 
+        arrcolldymean=($( misc_readfbyline $_fdata_mkdy )) 
+    else
+        arrcolldymean=()
     fi
 
     if [[ -f $_fhis2 ]];then
+
         arrcoll=($( exp_getcollections $_fhis2 ))
-        arrcollmon_mapl=($( exp_getcollfreq m $_fhis2 ))
-        arrcollmonpost=($( exp_getcollfreq n $_fhis2 ))
-        arrcollmon_part=($( exp_getcollpartmon ))
-        arrcollmonpost_diu=($( exp_getcolldiurnal $_fhis2 ))
-        arrcollmonpost_save=($( printf '%s\n' ${arrcollmonpost[@]} | grep -E '_slv|_sfc' 2>/dev/null ))
-        numcollmonpost=${#arrcollmonpost[@]}
+        arrcollmapl=($( exp_getcollfreq m $_fhis2 ))
+        arrcollpost=($( exp_getcollfreq n $_fhis2 ))
+        #arrcollmapl_part=($( exp_getcollpartmon mapl $bllastdayofthemonth $blfirstdayofthemonth ))
+        arrcollpost_part=($( exp_getcollpartmon post $bllastdayofthemonth $blfirstdayofthemonth ))
+        arrcollpost_diu=($( exp_getcolldiurnal $_fhis2 ))
+        arrcollpost_partdiu=($( printf "%s\n" ${arrcollpost_part[@]} ${arrcollpost_diu[@]} | sort -V | uniq -d ))
 
-        #todo:  get collections that produces extra monthly mean (*.monthly.* file)
-        #note:  for s2sv3 hindcast, ocn_tavg_1dy_glo_T1440x1080_slv creates extra monthly mean IF ic date is the 
-        #       first day of the month
-        blfirstdayofthemonth=$( fcal_firstdayofthemonth $capric_yyyymmdd )
-        for collmonpost in ${arrcollmonpost[@]};do
-            collreftime=$( grep $collmonpost.ref_time $_fhis2 2>/dev/null | tr -s '[:space:]' | rev  | cut -d' ' -f1 | cut -c2- | rev )
+        if $blmkdy;then 
+            arrcolldymean_part=($( printf "%s\n" ${arrcollpost_part[@]} ${arrcolldymean[@]} | sort -V | uniq -d ))
+        else
+            arrcolldymean_part=()
+        fi
         
-            if [[ -z $collreftime ]] || (( $capric_hhmmss != $collreftime ));then
-                arrcollmonpost_noreft+=( $collmonpost )
-            fi
-        done
-
         #note:  array with collections to save
-        arrcollmonpost_savemon=( ${arrcollmonpost[@]} )
-        arrcollmonpost_savediu=($( printf '%s\n' ${arrcollmonpost_diu[@]} | sort -V -k3 -t'_' | grep -E '_sfc|_slv' 2>/dev/null ))
+        arrcollpost_savediu=($( printf '%s\n' ${arrcollpost_diu[@]} | sort -V -k3 -t'_' | grep -E '_sfc|_slv' 2>/dev/null ))
+        arrcollpost_partsavediu=($( printf "%s\n" ${arrcollpost_partdiu[@]} ${arrcollpost_savediu[@]} | sort -V | uniq -d ))
+        arrcollpost_savedy3=($( misc_readfbyline $fdatapost_savedy3 ))
+        arrcollpost_partsavedy3=($( printf "%s\n" ${arrcollpost_part[@]}    ${arrcollpost_savedy3[@]} | sort -V | uniq -d ))
+
+        #Note: 02/06/2026   For s2s-3 NRT forecasts, dailies are no longer save in dexp 
+        #                   except for collections in fdatapost_savedy3 and only the first 3months.
         #arrcollmonpost_savedya=( ice_tavg_1dy_glo_T1440x1080_slv mjo_tavg_1dy_glo_L720x361_slv )
-        arrcollmonpost_savedya=( mjo_tavg_1dy_glo_L720x361_slv )
-        arrcollmonpost_savedy3=( sfc_tavg_3hr_glo_L720x361_sfc sfc_tavg_1hr_glo_L720x361_sfc )
-   
-        #todo:  get files to save
-        (( $capr_yyyymmdd == $realend_yyyymmdd )) && bl10morun=true || bl10morun=false
-        $bl10morun && arrmonthfull=( ${arrmfull_10mo[@]} ) || arrmonthfull=( ${arrmfull_3mo[@]} )
-        $bl10morun && arrmonth=( ${arrmon_10mo[@]} )       || arrmonth=( ${arrmon_3mo[@]} )
+        #arrcollmonpost_savedya=( mjo_tavg_1dy_glo_L720x361_slv )
 
-        for coll in ${arrcoll[@]};do
-            [[ "${arrcollmon_mapl[@]}" =~ "$coll" ]] && local  _blsavemapl=true || local _blsavemapl=false
-            [[ "${arrcollmonpost_savemon[@]}" =~ "$coll" ]] && local  _blsavemon=true || local  _blsavemon=false
-            [[ "${arrcollmonpost_savediu[@]}" =~ "$coll" ]] && local  _blsavediu=true || local  _blsavediu=false
-            [[ "${arrcollmonpost_savedya[@]}" =~ "$coll" ]] && local  _blsavedya=true || local  _blsavedya=false
-            [[ "${arrcollmonpost_savedy3[@]}" =~ "$coll" ]] && local  _blsavedy3=true || local  _blsavedy3=false
-            [[ "${arrcollmonpost_noreft[@]}"  =~ "$coll" ]] && local   _blnoreft=true || local   _blnoreft=false
-            $blmkdy && [[ "${arrcolldmean[@]}" =~ "$coll" ]] && local _blsavemkdy=true || local _blsavemkdy=false
-            arrfsave+=($( exp_createfname_save $_dexp $coll $blfirstdayofthemonth $bllastdayofthemonth $_blsavemapl $_blsavemon $_blsavediu $_blsavedya $_blsavedy3 $_blnoreft $_blsavemkdy ${arrmonth[@]} ))
-        done 
+        #todo:  create fmkfname_nop & fmkfsave_nop
+        exp_createfname $bllastdayofthemonth ${arrmonth[@]}
 
-        #todo:  create output file names that are supposed to exists in dexp
-        for coll in ${arrcoll[@]};do
-            [[ "${arrcollmonpost_savedy3[@]}" =~ "$coll" ]] && local _blsavedy3=true || local _blsavedy3=false
-            [[ "${arrcollmonpost_noreft[@]}"  =~ "$coll" ]] && local _blnoreft=true  || local _blnoreft=false
-            $blmkdy && [[ "${arrcolldmean[@]}" =~ "$coll" ]] && local _blmkdy=true || local _blmkdy=false
-            arrfname+=($( exp_createfname $_dexp $coll $bllastdayofthemonth $blfirstdayofthemonth $_blsavedy3 $_blnoreft $_blmkdy ${arrmonth[@]} ))
-        done 
+        arrfsave=($( misc_readfbyline $fmkfsave_nop ))
 
         #todo:  find which file to delete
         #note:  arrfremove contains file  names. This does not necessarily mean that script has checked output
         #       timestamps and size on arc and pfe. See get_fmiss_fexist function. That's where
         #       those two variables are checked. 
         if $blleaveout; then 
-            arrfremove=($( printf '%s\n' ${arrfname[@]} ${arrfsave[@]} | sort -V | uniq -u | sort -V ))
+            local _arrfremove=($( grep -Fxvf $fmkfsave_nop $fmkfname_nop 2>/dev/null | sort -V | uniq -u ))
+            arrfremove=($( printf "$dexp/%s\n" ${_arrfremove[@]} ))
         else
-            arrfremove=( ${arrfname[@]} )
+            local _arrfremove=($( misc_readfbyline $fmkfname_nop ))
+            arrfremove=($( printf "$dexp/%s\n" ${_arrfremove[@]} | sort -V | uniq ))
         fi
-
-        [[ -d $_dexp/$strrst ]] && arrfremove+=($( find $_dexp/$strrst/* -type f -name "${strrst}*.tar"        2>/dev/null ))
-        [[ -d $_dexp/$strmom ]] && arrfremove+=($( find $_dexp/$strmom/* -type f -name "${strmom_search}*.nc*" 2>/dev/null )) 
-
-        ##!!!!! Sanity Check Arrays and Numbers : 03/10/2022 - save these for now (start) !!!!!
-
-        ##todo:  all existing files in dexp (Save this as of 03/10/2022)
-        #arrfexist=($( find $_dexp/* -maxdepth 1 -mindepth 1 -type f -name "$fcstdate.*.nc4*" | grep -v sst | sort -V ))
-        #
-        ##todo:  file names that does not exist 
-        #arrfname_notexist=($( printf '%s\n'  ${arrfname[@]} | xargs -i bash -c "[[ ! -f {} ]] && echo {}" | sort -V ))
-        #
-        ##todo:  files that need to be saved but missing 
-        #arrfsave_miss+=($( printf '%s\n' ${arrfsave[@]}  | xargs -i bash -c "[[ ! -f {} ]] && echo {}" | sort -V ))
-        #
-        ##todo:  total number of files ( save + delete ). Supposed to equal to total # of outputs.
-        #numsaveplusdelete=$( echo "${#arrfremove[@]} + ${#arrfsave[@]}" | bc )
-        #
-        ##!!!!! Sanity Check Arrays and Numbers : 03/10/2022 - save these for now ( end ) !!!!!
 
         #todo:  These are calculated values (based on created files names) based on 3-month or 10-month run
         if $blleaveout;then
-            numfsave_mpl=$( printf '%s\n' ${arrfsave[@]} | grep "$strmapl"  | wc -l )
-            numfsave_mon=$( printf '%s\n' ${arrfsave[@]} | grep "monthly"   | wc -l )
-            numfsave_diu=$( printf '%s\n' ${arrfsave[@]} | grep "diurnal"   | wc -l )
-            numfsave_day=$( printf '%s\n' ${arrfsave[@]} | grep "\.daily\." | wc -l )
-            numfsave_dmn=$( printf '%s\n' ${arrfsave[@]} | grep "dailymean" | wc -l )
-            numfsave_rst=0
-            numfsave_mom=0
+            numfsave_mpl=$( printf '%s\n' ${arrfsave[@]} | grep "$strmapl"       2>/dev/null | wc -l )
+            numfsave_mon=$( printf '%s\n' ${arrfsave[@]} | grep "monthly"        2>/dev/null | wc -l )
+            numfsave_diu=$( printf '%s\n' ${arrfsave[@]} | grep "diurnal"        2>/dev/null | wc -l )
+            numfsave_day=$( printf '%s\n' ${arrfsave[@]} | grep "\.daily\."      2>/dev/null | wc -l )
+            numfsave_dmn=$( printf '%s\n' ${arrfsave[@]} | grep "dailymean"      2>/dev/null | wc -l )
+            numfsave_rst=$( printf '%s\n' ${arrfsave[@]} | grep "$strrst"        2>/dev/null | wc -l )
+            numfsave_mom=$( printf '%s\n' ${arrfsave[@]} | grep "$strmom_search" 2>/dev/null | wc -l )
             numfsave_tot=$( echo "$numfsave_mpl + $numfsave_mon + $numfsave_diu + $numfsave_day + $numfsave_dmn + $numfsave_mom" | bc )
         else
             numfsave_mpl=0
@@ -238,13 +236,13 @@ setvars() {
         fi
 
         if $blleaveout && $bl10morun;then  
-            numfremove_mpl=$( printf '%s\n' ${arrfremove[@]} | grep "$strmapl"       | xargs -i bash -c "[[ -f {} ]] && basename {}" | wc -l )
-            numfremove_mon=$( printf '%s\n' ${arrfremove[@]} | grep "monthly"        | xargs -i bash -c "[[ -f {} ]] && basename {}" | wc -l )
-            numfremove_diu=$( printf '%s\n' ${arrfremove[@]} | grep "diurnal"        | xargs -i bash -c "[[ -f {} ]] && basename {}" | wc -l )
-            numfremove_day=$( printf '%s\n' ${arrfremove[@]} | grep "\.daily\."      | xargs -i bash -c "[[ -f {} ]] && basename {}" | grep -v $strmom_search | wc -l )
-            numfremove_dmn=$( printf '%s\n' ${arrfremove[@]} | grep "dailymean"      | xargs -i bash -c "[[ -f {} ]] && basename {}" | wc -l )
-            numfremove_rst=$( printf '%s\n' ${arrfremove[@]} | grep "$strrst"        | xargs -i bash -c "[[ -f {} ]] && basename {}" | wc -l )
-            numfremove_mom=$( printf '%s\n' ${arrfremove[@]} | grep "$strmom_search" | xargs -i bash -c "[[ -f {} ]] && basename {}" | wc -l )
+            numfremove_mpl=$( printf '%s\n' ${arrfremove[@]} | grep "$strmapl"        2>/dev/null | xargs -i bash -c "[[ -f {} ]] && basename {}" | wc -l )
+            numfremove_mon=$( printf '%s\n' ${arrfremove[@]} | grep "\.monthly\."     2>/dev/null | xargs -i bash -c "[[ -f {} ]] && basename {}" | wc -l )
+            numfremove_diu=$( printf '%s\n' ${arrfremove[@]} | grep "\.diurnal\."     2>/dev/null | xargs -i bash -c "[[ -f {} ]] && basename {}" | wc -l )
+            numfremove_day=$( printf '%s\n' ${arrfremove[@]} | grep "\.daily\."       2>/dev/null | xargs -i bash -c "[[ -f {} ]] && basename {}" | grep -v $strmom_search | wc -l )
+            numfremove_dmn=$( printf '%s\n' ${arrfremove[@]} | grep "\.dailymean\."   2>/dev/null | xargs -i bash -c "[[ -f {} ]] && basename {}" | wc -l )
+            numfremove_rst=$( printf '%s\n' ${arrfremove[@]} | grep "$strrst"         2>/dev/null | xargs -i bash -c "[[ -f {} ]] && basename {}" | wc -l )
+            numfremove_mom=$( printf '%s\n' ${arrfremove[@]} | grep "$strmom_search"  2>/dev/null | xargs -i bash -c "[[ -f {} ]] && basename {}" | wc -l )
             numfremove_tot=$( echo "$numfremove_mpl + $numfremove_mon + $numfremove_diu + $numfremove_day + $numfremove_mom" | bc )
 
             numfsavePfrm_mpl=$((  numfsave_mpl +  numfremove_mpl ))      
@@ -257,96 +255,81 @@ setvars() {
             numfsavePfrm_tot=$((  numfsave_tot +  numfremove_tot ))      
         fi
 
-        #todo:  calculate a number of total output files.
+        #todo:  calculate a number of total output files ***BASED ON WHERE cap_restart IS AT***
         numcoll=${#arrcoll[@]}
-        numcollmon_mapl=${#arrcollmon_mapl[@]}        
-        numcollmon_maplpartial=${#arrcollmon_mapl[@]}        
-        numcollmonpost=${#arrcollmonpost[@]}
-        numcollmonpost_diu=${#arrcollmonpost_diu[@]}        
-        numcollmonpost_nreft=${#arrcollmonpost_noreft[@]}
-        numcollmonpost_savedy3=${#arrcollmonpost_savedy3[@]}
-        numcolldmean=${#arrcolldmean[@]} 
+        numcollmapl=${#arrcollmapl[@]}        
+        numcollpost=${#arrcollpost[@]}
+        #numcollmapl_part=${#arrcollmapl_part[@]}        
+        numcollpost_part=${#arrcollpost_part[@]}
+        numcollpost_partdiu=${#arrcollpost_partdiu[@]}
+        numcollpost_diu=${#arrcollpost_diu[@]}        
+        numcollpost_savediu=${#arrcollpost_savediu[@]}
+        numcollpost_savedy3=${#arrcollpost_savedy3[@]}
+
+        numcolldymean_part=${#arrcolldymean_part[@]}
+        numcolldymean=${#arrcolldymean[@]}
+
         nummon_run=$( fcal_calcnummon $capric_yyyymmdd $capr_yyyymmdd  )
+
         $bllastdayofthemonth && nummon_3mo=${#arrmfull_3mo[@]} || nummon_3mo=${#arrmon_3mo[@]} 
 
         if $bllastdayofthemonth;then
-            numfmonmapl_calc=$( echo "$nummon_run * $numcollmon_mapl    + $numcollmon_maplpartial"                          | bc -l ) 
-                numfday_calc=$( echo "$nummon_run * $numcollmonpost     + $numcollmonpost_nreft + $numcollmonpost_savedy3"  | bc -l ) 
-                numfdiu_calc=$( echo "$nummon_run * $numcollmonpost_diu + $numcollmonpost_savedy3"                          | bc -l ) 
-            numfmonpost_calc=$( echo "$nummon_run * $numcollmonpost     + $numcollmonpost_nreft + $numcollmonpost_savedy3"  | bc -l ) 
-              numfdmean_calc=$( echo "$nummon_3mo * $numcolldmean"                                                          | bc ) 
-
-        elif $blfirstdayofthemonth;then
-            numfmonmapl_calc=$( echo "( $nummon_run - 1 ) * $numcollmon_mapl + $numcollmon_maplpartial" | bc -l ) 
-
-            #note:  subtract 1 from nummon_run when partial month output for  high resolution collections are deleted
-            #    numfday_calc=$( echo "( $nummon_run - 1 ) * $numcollmonpost + $numcollmonpost_nreft" | bc -l ) 
-            #    numfdiu_calc=$( echo "( $nummon_run - 1 ) * $numcollmonpost_diu" | bc -l ) 
-            #numfmonpost_calc=$( echo "( $nummon_run - 1 ) * $numcollmonpost + $numcollmonpost_nreft" | bc -l ) 
-
-                numfday_calc=$( echo "( $nummon_run  ) * $numcollmonpost"     | bc -l ) 
-                numfdiu_calc=$( echo "( $nummon_run  ) * $numcollmonpost_diu" | bc -l ) 
-            numfmonpost_calc=$( echo "( $nummon_run  ) * $numcollmonpost"     | bc -l ) 
-              numfdmean_calc=$( echo "$nummon_3mo * $numcolldmean"                                                          | bc ) 
+            numfmonmapl_calc=$( echo "( $nummon_run + 1 ) * $numcollmapl"                    | bc ) 
+            numfmonpost_calc=$( echo "$nummon_run * $numcollpost     + $numcollpost_part"    | bc ) 
+                numfday_calc=$( echo "$nummon_run * $numcollpost     + $numcollpost_part"    | bc ) 
+                numfdiu_calc=$( echo "$nummon_run * $numcollpost_diu + $numcollpost_partdiu" | bc ) 
+              #numfdmn_calc=$( echo "$nummon_run * $numcolldymean   + $numcolldymean_part"  | bc ) 
+                numfdmn_calc=$( echo "$nummon_run * $numcolldymean"                          | bc ) 
 
         else
-            numfmonmapl_calc=$( echo "( $nummon_run - 1 ) * $numcollmon_mapl + $numcollmon_maplpartial" | bc -l ) 
-
-            #note:  subtract 1 from nummon_run when partial month output for  high resolution collections are deleted
-            #    numfday_calc=$( echo "( $nummon_run - 1 ) * $numcollmonpost" | bc -l ) 
-            #    numfdiu_calc=$( echo "( $nummon_run - 1 ) * $numcollmonpost_diu" | bc -l ) 
-            #numfmonpost_calc=$( echo "( $nummon_run - 1 ) * $numcollmonpost" | bc -l ) 
-            
-                numfday_calc=$( echo "( $nummon_run ) * $numcollmonpost"     | bc -l ) 
-                numfdiu_calc=$( echo "( $nummon_run ) * $numcollmonpost_diu" | bc -l ) 
-            numfmonpost_calc=$( echo "( $nummon_run ) * $numcollmonpost"     | bc -l ) 
-              numfdmean_calc=$( echo "$nummon_3mo * $numcolldmean"           | bc ) 
+            #numfmonmapl_calc=$( echo "( $nummon_run - 1 ) * $numcollmapl" | bc ) 
+            numfmonmapl_calc=$( echo "$nummon_run * $numcollmapl"         | bc ) 
+            numfmonpost_calc=$( echo "$nummon_run * $numcollpost"         | bc ) 
+                numfday_calc=$( echo "$nummon_run * $numcollpost"         | bc ) 
+                numfdiu_calc=$( echo "$nummon_run * $numcollpost_diu"     | bc ) 
+                numfdmn_calc=$( echo "$nummon_3mo * $numcolldymean"       | bc ) 
         fi
 
-        numftotal_calc=$( echo "$numfmonmapl_calc + $numfday_calc + $numfdiu_calc + $numfmonpost_calc + $numfdmean_calc + $numfmom_calc" | bc -l )
+        numftotal_calc=$( echo "$numfmonmapl_calc + $numfmonpost_calc + $numfday_calc + \
+                                $numfdiu_calc     + $numfdmn_calc   + $numfmom_calc"    | bc )
 
         #todo:  calc 3mon
+        #todo:  calculate a number of total output files ***BASED ON WHERE cap_restart IS AT***
         local thismon=3
         if $bllastdayofthemonth;then
-            numfmonmapl_3mon_calc=$( echo "$thismon * $numcollmon_mapl + $numcollmon_maplpartial" | bc -l ) 
-                numfday_3mon_calc=$( echo "$thismon * $numcollmonpost"                            | bc -l ) 
-                numfdiu_3mon_calc=$( echo "$thismon * $numcollmonpost_diu"                        | bc -l ) 
-            numfmonpost_3mon_calc=$( echo "$thismon * $numcollmonpost"                            | bc -l ) 
-              numfdmean_3mon_calc=$( echo "$thismon * $numcolldmean"                              | bc -l ) 
-
-        elif $blfirstdayofthemonth;then
-            numfmonmapl_3mon_calc=$( echo "( $thismon - 1 ) * $numcollmon_mapl + $numcollmon_maplpartial" | bc -l ) 
-
-            #    numfday_3mon_calc=$( echo "( $thismon - 1 ) * $numcollmonpost + $numcollmonpost_nreft" | bc -l ) 
-            #    numfdiu_3mon_calc=$( echo "( $thismon - 1 ) * $numcollmonpost_diu" | bc -l ) 
-            #numfmonpost_3mon_calc=$( echo "( $thismon - 1 ) * $numcollmonpost + $numcollmonpost_nreft" | bc -l ) 
-
-            #note:  subtract 1 from nummon_run when partial month output for  high resolution collections are deleted
-                numfday_3mon_calc=$( echo "( $thismon - 1 ) * $numcollmonpost + $numcollmonpost_nreft" | bc -l ) 
-                numfdiu_3mon_calc=$( echo "( $thismon - 1 ) * $numcollmonpost_diu"                     | bc -l ) 
-            numfmonpost_3mon_calc=$( echo "( $thismon - 1 ) * $numcollmonpost + $numcollmonpost_nreft" | bc -l ) 
-              numfdmean_3mon_calc=$( echo "$thismon * $numcolldmean"                                   | bc -l ) 
+            numfmonmapl_3mon_calc=$( echo "$thismon * $numcollmapl"                            | bc ) 
+            numfmonpost_3mon_calc=$( echo "$thismon * $numcollpost     + $numcollpost_part"    | bc ) 
+                numfday_3mon_calc=$( echo "$thismon * $numcollpost     + $numcollpost_part"    | bc ) 
+                numfdiu_3mon_calc=$( echo "$thismon * $numcollpost_diu + $numcollpost_partdiu" | bc ) 
+              numfdmean_3mon_calc=$( echo "$thismon * $numcolldymean   + $numcolldymean_part"  | bc ) 
 
         else
-            numfmonmapl_3mon_calc=$( echo "( $thismon - 1 ) * $numcollmon_mapl + $numcollmon_maplpartial" | bc -l ) 
-
-            #    numfday_3mon_calc=$( echo "( $thismon - 1 ) * $numcollmonpost" | bc -l ) 
-            #    numfdiu_3mon_calc=$( echo "( $thismon - 1 ) * $numcollmonpost_diu" | bc -l ) 
-            #numfmonpost_3mon_calc=$( echo "( $thismon - 1 ) * $numcollmonpost" | bc -l ) 
-            
-            #note:  subtract 1 from nummon_run when partial month output for  high resolution collections are deleted
-                numfday_3mon_calc=$( echo "( $thismon - 1 ) * $numcollmonpost"     | bc -l ) 
-                numfdiu_3mon_calc=$( echo "( $thismon - 1 ) * $numcollmonpost_diu" | bc -l ) 
-            numfmonpost_3mon_calc=$( echo "( $thismon - 1 ) * $numcollmonpost"     | bc -l ) 
-              numfdmean_3mon_calc=$( echo "$thismon * $numcolldmean"               | bc -l ) 
-
+            numfmonmapl_3mon_calc=$( echo "( $thismon - 1 ) * $numcollmapl" | bc ) 
+            numfmonpost_3mon_calc=$( echo "$thismon * $numcollpost"         | bc ) 
+                numfday_3mon_calc=$( echo "$thismon * $numcollpost"         | bc ) 
+                numfdiu_3mon_calc=$( echo "$thismon * $numcollpost_diu"     | bc ) 
+              numfdmean_3mon_calc=$( echo "$thismon * $numcolldymean"       | bc ) 
         fi
 
-        numftotal_3mon_calc=$( echo "$numfmonmapl_3mon_calc + $numfday_3mon_calc + $numfdiu_3mon_calc + $numfmonpost_3mon_calc + $numfdmean_3mon_calc + $numfmom_3mon_calc" | bc -l )
+        numftotal_3mon_calc=$( echo "$numfmonmapl_3mon_calc + $numfmonpost_3mon_calc + \
+                                     $numfday_3mon_calc     + $numfdiu_3mon_calc     + \
+                                     $numfdmean_3mon_calc   + $numfmom_3mon_calc     + $numfrst_3mon_calc" | bc )
 
-        numfsst_calc=3 
+#wmessage \@$LINENO
+str="\
+$fcstdate:
+numfmonmapl_calc=$numfmonmapl_calc $numfmonmapl_3mon_calc
+numfmonpost_calc=$numfmonpost_calc $numfmonpost_3mon_calc
+    numfday_calc=$numfday_calc $numfday_3mon_calc
+    numfdiu_calc=$numfdiu_calc $numfdiu_3mon_calc
+    numfdmn_calc=$numfdmn_calc $numfdmean_3mon_calc
+    numfmom_calc=$numfmom_calc $numfmom_3mon_calc
+    numfrst_calc=$numfrst_calc $numfrst_3mon_calc
+  numftotal_calc=$numftotal_calc $numftotal_3mon_calc
+"
+#wmessage "$str"
+#wmessage "@$LINENO exit" && exit
     fi 
-
 
     return
 }
@@ -484,6 +467,30 @@ writeheader() {
     wmessage
     return
 }
+
+msg_wheader_userdefined(){
+    #Usage: ${FUNCNAME[0]} [ number of char to repeat ] [ character] [ a header subject (optional) ] 
+
+    #msg_makehead $1 "$2" 
+    local _str_head=$( printf -- "$2%.0s" $( seq 1  $1 ) )
+
+    if [[ -z $3 ]];then 
+        local _str_subject="$(TZ=America/New_York date +'%m/%d/%Y %H:%M' )"
+        #echo "subject variable empty. Enter an email subject as an input if you wish."
+    else 
+        local _str_subject="$3"
+    fi
+
+    local _len=${#_str_subject}
+    local _len_head=${#_str_head}
+    local _num_spaces=$( echo "$_len_head/2 + $_len/2" | bc  )
+
+    wmessage "$_str_head"
+    wmessage "$( printf '%*s\n' ${_num_spaces#0} "${_str_subject}" )"
+    wmessage "$_str_head"
+    return
+}
+
 
 die() {
     if [[ -z $writetofile ]];then writetofile=0;fi
@@ -780,221 +787,147 @@ exp_getcollfreq() {
     echo ${_arr[@]}
 }
 
+
 exp_getcollpartmon(){
-    #description:   All s2sv3 dates are supposed to produce "partial" month outputs. However, 
-    #               only three collections produce them when fcstdates are the 1st day of the months
-    #               (i.e. January 1, April 1, and May 1). This function returns those three collections
-    #               when requirements are met. Otherwise, it will return collections that gcm_post produces.
-    local _fhis2=$dexp/HISTORY_2.rc
+    #description:   determine collections that produce partial month outputs
 
-    [[   -z $capric_yyyymmdd ]] && wmessage "(${FUNCNAME[0]}) var undefined: capric_yyyymmdd"
-    [[ ! -f $_fhis2          ]] && wmessage "(${FUNCNAME[0]}) file does not exist: $_fhis2"
-
-    [[ -z $bllastdayofthemonth ]] && local bllastdayofthemonth=$( fcal_lastdayofthemonth  $capric_yyyymmdd )
+    local _colltype=$1;shift
+    local _bllstdy=$1;shift
+    local _blfstdy=$1
+    local _arr=()
     
-    if $bllastdayofthemonth;then 
-        local _arrcoll_pmon=( ocn_tavg_1dy_glo_T1440x1080_slv sfc_tavg_1hr_glo_L720x361_sfc sfc_tavg_3hr_glo_L720x361_sfc ) 
-    else
-        if (( ${#arrmonpost[@]} > 0 ));then 
-            local _arrcoll_pmon=(${arrmonpost[@]} ) 
+    [[ -z $_colltype || -z $_bllstdy || -z $_blfstdy ]] && wmessage "(${FUNCNAME[0]}) input missing" && exit
+
+
+    if [[ "$_colltype" == "post" ]];then 
+        if [[ -n $_bllstdy ]] && $_bllstdy;then 
+            local _fdata=$fdatapost_lst
         else
-            local _arrcoll_pmon=($( exp_getcollfreq n $_fhis2 ))
+            local _fdata=
+        fi
+    elif [[ "$_colltype" == "mapl" ]];then 
+        #if [[ -n $_bllstdy ]] && $_bllstdy;then 
+        #    local _fdata=$fdatamapl_lst
+        #else
+        #    local _fdata=
+        #fi
+            
+        local _fdata=
+    fi
+
+    if [[ -n $_fdata ]];then 
+        _arr=($( misc_readfbyline $_fdata ))
+    else
+        if [[ "$_colltype" == "post" ]];then 
+            _arr=( ${arrcollpost[@]} )
+        elif [[ "$_colltype" == "mapl" ]];then 
+            _arr=( ${arrcollmapl[@]} )
         fi
     fi
 
-    echo "${_arrcoll_pmon[@]}"    
+    echo "${_arr[@]}"
 }
 
+exp_createfname(){
+    #description:   *CREATE* file names based on HISTORY.rc and YYYYMM that gcm_run.j ran so far.
+    local _bllastday=$1;shift
+    local _arrmon=( "$@" ) 
+    #local  _bl1stday=$1
+    local _strmapl="01_0000z"
+    local _yyyymm
 
-exp_createfname_save() {
-    #description:   based on collection and YYYYMM, create filenames that are suppoed to exists and should be
-    #               saved on pfe
-
-    [[ -n $1 ]] && local _dexp=$1      && shift || die "(${FUNCNAME[0]}) input argument required" 
-    [[ -n $1 ]] && local _coll=$1      && shift || die "(${FUNCNAME[0]}) input argument required" 
-    [[ -n $1 ]] && local _blfrstday=$1 && shift || die "(${FUNCNAME[0]}) input argument required" 
-    [[ -n $1 ]] && local _bllastday=$1 && shift || die "(${FUNCNAME[0]}) input argument required" 
-    [[ -n $1 ]] && local    _blmapl=$1 && shift || die "(${FUNCNAME[0]}) input argument required" 
-    [[ -n $1 ]] && local     _blmon=$1 && shift || die "(${FUNCNAME[0]}) input argument required" 
-    [[ -n $1 ]] && local     _bldiu=$1 && shift || die "(${FUNCNAME[0]}) input argument required" 
-    [[ -n $1 ]] && local     _bldya=$1 && shift || die "(${FUNCNAME[0]}) input argument required" 
-    [[ -n $1 ]] && local     _bldy3=$1 && shift || die "(${FUNCNAME[0]}) input argument required" 
-    [[ -n $1 ]] && local  _blnoreft=$1 && shift || die "(${FUNCNAME[0]}) input argument required" 
-    [[ -n $1 ]] && local    _blmkdy=$1 && shift || die "(${FUNCNAME[0]}) input argument required" 
-    [[ -n $1 ]] && local _arrmfull=( "$@" )     || die "(${FUNCNAME[0]}) input argument required" 
-    local _strmapl="01_0000z.nc4"
-    local _arrstr=( daily monthly diurnal dailymean )
-    local _arrfname=()
-    local _str
-
-    [[ ! -d $_dexp  ]] && die "(${FUNCNAME[0]}) exp dir does not exists - $_dexp" 
-    [[ -z $fcstdate ]] && set_rstfcstdate $dexp
-    
-    #mapl file names:    
+    #----------------------------------------
+    #              MAPL Outputs
+    #----------------------------------------
     #20210531.trb_tavg_1mo_glo_L720x361_p49.20210601_0000z.nc4
     #$fcstdate.$coll.${yyyymm}01_0000z.nc4-partial
     #$fcstdate.$coll.${yyyymm}01_0000z.nc4
+    
+    #todo:  create file name for mapl output
+    local _arrfmapl_part=($( printf "%s\n" ${arrcollmapl[@]} | xargs -i printf '{}/'${fcstdate}'.{}.%s'$_strmapl'.nc4-partial\n' ${_arrmon[0]}   ))
+    local _arrfmapl_full=($( printf "%s\n" ${arrcollmapl[@]} | xargs -i printf '{}/'${fcstdate}'.{}.%s'$_strmapl'.nc4\n'         ${_arrmon[@]:1} ))
+    arrfmapl=($( printf '%s\n' ${_arrfmapl_part[@]} ${_arrfmapl_full[@]} | sort -V ))
 
-    #postproc output file names
+    #----------------------------------------
+    #            gcm_post Outputs
+    #----------------------------------------
     #19840101.aer_inst_3hr_glo_L720x361_slv.diurnal.198402.nc4
     #$fcstdate.$coll.diurnal.YYYYMM.nc4
     #gcm_post.ocn_inst_6hr_glo_L1440x721_z50.j198402
     #gcm_post.$coll.jYYYYMM
-    
-    $_bllastday && local numfmon=3 || local numfmon=2
-    
-    #todo:  create filenames, which are suppoed to exists, based on collection and YYYYMM
-    if $_blmapl;then
-        local fname1=$_dexp/$_coll/$fcstdate.$_coll.
-        _arrmfull=($( printf '%s\n' ${_arrmfull[@]} | grep -v $capric_yyyymm )) 
+  
+    local _arrfpost_partmon=($( printf "%s\n" ${arrcollpost_part[@]}     | xargs -i printf '{}/'${fcstdate}'.{}.monthly.%s.nc4\n'   ${_arrmon[0]} ))
+    local _arrfpost_partday=($( printf "%s\n" ${arrcollpost_part[@]}     | xargs -i printf '{}/'${fcstdate}'.{}.daily.%s.nc4.tar\n' ${_arrmon[0]} ))
+    local _arrfpost_partdiu=($( printf "%s\n" ${arrcollpost_partdiu[@]}  | xargs -i printf '{}/'${fcstdate}'.{}.diurnal.%s.nc4\n'   ${_arrmon[0]} ))
+    local _arrfpost_part=($( printf '%s\n' ${_arrfpost_partmon[@]} ${_arrfpost_partday[@]} ${_arrfpost_partdiu[@]} | sort -V ))
 
-        if $_bllastday;then 
-            _arrfname+=( ${fname1}${capric_yyyymm}${_strmapl}-partial )
-            _arrfname+=($( printf "%s\n" $fname1 | xargs -i printf "{}%s${_strmapl}\n" ${_arrmfull[@]} ))
-        else
-            _arrfname+=( ${fname1}${fcstdate:0:6}${_strmapl}-partial )
-            _arrfname+=($( printf "%s\n" $fname1 | xargs -i printf "{}%s${_strmapl}\n" ${_arrmfull[@]} ))
-        fi
+    local _arrfpost_mon=($( printf "%s\n" ${arrcollpost[@]}     | xargs -i printf '{}/'${fcstdate}'.{}.monthly.%s.nc4\n'   ${_arrmon[@]:1} ))
+    local _arrfpost_day=($( printf "%s\n" ${arrcollpost[@]}     | xargs -i printf '{}/'${fcstdate}'.{}.daily.%s.nc4.tar\n' ${_arrmon[@]:1} ))
+    local _arrfpost_diu=($( printf "%s\n" ${arrcollpost_diu[@]} | xargs -i printf '{}/'${fcstdate}'.{}.diurnal.%s.nc4\n'   ${_arrmon[@]:1} ))
+    local _arrfpost_full=($( printf '%s\n' ${_arrfpost_mon[@]} ${_arrfpost_day[@]} ${_arrfpost_diu[@]} | sort -V ))
+    arrfpost=($( printf '%s\n' ${_arrfpost_part[@]} ${_arrfpost_full[@]} | sort -V ))
+
+    #----------------------------------------
+    #           dailymean Outputs
+    #----------------------------------------
+    #20250819.sfc_tavg_3hr_glo_L720x361_sfc.dailymean.202508.nc4.tar
+    #$fcstdate.$coll.dailymean.$YYYYMM.nc4.tar
+    if $_bllastday;then 
+        #local _arrfdymean_part=($( printf "%s\n" ${arrcolldymean_part[@]} | xargs -i printf '{}/'${fcstdate}'.{}.dailymean.%s.nc4.tar\n' ${_arrmon[0]}   ))
+        local _arrfdymean_part=()
+        local      _arrfdymean=($( printf "%s\n" ${arrcolldymean[@]}      | xargs -i printf '{}/'${fcstdate}'.{}.dailymean.%s.nc4.tar\n' ${_arrmon[@]:1} ))
     else
-        for _str in ${_arrstr[@]};do
-            local fname1=$_dexp/$_coll/$fcstdate.$_coll.${_str}.
-
-            if $_bllastday;then 
-                if $_bldy3 || $_blnoreft;then 
-                    _arrmfull=( ${_arrmfull[@]} ) 
-                else
-                    _arrmfull=($( printf '%s\n' ${_arrmfull[@]} | grep -v $capric_yyyymm )) 
-                fi
-            fi
-
-            if $_bldya && [[ "$_str" == daily ]];then 
-                _arrfname+=($( printf "%s\n" $fname1 | xargs -i printf "{}%s.nc4.tar\n" ${_arrmfull[@]} ))
-
-            elif $_bldy3 && [[ "$_str" == daily ]];then 
-                #local _arrmfull_3mo=($( printf '%s\n' ${_arrmfull[@]} | sort -n | head -$numfmon ))
-                #_arrfname+=($( printf "%s\n" $fname1 | xargs -i printf "{}%s.nc4.tar\n" ${_arrmfull_3mo[@]} ))
-                _arrfname+=($( printf "%s\n" $fname1 | xargs -i printf "{}%s.nc4.tar\n" ${_arrmfull[@]} ))
-
-            elif $_blmon && [[ "$_str" == monthly ]];then 
-                #$_blfrstday && $_blnoreft && local _arrmfull_3mo=( $capric_yyyymm ${_arrmfull[@]} ) || local _arrmfull_3mo=( ${_arrmfull[@]} ) 
-                #_arrfname+=($( printf "%s\n" $fname1 | xargs -i printf "{}%s.nc4\n" ${_arrmfull_3mo[@]} ))
-                _arrfname+=($( printf "%s\n" $fname1 | xargs -i printf "{}%s.nc4\n" ${_arrmfull[@]} ))
-
-            elif $_bldiu && [[ "$_str" == diurnal ]];then 
-                _arrfname+=($( printf "%s\n" $fname1 | xargs -i printf "{}%s.nc4\n" ${_arrmfull[@]} ))
-
-            elif $_blmkdy && [[ "$_str" == "dailymean" ]];then 
-                #note:  create dailymean files for the 3mo runs (# of dailymeans can be 4/collection)
-                if $_bllastday;then 
-                    #note:  when _bllastday=true, dailymeans are NOT available of icyyyymmdd
-                    _arrfname+=($( printf "%s\n" $fname1 | xargs -i printf "{}%s.nc4\n" ${arrmfull_3mo[@]} ))
-                else
-                    #note:  when _bllastday=false, dailymeans are *available* for icyyyymmdd
-                    _arrfname+=($( printf "%s\n" $fname1 | xargs -i printf "{}%s.nc4\n" ${arrmon_3mo[@]} ))
-                fi
-            fi
-        done 
+        local _arrfdymean_part=($( printf "%s\n" ${arrcolldymean_part[@]} | xargs -i printf '{}/'${fcstdate}'.{}.dailymean.%s.nc4.tar\n' ${_arrmon[0]}   ))
+        local      _arrfdymean=($( printf "%s\n" ${arrcolldymean[@]}      | xargs -i printf '{}/'${fcstdate}'.{}.dailymean.%s.nc4.tar\n' ${_arrmon[@]:1} ))
     fi
 
-    echo "${_arrfname[@]}"
+    arrfdymean=($( printf '%s\n' ${_arrfdymean_part[@]} ${_arrfdymean[@]} | sort -V ))
+
+    #----------------------------------------
+    #            restarts Outputs
+    #----------------------------------------
+    #restarts.e20241231_21z.tar
+    #restarts.e20250401_21z.tar
+    #$strrst.e${yyyymmdd}_${capric_hh}z.tar
+    arrfrst=($( printf "${strrst}/${strrst}.e%s_${capric_hh}z.tar\n" ${arrmonth_rst[@]} ))
+
+    #----------------------------------------
+    #              MOM Outputs
+    #----------------------------------------
+    #ocean_daily.e20250401_21z.nc
+    #ocean_daily.e20250801_21z.nc
+    #${strmom_search}.e${yyyymmdd}_${capric_hh}z.nc
+    arrfmom=($( printf "${strmom}/${strmom_search}.e%s_${capric_hh}z.nc\n" ${arrmonth_mom[@]} ))
+
+    #------------------------------------------------------------
+    #                  gcm_post Outputs to Save
+    #------------------------------------------------------------
+    #Monthly
+    arrfpost_savemon=($( printf '%s\n' ${_arrfpost_partmon[@]} ${_arrfpost_mon[@]} ))
+
+    #Diurnal
+    local  _strcoll_savediu=$( echo ${arrcollpost_savediu[@]} | sed "s# #|#g" | rev | cut -c2- | rev ) 
+    arrfpost_savediu=($( printf '%s\n' ${_arrfpost_partdiu[@]} ${_arrfpost_diu[@]} | sort -V | grep -E "$_strcoll_savediu" ))
+
+    #Daily
+    local _arrsavedy3=($( printf "%s.daily\n" ${arrcollpost_savedy3[@]} | while read strcoll;do
+                                                                              for _yyyymm in ${arrmon_3mo[@]};do
+                                                                                  echo ${strcoll}.$_yyyymm
+                                                                              done
+                                                                          done ))
+                                                                                   
+    local _strsavedy3=$( echo ${_arrsavedy3[@]} | sed "s# #|#g" | rev | cut -c2- | rev )
+    arrfpost_savedy3=($( printf '%s\n' ${_arrfpost_partday[@]} ${_arrfpost_day[@]} | sort -V | grep -E "$_strsavedy3" ))
+
+    #todo:  create fmkfname_nop
+    printf '%s\n' ${arrfmapl[@]}              | sort -V >| $fmkfname_nop 
+    printf '%s\n' ${arrfpost[@]}              | sort -V >> $fmkfname_nop
+    printf '%s\n' ${arrfdymean[@]}            | sort -V >> $fmkfname_nop
+    printf '%s\n' ${arrfmom[@]} ${arrfrst[@]} | sort -V >> $fmkfname_nop
     
-    return
-}
+    #todo:  create fmkfsave_nop
+    printf '%s\n' ${arrfmapl[@]} ${arrfpost_savemon[@]} ${arrfpost_savediu[@]} ${arrfpost_savedy3[@]} ${arrfdymean[@]} >| $fmkfsave_nop
 
-exp_createfname() {
-    #description:   based on collection and YYYYMM, create filenames that are suppoed to exists 
-    [[ -n $1 ]] && local _dexp=$1      && shift || die "(${FUNCNAME[0]}) input argument required"
-    [[ -n $1 ]] && local _coll=$1      && shift || die "(${FUNCNAME[0]}) input argument required"
-    [[ -n $1 ]] && local _bllastday=$1 && shift || die "(${FUNCNAME[0]}) input argument required"
-    [[ -n $1 ]] && local _blfrstday=$1 && shift || die "(${FUNCNAME[0]}) input argument required"
-    [[ -n $1 ]] && local     _bldy3=$1 && shift || die "(${FUNCNAME[0]}) input argument required" 
-    [[ -n $1 ]] && local  _blnoreft=$1 && shift || die "(${FUNCNAME[0]}) input argument required" 
-    [[ -n $1 ]] && local    _blmkdy=$1 && shift || die "(${FUNCNAME[0]}) input argument required" 
-    [[ -n $1 ]] && local _arrmfull=( "$@" )     || die "(${FUNCNAME[0]}) input argument required"
-    local _strmapl="01_0000z.nc4"
-    local _arrstr=( daily monthly diurnal dailymean )
-    local _arrfname=()
-    local _str
-
-    [[ ! -d $_dexp  ]] && die "(${FUNCNAME[0]}) exp dir does not exists - $_dexp" 
-
-    #mapl file names:    
-    #20210531.trb_tavg_1mo_glo_L720x361_p49.20210601_0000z.nc4
-    #$fcstdate.$coll.${yyyymm}01_0000z.nc4-partial
-    #$fcstdate.$coll.${yyyymm}01_0000z.nc4
-
-    #postproc output file names
-    #19840101.aer_inst_3hr_glo_L720x361_slv.diurnal.198402.nc4
-    #$fcstdate.$coll.diurnal.YYYYMM.nc4
-    #gcm_post.ocn_inst_6hr_glo_L1440x721_z50.j198402
-    #gcm_post.$coll.jYYYYMM
-
-    $_bllastday && local numfmon=3 || local numfmon=2
-
-    [[ "$_coll" == *"_1mo_glo_"* ]] && local _blmapl=true || local _blmapl=false
-    [[ "$_coll" == *"_1dy_glo_"* ]] && local _bl1dy=true  || local _bl1dy=false
-
-    #todo:  create filenames that are suppoed to exists, based on collection and YYYYMM
-    if $_blmapl;then
-        local fname1=$_dexp/$_coll/$fcstdate.$_coll.
-        _arrmfull=($( printf '%s\n' ${_arrmfull[@]} | grep -v $capric_yyyymm )) 
-
-        if $_bllastday;then 
-            _arrfname+=( ${fname1}${capric_yyyymm}${_strmapl}-partial )
-            _arrfname+=($( printf "%s\n" $fname1 | xargs -i printf "{}%s${_strmapl}\n" ${_arrmfull[@]} ))
-        else
-            _arrfname+=( ${fname1}${fcstdate:0:6}${_strmapl}-partial )
-            _arrfname+=($( printf "%s\n" $fname1 | xargs -i printf "{}%s${_strmapl}\n" ${_arrmfull[@]} ))
-        fi
-    else
-        for _str in ${_arrstr[@]};do
-            local fname1=$_dexp/$_coll/$fcstdate.$_coll.${_str}.
-            if $_bllastday;then 
-                if $_bldy3 || $_blnoreft ;then 
-                    _arrmfull=( ${_arrmfull[@]} )
-                else
-                    _arrmfull=($( printf '%s\n' ${_arrmfull[@]} | grep -v $capric_yyyymm )) 
-                fi
-            fi
-
-            if   [[ "$_str" == daily ]];then 
-                #if $_blfrstday && $_blnoreft;then
-                #    local _arrmfull_3mo=( $capric_yyyymm ${_arrmfull[@]} )  
-                #    _arrfname+=($( printf "%s\n" $fname1 | xargs -i printf "{}%s.nc4.tar\n" ${_arrmfull_3mo[@]} ))
-                #else
-                #    _arrfname+=($( printf "%s\n" $fname1 | xargs -i printf "{}%s.nc4.tar\n" ${_arrmfull[@]} ))
-                #fi
-                    
-                _arrfname+=($( printf "%s\n" $fname1 | xargs -i printf "{}%s.nc4.tar\n" ${_arrmfull[@]} ))
-
-            elif [[ "$_str" == monthly ]];then 
-                #if $_blfrstday && $_blnoreft;then 
-                #    local _arrmfull_3mo=( $capric_yyyymm ${_arrmfull[@]} )
-                #else
-                #    local _arrmfull_3mo=( ${_arrmfull[@]} ) 
-                #fi
-                #_arrfname+=($( printf "%s\n" $fname1 | xargs -i printf "{}%s.nc4\n" ${_arrmfull_3mo[@]} ))
-                _arrfname+=($( printf "%s\n" $fname1 | xargs -i printf "{}%s.nc4\n" ${_arrmfull[@]} ))
-
-            elif ! $_bl1dy && [[ "$_str" == diurnal ]];then 
-                _arrfname+=($( printf "%s\n" $fname1 | xargs -i printf "{}%s.nc4\n" ${_arrmfull[@]} ))
-
-            elif   $_blmkdy && [[ "$_str" == "dailymean" ]];then 
-                #note:  create dailymean files for the 3mo runs (# of dailymeans can be 4/collection)
-                if $_bllastday;then 
-                    #note:  when _bllastday=true, dailymeans are NOT available of icyyyymmdd
-                    _arrfname+=($( printf "%s\n" $fname1 | xargs -i printf "{}%s.nc4\n" ${arrmfull_3mo[@]} ))
-                else
-                    #note:  when _bllastday=false, dailymeans are *available* for icyyyymmdd
-                    _arrfname+=($( printf "%s\n" $fname1 | xargs -i printf "{}%s.nc4\n" ${arrmon_3mo[@]} ))
-                fi
-
-            fi
-        done 
-    fi
-
-    echo "${_arrfname[@]}"
-    
     return
 }
 
@@ -1233,6 +1166,7 @@ calc_seg_endyyyymmdd(){
     local _userbeg_yyyy=$( echo $_userbeg_yyyymmdd | cut -c1-4 ) 
     local _userend_yyyy=$( echo $_userend_yyyymmdd | cut -c1-4 ) 
     local arrseg_yyyymmdd=()
+    local dd="01"
 
     #todo:  add YYYY0101 when begyyyy and endyyyy are different
     #note:  MOM create output at the beginning of Year. 
@@ -1249,42 +1183,40 @@ calc_seg_endyyyymmdd(){
         local num_seg=1
     fi
    
+        if (( $num_seg == 0 ));then 
+            local endyyyymmdd=$cap0_endyyyymmdd
+            local seg_y=$seg0_y
+            local seg_m=$seg0_m
+            local seg_d=$seg0_d
+    
+        elif (( $num_seg == 1 ));then 
+            local endyyyymmdd=$cap1_endyyyymmdd
+            local seg_y=$seg1_y
+            local seg_m=$seg1_m
+            local seg_d=$seg1_d
+    
+        elif (( $num_seg == 2 ));then 
+            local endyyyymmdd=$cap2_endyyyymmdd
+            local seg_y=$seg2_y
+            local seg_m=$seg2_m
+            local seg_d=$seg2_d
+        else
+            echo ""
+        fi
+    
     local yyyymmdd=$_userbeg_yyyymmdd 
     while (( $yyyymmdd < $_userend_yyyymmdd ));do
     
-        if (( $num_seg == 0 ));then 
-            endyyyymmdd=$cap0_endyyyymmdd
-            seg_y=$seg0_y
-            seg_m=$seg0_m
-            seg_d=$seg0_d
-    
-        elif (( $num_seg == 1 ));then 
-            endyyyymmdd=$cap1_endyyyymmdd
-            seg_y=$seg1_y
-            seg_m=$seg1_m
-            seg_d=$seg1_d
-    
-        elif (( $num_seg == 2 ));then 
-            endyyyymmdd=$cap2_endyyyymmdd
-            seg_y=$seg2_y
-            seg_m=$seg2_m
-            seg_d=$seg2_d
-        else
-            break
-        fi
-    
-        dd="01"
-    
-        [[ -n $seg_y ]] && yyyymm=$( date -d "$yyyymmdd +${seg_y}years" +%Y%m )${dd}
+        [[ -n $seg_y ]] && local yyyymm=$( date -d "$yyyymmdd +${seg_y}years" +%Y%m )${dd}
         if [[ -n $seg_m ]];then 
-            yyyymm=$( echo $yyyymmdd | cut -c1-6 ) 
-            yyyy_beg=$( echo $yyyymmdd | cut -c1-4 ) 
+            local yyyymm=$( echo $yyyymmdd | cut -c1-6 ) 
+            local yyyy_beg=$( echo $yyyymmdd | cut -c1-4 ) 
             #    dd=$( echo $yyyymmdd | cut -c7-8 ) 
 
             local xmon=1
             while (( $xmon <= $seg_m )) ;do
-                yyyymm=$( fcal_nextmonth $yyyymm )
-                  yyyy=$( echo $yyyymm | cut -c1-4 )
+                local yyyymm=$( fcal_nextmonth $yyyymm )
+                local   yyyy=$( echo $yyyymm | cut -c1-4 )
                 #(( $yyyy_beg != $yyyy )) && break
                 xmon=$(( xmon + 1 ))
             done
@@ -1292,7 +1224,6 @@ calc_seg_endyyyymmdd(){
         fi
         [[ -n $seg_d ]] && yyyymmdd=$( date -d "$yyyymmdd +${seg_d}days" +%Y%m%d )
     
-            
         if (( $yyyymmdd >= $endyyyymmdd ));then 
             yyyymmdd=$endyyyymmdd
             num_seg=$(( num_seg + 1 ))
@@ -1301,65 +1232,11 @@ calc_seg_endyyyymmdd(){
         if (( $yyyymmdd <= $capr_yyyymmdd ));then 
             arrseg_yyyymmdd+=( $yyyymmdd )
         fi
-    
     done
 
-    #local arrseg_yyyymmdd=($( printf '%s\n' ${arrseg_yyyymmdd[@]} ${_arradd_yyyymmdd[@]} | sort -V | uniq ))
     local arrseg_yyyymmdd=($( printf '%s\n' ${arrseg_yyyymmdd[@]} | sort -V | uniq ))
     
     echo ${arrseg_yyyymmdd[@]} 
-}
-
-calc_numseg_mom(){
-    local _begyyyymmdd=$1;shift
-    local _endyyyymmdd=$1;shift
-    local _seg=$1
-    local _arryyyymm=()
-
-    local _endyyyymm=${_endyyyymmdd:0:6}
-    local yyyymm=${_begyyyymmdd:0:6}
-
-    while (( $yyyymm < $_endyyyymm ));do
-        _arryyyymm+=( $yyyymm )
-        yyyymm=$( fcal_nextmonth $yyyymm )
-    done 
-
-    if (( ${#_arryyyymm[@]} < $_seg ));then 
-        _numseg=$(( _numseg + 1 ))
-    else
-
-        local yyyymm=${_begyyyymmdd:0:6}
-        local _numseg=0
-        local _cnt=0    
-        while (( $yyyymm < $_endyyyymm ));do
-            _cnt=$(( _cnt + 1 ))
-            local _bladded=false
-            yyyymm2=$( fcal_nextmonth $yyyymm )
-    
-            local _yyyy1=${yyyymm:0:4}
-            local _yyyy2=${yyyymm2:0:4}
-
-            if (( $_yyyy1 < $_yyyy2 ));then 
-                _numseg=$(( _numseg + 1 ))
-                _bladded=true
-                _cnt=0    
-    
-            elif (( $_cnt == $_seg ));then 
-                _numseg=$(( _numseg + 1 ))
-                _bladded=true
-                _cnt=0    
-            fi
-
-            if ! $_bladded && (( $yyyymm2 == $_endyyyymm ));then 
-                _numseg=$(( _numseg + 1 ))
-                _bladded=true
-            fi
-
-            yyyymm=$yyyymm2
-        done
-    fi
-            
-    echo $_numseg
 }
 
 fnamearc(){
@@ -1368,16 +1245,9 @@ fnamearc(){
     #local thiscmd="$cmd_sup shiftc --no-cron --no-mail --wait"
 
     if $blnode_nas || [[ "$hstshort" == "pfe" ]];then 
-        ssh -q $hst "find $darc/* -maxdepth 1 -mindepth 1 -type f -name '$fcstdate.*.nc*' -o -name '${strrst}.*.tar' | grep -v bbftp.tmp | xargs -i stat --printf="'"'"%s %Y %n\n"'"'" {} > $fexistarc" 2>/dev/null
-        ssh -q $hst "find $darc/$strmom/* -type f | grep -v bbftp.tmp | xargs -i stat --printf="'"'"%s %Y %n\n"'"'" {} >> $fexistarc" 2>/dev/null
-
-    #elif $blnode_nccs;then
-        #todo:  get a file with name of existing monthly, daily, & diurnal files from lou.
-        #local _fexistarc=$darc/$( basename $fexistarc )
-        #ssh -q $hst "find $darc/* -maxdepth 1 -mindepth 1 -type f -name '$fcstdate.*.nc*' -o -name '${strrst}.*.tar' | grep -v bbftp.tmp | xargs -i stat --printf="'"'"%s %Y %n\n"'"'" {} > $_fexistarc" 2>/dev/null
-        #ssh -q $hst "find $darc/$strmom/* -type f 2>/dev/null | xargs -i stat --printf="'"'"%s %Y %n\n"'"'" {} >> $_fexistarc" 2>/dev/null
-        #scp -qp $hst:$_fexistarc $fexistarc
-        #[[ -f $fexistarc ]] && ssh -q $hst "rm -f $_fexistarc"
+        ssh -q $hst "find $darc/* -maxdepth 1 -mindepth 1 -type f -name '$fcstdate.*.nc*' -o -name '${strrst}.*.tar' | grep -v bbftp.tmp | xargs -i stat --printf="'"'"%Y %s %n\n"'"'" {} > $fexistarc" 2>/dev/null
+        ssh -q $hst "find $darc/$strmom/* -type f | grep -v bbftp.tmp | xargs -i stat --printf="'"'"%Y %s %n\n"'"'" {} >> $fexistarc" 2>/dev/null
+        cat $fexistarc 2>/dev/null | sed "s#$darc/##g" >| $fexistarc_nop
 
     elif $blnode_nccs || [[ "$hstshort" == "dis" ]];then 
         if $blarc2os;then 
@@ -1402,6 +1272,7 @@ fnamearc(){
                         mv $_ftmp $fexistarc
                     else
                         cat $_ftmp | grep -vEi "$_strfignore" >> $fexistarc 
+                        cat $fexist_arc | sed "s#$darc/##g" >| $fexistarc_nop
                         [[ -f $_ftmp ]] && rm -f $_ftmp
                     fi
                 else
@@ -1413,8 +1284,8 @@ fnamearc(){
             fi
 
         else
-            find $darc/* -maxdepth 1 -mindepth 1 -type f -name "$fcstdate.*.nc*" -o -name "${strrst}.*.tar" | grep -v bbftp.tmp | xargs -i stat --printf='%s %Y %n\n' {} > $fexistarc 2>/dev/null
-            find $darc/$strmom/* -type f 2>/dev/null | xargs -i stat --printf="%s %Y %n\n" {} >> $fexistarc 2>/dev/null
+            find $darc/* -maxdepth 1 -mindepth 1 -type f -name "$fcstdate.*.nc*" -o -name "${strrst}.*.tar" | grep -v bbftp.tmp | xargs -i stat --printf='%Y %s %n\n' {} > $fexistarc 2>/dev/null
+            find $darc/$strmom/* -type f 2>/dev/null | xargs -i stat --printf="%Y %s %n\n" {} >> $fexistarc 2>/dev/null
         fi
     fi
     return
@@ -1425,18 +1296,18 @@ getfname_arc() {
     if $blhostarc_avail;then 
         :
     else
-        [[ ! -f $fexistarc ]] && touch $fexistarc
+        [[ ! -f $fexistarc ]] && touch $fexistarc $fexistarc_nop
         return
     fi
 
-    [[ -f $fexistarc ]] && rm -f $fexistarc
+    [[ -f $fexistarc ]] && rm -f $fexistarc $fexistarc_nop
 
     if [[ "$hstshort" == "dis" && "$hostarc" == "lfe" ]];then 
         local fwftmsz=$dexp/wftmsz_flist
 
         if [[ ! -s $fwftmsz ]];then 
             #todo:  create empty files
-            touch $fexistarc
+            touch $fexistarc $fexistarc_nop
         else
             fnamearc $hostarc
         fi
@@ -1445,7 +1316,7 @@ getfname_arc() {
         ssh -q $hostarc test -d $darc
         if (( $? > 0 ));then
             #todo:  create empty files
-            touch $fexistarc
+            touch $fexistarc $fexistarc_nop
         else
             fnamearc $hostarc
         fi
@@ -1469,13 +1340,16 @@ getfname_exp() {
     #description:   get all output file name with byte size
     [[ -f $fexistexp ]] && rm -f $fexistexp
 
-    find $dexp/* -maxdepth 1 -mindepth 1 -type f -name "$fcstdate.*.nc*" 2>/dev/null  | grep -Ev "$collsst|$strscrach" | xargs -i stat --printf="%s %Y %n\n" {} | sort -V > $fexistexp
-    [[ -d $dexp/$strrst ]] && find $dexp/$strrst/* -type f -name "${strrst}*.tar" 2>/dev/null| xargs -i stat --printf="%s %Y %n\n" {} >> $fexistexp
-    [[ -d $dexp/$strmom ]] && find $dexp/$strmom/* -type f -name "${strmom_search}*.nc*" 2>/dev/null | xargs -i stat --printf="%s %Y %n\n" {} >> $fexistexp
+    find $dexp/* -maxdepth 1 -mindepth 1 -type f -name "$fcstdate.*.nc*" 2>/dev/null  | grep -Ev "$collsst|$strscrach" | xargs -i stat --printf="%Y %s %n\n" {} | sort -V >| $fexistexp
+    [[ -d $dexp/$strrst ]] && find $dexp/$strrst/* -type f -name "${strrst}*.tar" 2>/dev/null| xargs -i stat --printf="%Y %s %n\n" {} >> $fexistexp
+    [[ -d $dexp/$strmom ]] && find $dexp/$strmom/* -type f -name "${strmom_search}*.nc*" 2>/dev/null | xargs -i stat --printf="%Y %s %n\n" {} >> $fexistexp
+
+    cat $fexistexp | sed "s#$dexp/##g" >| $fexistexp_nop
+    
     return
 }
 
-get_fmiss_fexist() {
+_get_fmiss_fexist() {
     #description:   find missing and existing (with file size other than zero) and place
     #               them in two separate global arrays.
     local arrpfefout=($( cat $fexistexp | cut -d' ' -f3 ))
@@ -1507,7 +1381,7 @@ get_fmiss_fexist() {
                 local status_here=$?
 
                 if (( $status_here == 0 ));then
-                    arrfexist_readytoberemoved+=( $fpfepath )
+                    arrfdelrdyexp+=( $fpfepath )
                     blpasshere=true
                 fi
 
@@ -1533,13 +1407,85 @@ get_fmiss_fexist() {
     return
 }
 
+get_fmiss_fexist() {
+
+    #description:   find missing and existing (with file size other than zero)
+    #note:      arrfmiss: used to create_shiftc_fin function
+    local _ftmp1=tmp_${strscr}_${FUNCNAME[0]}_1
+
+    local     _ftmp_live_nop=tmp_${strscr}_${FUNCNAME[0]}_existing_nop
+    local _ftmp_fdeldone_nop=tmp_${strscr}_${FUNCNAME[0]}_fdeldone
+
+    local _arrfrm=( $_ftmp_live_nop $_ftmp_fdeldone_nop )
+
+    [[ -f $_ftmp1 ]] && rm -f $_ftmp1
+    rm -f ${_arrfrm[@]} 2>/dev/null
+
+    #----------------------------------------
+    #        Diff mkfname vs. EXP/ARC
+    #----------------------------------------
+    cat $fexistarc_nop $fexistexp_nop $fdelout_nop 2>/dev/null | cut -d' ' -f3 | sort -V | uniq >| $_ftmp_live_nop
+
+    grep -Fxvf $_ftmp_live_nop  $fmkfname_nop   2>/dev/null >| $fdiff_nop
+    grep -Fxvf $fmkfname_nop    $_ftmp_live_nop 2>/dev/null >> $fdiff_nop
+
+    #----------------------------------------
+    #           ARC Missing Files
+    #----------------------------------------
+    #todo:  find missing files on lou
+    grep -Fxvf $fexistarc_nop $fexistexp_nop 2>/dev/null >| $ftmp_fmissarc_nop 
+
+    #----------------------------------------
+    #       EXP Ready-to-Delete Files
+    #----------------------------------------
+    wmessage "@$LINENO 02/10/2026 Work on this code here ONCE fdelout HAS CONTENTS!!"  
+    grep -Fwvf $fmkfsave_nop $fexistexp_nop 2>/dev/null >| $fdelrdyexp_nop 
+
+    #----------------------------------------
+    #             Update fdelout
+    #----------------------------------------
+    #todo:  check if file was written in fdelout. If it is, remove line from fdelout 
+    #note:  this is important especially when exp was re-run.
+    wmessage "@$LINENO 02/10/2026 Work on this code here ONCE fdelout HAS CONTENTS!!"  
+    grep -Fxvf $fdelrdyexp_nop $fdelout_nop 2>/dev/null >| $_ftmp_fdeldone_nop 
+
+local str="\
+@$LINENO
+#lines ftmp_fmissarc_nop  : $( cat $ftmp_fmissarc_nop  | wc -l )
+#lines fexistexp_nop      : $( cat $fexistexp_nop      | wc -l )    
+#lines fexistarc_nop      : $( cat $fexistarc_nop      | wc -l )    
+#lines fdelrdyexp_nop     : $( cat $fdelrdyexp_nop     | wc -l )    
+#lines _ftmp_fdeldone_nop : $( cat $_ftmp_fdeldone_nop | wc -l )    
+"
+#wmessage "$str" 
+
+    #----------------------------------------
+    #        Create Arrays/Data Files
+    #----------------------------------------
+    cat $ftmp_fmissarc_nop | cut -d' ' -f3 >| $_ftmp1 
+    local      _arrfmiss_nop=($( misc_readfbyline $_ftmp1 ))
+    cat $fdelrdyexp_nop    | cut -d' ' -f3 >| $_ftmp1 
+    local _arrfdelrdyexp_nop=($( misc_readfbyline $_ftmp1 ))
+
+    (( ${#_arrfmiss_nop[@]}      > 0 )) &&      arrfmiss=($( printf "$dexp/%s\n" ${_arrfmiss_nop[@]}      | sort -V )) 
+    (( ${#_arrfdelrdyexp_nop[@]} > 0 )) && arrfdelrdyexp=($( printf "$dexp/%s\n" ${_arrfdelrdyexp_nop[@]} | sort -V )) 
+   
+    mv $_ftmp_fdeldone_nop $fdelout_nop
+    cat $fdelout_nop | xargs -i echo $dexp/{} >| $fdelout
+    
+    [[ -f $_ftmp1 ]] && rm -f $_ftmp1
+    #rm -f ${_arrfrm[@]} 2>/dev/null
+
+    return
+}
+
 get_tarable(){
     #description:   find nonmonthly outputs in holding which can be compressed.
     local _dhold=$dexp/holding
     local _fhis1=$dexp/HISTORY_1.rc
     local arryyyymm_dhold=($( find $_dhold/$coll/* -type f -name "*.nc?" 2>/dev/null | cut -d'.' -f3 | sed 's/[^0-9]*//g' | cut -c1-6 | sort | uniq | grep -v $capric_yyyymm ))
 
-    for coll in ${arrcollmonpost[@]};do
+    for coll in ${arrcollpost[@]};do
         local collfreq=$( grep $coll.frequency $_fhis1 |  tr -s '[:space:]' |rev |  cut -d' ' -f1 | tr -d ',' | rev | cut -c1-2 | xargs -i bash -c "echo "'"'"{}*1"'"'" | bc" )
 
         for yyyymm in ${arryyyymm_dhold[@]};do
@@ -1580,83 +1526,206 @@ find_partialinhold(){
     done 
 
     return
-
 }
 
-
 count_files(){
+
+    #----------------------------------------
+    #          Count Files in DEXP            
+    #----------------------------------------
     cd $dexp
     #numfdisk_all=$( find * -maxdepth 1 -mindepth 1 -type f -name "$fcstdate.*.nc*" | grep -Ev "$collsst|$strscrach" | wc -l )
-        numfpfe_tar_cnt=$( find * -maxdepth 1 -mindepth 1 -type f -name "$fcstdate.*.??????.nc4.tar" | grep -Ev "$collsst|$strscrach|daily|dailymean" | wc -l )
-        numfpfe_mom_cnt=$( find * -maxdepth 1 -mindepth 1 -type f -name "$strmom_search*"  | grep -v $strscrach | grep $strmom | wc -l )
-     numfpfe_total_cnt1=$( find * -maxdepth 1 -mindepth 1 -type f -name "$fcstdate.*.nc4*" | grep -Ev "$collsst|$strscrach"    | wc -l )
-      numfpfe_total_cnt=$(( numfpfe_total_cnt1 - numfpfe_tar_cnt + $numfpfe_mom_cnt ))
+        numfexp_tar_cnt=$( find * -maxdepth 1 -mindepth 1 -type f -name "$fcstdate.*.??????.nc4.tar" | grep -Ev "$collsst|$strscrach|daily|dailymean" | wc -l )
+        numfexp_mom_cnt=$( find * -maxdepth 1 -mindepth 1 -type f -name "$strmom_search*" | grep -v $strscrach | grep $strmom | wc -l )
+        numfexp_rst_cnt=$( find * -maxdepth 1 -mindepth 1 -type f -name "$strrst*"        | grep -v $strscrach | wc -l  )
 
-    numfpfe_monmapl_cnt=$( find * -maxdepth 1 -mindepth 1 -type f -name "$fcstdate.*z.nc4*"               | grep -Ev "$collsst|$strscrach" | wc -l )
-        numfpfe_day_cnt=$( find * -maxdepth 1 -mindepth 1 -type f -name "$fcstdate.*.daily.*.nc4.tar"     | grep -Ev "$collsst|$strscrach" | wc -l )
-        numfpfe_diu_cnt=$( find * -maxdepth 1 -mindepth 1 -type f -name "$fcstdate.*.diurnal.*.nc4*"      | grep -Ev "$collsst|$strscrach" | wc -l )
-    numfpfe_monpost_cnt=$( find * -maxdepth 1 -mindepth 1 -type f -name "$fcstdate.*.monthly.*.nc4*"      | grep -Ev "$collsst|$strscrach" | wc -l )
+     numfexp_total_cnt1=$( find * -maxdepth 1 -mindepth 1 -type f -name "$fcstdate.*.nc4*" | grep -Ev "$collsst|$strscrach"    | wc -l )
+      numfexp_total_cnt=$(( numfexp_total_cnt1 - numfexp_tar_cnt + $numfexp_mom_cnt )) #excl. rst
+                numfexp=$(( numfexp_total_cnt + numfexp_rst_cnt ))                     #incl. rst
+
+
+    numfexp_monmapl_cnt=$( find * -maxdepth 1 -mindepth 1 -type f -name "$fcstdate.*z.nc4*"               | grep -Ev "$collsst|$strscrach" | wc -l )
+        numfexp_day_cnt=$( find * -maxdepth 1 -mindepth 1 -type f -name "$fcstdate.*.daily.*.nc4.tar"     | grep -Ev "$collsst|$strscrach" | wc -l )
+        numfexp_diu_cnt=$( find * -maxdepth 1 -mindepth 1 -type f -name "$fcstdate.*.diurnal.*.nc4*"      | grep -Ev "$collsst|$strscrach" | wc -l )
+    numfexp_monpost_cnt=$( find * -maxdepth 1 -mindepth 1 -type f -name "$fcstdate.*.monthly.*.nc4*"      | grep -Ev "$collsst|$strscrach" | wc -l )
 
     if $blmkdy;then 
-        numfpfe_dmn_cnt=$( find * -maxdepth 1 -mindepth 1 -type f -name "$fcstdate.*.dailymean.*.nc4.tar" | grep -Ev "$collsst|$strscrach" | wc -l )
+        numfexp_dmn_cnt=$( find * -maxdepth 1 -mindepth 1 -type f -name "$fcstdate.*.dailymean.*.nc4.tar" | grep -Ev "$collsst|$strscrach" | wc -l )
     else
-        numfpfe_dmn_cnt=0
+        numfexp_dmn_cnt=0
     fi
 
-        numfpfe_rst_cnt=$( find * -maxdepth 1 -mindepth 1 -type f -name "$strrst*"        | grep -v $strscrach | wc -l  )
-        numfpfe_mom_cnt=$( find * -maxdepth 1 -mindepth 1 -type f -name "$strmom_search*" | grep -v $strscrach | grep $strmom | wc -l )
-
-        #numfpfe_del_cnt=$( cat $fdelout 2>/dev/null | grep -vE "${strmom_search}|${strrst}" 2>/dev/null | sort -V | uniq | wc -l ) 
-        numfpfe_del_cnt=$( cat $fdelout 2>/dev/null | grep -v "${strrst}" 2>/dev/null | sort -V | uniq | wc -l ) 
-        numfpfe_mis_cnt=$( echo "$numftotal_calc - $numfpfe_total_cnt - $numfpfe_del_cnt" | bc )
+        numfexp_del_cnt=$( cat $fdelout 2>/dev/null | grep -v "${strrst}" 2>/dev/null | sort -V | uniq | wc -l ) 
+        numfexp_mis_cnt=$( echo "$numftotal_calc - $numfexp_total_cnt - $numfexp_del_cnt" | bc )
 
     #note:  add delete output from 3mon-run. This number give # of output on pfe after 3mon output are deleted but before 10mon
     #       output are deleted
-    #numftotal_cnt_p3mdel=$( echo "$numfpfe_total_cnt + $numfdeleted_3mon" | bc )
+    #numftotal_cnt_p3mdel=$( echo "$numfexp_total_cnt + $numfdeleted_3mon" | bc )
 
     cd - >/dev/null
 
-    #todo: get number of files
-    numfpfe=$(( numfpfe_total_cnt + numfpfe_rst_cnt + numfpfe_mom_cnt ))
-    
+    #----------------------------------------
+    #   grep #Files in gcmarch_wftmsz_exp
+    #----------------------------------------
+    if [[ -f $fexistexp ]];then 
+                      numfexp_wftmsz=$( cat $fexistexp | wc -l )
+          numfexp_wftmsz_misctar_cnt=$( cat $fexistexp | grep .[0-9]*.nc4.tar | grep -Ev "$collsst|$strscrach|daily" | wc -l )
+        numfexp_wftmsz_fmomfout_cnt1=$( cat $fexistexp | grep -Ev "$strrst|$collsst" | wc -l )
+         numfexp_wftmsz_fmomfout_cnt=$(( $numfexp_wftmsz_fmomfout_cnt1 - numfexp_wftmsz_misctar_cnt ))
+
+        numfexp_wftmsz_monmapl_cnt=$( cat $fexistexp | grep z.nc4            | grep -Ev "$collsst|$strscrach" | wc -l )
+            numfexp_wftmsz_day_cnt=$( cat $fexistexp | grep .daily.[0-9]     | grep .nc4.tar | grep -v tar.   | grep -Ev "$collsst|$strscrach" | wc -l )
+            numfexp_wftmsz_dmn_cnt=$( cat $fexistexp | grep .dailymean.[0-9] | grep .nc4.tar | grep -v tar.   | wc -l )
+            numfexp_wftmsz_diu_cnt=$( cat $fexistexp | grep .diurnal.        | grep -Ev "$collsst|$strscrach" | wc -l )
+        numfexp_wftmsz_monpost_cnt=$( cat $fexistexp | grep .monthly.        | grep -Ev "$collsst|$strscrach" | wc -l )
+            numfexp_wftmsz_rst_cnt=$( cat $fexistexp | grep $strrst          | wc -l )
+            numfexp_wftmsz_mom_cnt=$( cat $fexistexp | grep $strmom_search   | wc -l )
+            numfexp_wftmsz_mis_cnt=$( echo "$numftotal_calc - $numfexp_wftmsz_fmomfout_cnt" | bc )
+    fi
+
+    #----------------------------------------
+    #grep #Files in gcmarch_mkfname_fname_nop
+    #----------------------------------------
+    if [[ -f $fmkfname_nop ]];then 
+                      numfexp_mkfname=$( cat $fmkfname_nop | wc -l )
+          numfexp_mkfname_misctar_cnt=$( cat $fmkfname_nop | grep .[0-9]*.nc4.tar | grep -Ev "$collsst|$strscrach|daily" | wc -l )
+        numfexp_mkfname_fmomfout_cnt1=$( cat $fmkfname_nop | grep -Ev "$strrst|$collsst" | wc -l )
+         numfexp_mkfname_fmomfout_cnt=$(( $numfexp_mkfname_fmomfout_cnt1 - numfexp_mkfname_misctar_cnt ))
+
+        numfexp_mkfname_monmapl_cnt=$( cat $fmkfname_nop | grep z.nc4            | grep -Ev "$collsst|$strscrach" | wc -l )
+            numfexp_mkfname_day_cnt=$( cat $fmkfname_nop | grep .daily.[0-9]     | grep .nc4.tar | grep -v tar.   | grep -Ev "$collsst|$strscrach" | wc -l )
+            numfexp_mkfname_dmn_cnt=$( cat $fmkfname_nop | grep .dailymean.[0-9] | grep .nc4.tar | grep -v tar.   | wc -l )
+            numfexp_mkfname_diu_cnt=$( cat $fmkfname_nop | grep .diurnal.        | grep -Ev "$collsst|$strscrach" | wc -l )
+        numfexp_mkfname_monpost_cnt=$( cat $fmkfname_nop | grep .monthly.        | grep -Ev "$collsst|$strscrach" | wc -l )
+            numfexp_mkfname_rst_cnt=$( cat $fmkfname_nop | grep $strrst          | wc -l )
+            numfexp_mkfname_mom_cnt=$( cat $fmkfname_nop | grep $strmom_search   | wc -l )
+            numfexp_mkfname_mis_cnt=$( echo "$numftotal_calc - $numfexp_mkfname_fmomfout_cnt" | bc )
+    fi
+
+    #----------------------------------------
+    # grep #Files in gcmarch_wftmsz_exp_sst
+    #----------------------------------------
     #note:  these are counting a number of files (no checking size)
-    [[ -f $fexistexp_sst ]] && numfpfe_sst=$( cat $fexistexp_sst | grep .tar 2>/dev/null | wc -l ) 
+    [[ -f $fexistexp_sst ]] && numfexp_sst=$( cat $fexistexp_sst | grep .tar 2>/dev/null | wc -l ) 
 
+    #----------------------------------------
+    #   grep #Files in gcmarch_wftmsz_arc
+    #----------------------------------------
     if [[ -f $fexistarc ]];then
-        numfarc=$( cat $fexistarc | wc -l )
-            numfarc_tar_cnt=$( cat $fexistarc | grep .[0-9]*.nc4.tar | grep -Ev "$collsst|$strscrach|daily" | wc -l )
-         #numfarc_total_cnt1=$( cat $fexistarc | grep -Ev "$strrst|$strmom_search|$collsst" | wc -l )
-         numfarc_total_cnt1=$( cat $fexistarc | grep -Ev "$strrst|$collsst" | wc -l )
-          numfarc_total_cnt=$(( $numfarc_total_cnt1 - numfarc_tar_cnt ))
+                      numfarc=$( cat $fexistarc | wc -l )
+          numfarc_misctar_cnt=$( cat $fexistarc | grep .[0-9]*.nc4.tar | grep -Ev "$collsst|$strscrach|daily" | wc -l )
+        numfarc_fmomfout_cnt1=$( cat $fexistarc | grep -Ev "$strrst|$collsst" | wc -l )
+         numfarc_fmomfout_cnt=$(( $numfarc_fmomfout_cnt1 - numfarc_misctar_cnt ))
 
-        numfarc_monmapl_cnt=$( cat $fexistarc | grep z.nc4     | grep -Ev "$collsst|$strscrach" | wc -l )
-            #numfarc_tar_cnt=$( cat $fexistarc | grep .nc4.tar  | grep -Ev "$collsst|$strscrach" | wc -l )
-            #numfarc_day_cnt=$( cat $fexistarc | grep .daily.[0-9]*.nc4.tar  | grep -Ev "$collsst|$strscrach" | wc -l )
-            numfarc_day_cnt=$( cat $fexistarc | grep .daily.[0-9]     | grep .nc4.tar | grep -v tar. | grep -Ev "$collsst|$strscrach" | wc -l )
-            numfarc_dmn_cnt=$( cat $fexistarc | grep .dailymean.[0-9] | grep .nc4.tar | grep -v tar. | wc -l )
-            numfarc_diu_cnt=$( cat $fexistarc | grep .diurnal. | grep -Ev "$collsst|$strscrach" | wc -l )
-        numfarc_monpost_cnt=$( cat $fexistarc | grep .monthly. | grep -Ev "$collsst|$strscrach" | wc -l )
-            numfarc_rst_cnt=$( cat $fexistarc | grep $strrst | wc -l )
-            numfarc_mom_cnt=$( cat $fexistarc | grep $strmom_search | wc -l )
-            #numfarc_mis_cnt=$( echo "$numftotal_calc - $numfarc_total_cnt" | bc )
-            numfarc_mis_cnt=$( echo "$numftotal_calc - $numfarc_total_cnt" | bc )
+        numfarc_monmapl_cnt=$( cat $fexistarc | grep z.nc4            | grep -Ev "$collsst|$strscrach" | wc -l )
+            numfarc_day_cnt=$( cat $fexistarc | grep .daily.[0-9]     | grep .nc4.tar | grep -v tar.   | grep -Ev "$collsst|$strscrach" | wc -l )
+            numfarc_dmn_cnt=$( cat $fexistarc | grep .dailymean.[0-9] | grep .nc4.tar | grep -v tar.   | wc -l )
+            numfarc_diu_cnt=$( cat $fexistarc | grep .diurnal.        | grep -Ev "$collsst|$strscrach" | wc -l )
+        numfarc_monpost_cnt=$( cat $fexistarc | grep .monthly.        | grep -Ev "$collsst|$strscrach" | wc -l )
+            numfarc_rst_cnt=$( cat $fexistarc | grep $strrst          | wc -l )
+            numfarc_mom_cnt=$( cat $fexistarc | grep $strmom_search   | wc -l )
+            numfarc_mis_cnt=$( echo "$numftotal_calc - $numfarc_fmomfout_cnt" | bc )
+
     fi
     
     #note:  size has been check with these files
     numfmissing=${#arrfmiss[@]}
+
+    local _blsanitycheck=true
+    local _blsanitycheck=false
+    ! $_blsanitycheck && return 
+
+    #============================================================
+    #                       Sanity Check!
+    #============================================================
+    #----------------------------------------
+    # DEXP: Comp Counts vs. Grep wftmsz_exp
+    #----------------------------------------
+    local _blmatch_wftmsz=true
+    
+    ((               $numfexp_wftmsz != $numfexp             )) && _blmatch_wftmsz=false      
+    ((   $numfexp_wftmsz_misctar_cnt != $numfexp_tar_cnt     )) && _blmatch_wftmsz=false      
+    ((  $numfexp_wftmsz_fmomfout_cnt != $numfexp_total_cnt   )) && _blmatch_wftmsz=false      
+    ((   $numfexp_wftmsz_monmapl_cnt != $numfexp_monmapl_cnt )) && _blmatch_wftmsz=false      
+    ((       $numfexp_wftmsz_day_cnt != $numfexp_day_cnt     )) && _blmatch_wftmsz=false      
+    ((       $numfexp_wftmsz_diu_cnt != $numfexp_diu_cnt     )) && _blmatch_wftmsz=false      
+    ((   $numfexp_wftmsz_monpost_cnt != $numfexp_monpost_cnt )) && _blmatch_wftmsz=false      
+    ((       $numfexp_wftmsz_dmn_cnt != $numfexp_dmn_cnt     )) && _blmatch_wftmsz=false      
+    ((       $numfexp_wftmsz_rst_cnt != $numfexp_rst_cnt     )) && _blmatch_wftmsz=false      
+    ((       $numfexp_wftmsz_mom_cnt != $numfexp_mom_cnt     )) && _blmatch_wftmsz=false      
+    ((       $numfexp_wftmsz_mis_cnt != $numfexp_mis_cnt     )) && _blmatch_wftmsz=false      
+
+        local _strnum=" \
+         TOTAL: $numfexp_wftmsz,$numfexp             
+         #Tars: $numfexp_wftmsz_misctar_cnt,$numfexp_tar_cnt     
+     #Non-Tars: $numfexp_wftmsz_fmomfout_cnt,$numfexp_total_cnt   
+         #MAPL: $numfexp_wftmsz_monmapl_cnt,$numfexp_monmapl_cnt 
+        #daily: $numfexp_wftmsz_day_cnt,$numfexp_day_cnt     
+      #diurnal: $numfexp_wftmsz_diu_cnt,$numfexp_diu_cnt     
+      #monthly: $numfexp_wftmsz_monpost_cnt,$numfexp_monpost_cnt 
+    #dailymean: $numfexp_wftmsz_dmn_cnt,$numfexp_dmn_cnt     
+     #restarts: $numfexp_wftmsz_rst_cnt,$numfexp_rst_cnt     
+          #MOM: $numfexp_wftmsz_mom_cnt,$numfexp_mom_cnt     
+      #Missing: $numfexp_wftmsz_mis_cnt,$numfexp_mis_cnt
+"
+
+    if ! $_blmatch_wftmsz;then 
+        wmessage
+        wmessage "@$LINENO (${FUNCNAME[0]}) WARNING: # of files don't match up between $( basename $fexistexp ) and file counts."
+        wmessage "$_strnum"
+        wmessage
+    fi
+
+
+    #----------------------------------------
+    # DEXP: Grep mkfname vs. Grep wftmsz_exp
+    #----------------------------------------
+    local _blmatch_mkfname=true
+    ((             $numfexp_mkfname != $numfexp             )) && _blmatch_mkfname=false      
+    (( $numfexp_mkfname_misctar_cnt != $numfexp_tar_cnt     )) && _blmatch_mkfname=false      
+    (( $numfexp_mkfname_fmomfout_cnt != $numfexp_total_cnt   )) && _blmatch_mkfname=false      
+    (( $numfexp_mkfname_monmapl_cnt != $numfexp_monmapl_cnt )) && _blmatch_mkfname=false      
+    ((     $numfexp_mkfname_day_cnt != $numfexp_day_cnt     )) && _blmatch_mkfname=false      
+    ((     $numfexp_mkfname_diu_cnt != $numfexp_diu_cnt     )) && _blmatch_mkfname=false      
+    (( $numfexp_mkfname_monpost_cnt != $numfexp_monpost_cnt )) && _blmatch_mkfname=false      
+    ((     $numfexp_mkfname_dmn_cnt != $numfexp_dmn_cnt     )) && _blmatch_mkfname=false      
+    ((     $numfexp_mkfname_rst_cnt != $numfexp_rst_cnt     )) && _blmatch_mkfname=false      
+    ((     $numfexp_mkfname_mom_cnt != $numfexp_mom_cnt     )) && _blmatch_mkfname=false      
+    ((     $numfexp_mkfname_mis_cnt != $numfexp_mis_cnt     )) && _blmatch_mkfname=false      
+
+        local _strnum=" \
+        TOTAL: $numfexp_mkfname,$numfexp             
+        #Tars: $numfexp_mkfname_misctar_cnt,$numfexp_tar_cnt     
+    #Non-Tars: $numfexp_mkfname_fmomfout_cnt,$numfexp_total_cnt   
+        #MAPL: $numfexp_mkfname_monmapl_cnt,$numfexp_monmapl_cnt 
+       #daily: $numfexp_mkfname_day_cnt,$numfexp_day_cnt     
+     #diurnal: $numfexp_mkfname_diu_cnt,$numfexp_diu_cnt     
+     #monthly: $numfexp_mkfname_monpost_cnt,$numfexp_monpost_cnt 
+   #dailymean: $numfexp_mkfname_dmn_cnt,$numfexp_dmn_cnt     
+    #restarts: $numfexp_mkfname_rst_cnt,$numfexp_rst_cnt     
+         #MOM: $numfexp_mkfname_mom_cnt,$numfexp_mom_cnt     
+     #Missing: $numfexp_mkfname_mis_cnt,$numfexp_mis_cnt
+"
+
+    if ! $_blmatch_mkfname;then  
+        wmessage
+        wmessage "@$LINENO (${FUNCNAME[0]}) WARNING: # of files don't match up between $( basename $fmkfname_nop ) and file counts."
+        wmessage "$_strnum"
+        wmessage
+    fi
 
     return
 }
 
 sherlock_findcorruptedtar(){
     #description:   find corrupted tar files ("daily" files" 
-    local arrdexpcoll=($( printf "$dexp/%s\n" ${arrcollmonpost[@]} ))
+    local arrdexpcoll=($( printf "$dexp/%s\n" ${arrcollpost[@]} ))
     local dexpcoll ftar
     #global variable
     arrftar=()
     arrftar_crpt=()
 
-    for coll in ${arrcollmonpost[@]};do
+    for coll in ${arrcollpost[@]};do
         [[ -d $dexpcoll ]] && arrftar+=($( find $dexpcoll/* -maxdepth 0 -type f -name '*.nc4.tar' 2>/dev/null | grep daily ))
     done 
 
@@ -1682,30 +1751,32 @@ write_table(){
 
     [[ -f $_ftmp ]] && rm -f $_ftmp
 
-    if [[ -n $numfarc && -n $numfarc_total_cnt && -n $numfarc_mom_cnt && -n $numfarc_rst_cnt ]];then
+    if [[ -n $numfarc && -n $numfarc_fmomfout_cnt && -n $numfarc_mom_cnt && -n $numfarc_rst_cnt ]];then
         echo  "                     "\;"Calculated"\;"Calc_Save"\;"$_thishost_up"\;"$_darchost" >> $_ftmp 
-        echo  "  total # of outputs:"\;$numftotal_calc\;$numfsave_tot\;$numfpfe_total_cnt\;$numfarc_total_cnt >> $_ftmp 
-        echo  "        mapl outputs:"\;$numfmonmapl_calc\;$numfsave_mpl\;$numfpfe_monmapl_cnt\;$numfarc_monmapl_cnt >> $_ftmp 
-        echo  "             monthly:"\;$numfmonpost_calc\;$numfsave_mon\;$numfpfe_monpost_cnt\;$numfarc_monpost_cnt >> $_ftmp 
-        echo  "             diurnal:"\;$numfdiu_calc\;$numfsave_diu\;$numfpfe_diu_cnt\;$numfarc_diu_cnt >> $_ftmp 
-        echo  "               daily:"\;$numfday_calc\;$numfsave_day\;$numfpfe_day_cnt\;$numfarc_day_cnt >> $_ftmp 
-        echo  "           dailymean:"\;$numfdmean_calc\;$numfsave_dmn\;$numfpfe_dmn_cnt\;$numfarc_dmn_cnt >> $_ftmp 
-        echo  "         MOM outputs:"\;$numfmom_calc\;$numfsave_mom\;$numfpfe_mom_cnt\;$numfarc_mom_cnt >> $_ftmp 
-        echo  "            restarts:"\;-\;-\;$numfpfe_rst_cnt\;$numfarc_rst_cnt >> $_ftmp 
+        echo  "  total # of outputs:"\;$numftotal_calc\;$numfsave_tot\;$numfexp_total_cnt\;$numfarc_fmomfout_cnt >> $_ftmp 
+        echo  "        MAPL monthly:"\;$numfmonmapl_calc\;$numfsave_mpl\;$numfexp_monmapl_cnt\;$numfarc_monmapl_cnt >> $_ftmp 
+        echo  "             monthly:"\;$numfmonpost_calc\;$numfsave_mon\;$numfexp_monpost_cnt\;$numfarc_monpost_cnt >> $_ftmp 
+        echo  "             diurnal:"\;$numfdiu_calc\;$numfsave_diu\;$numfexp_diu_cnt\;$numfarc_diu_cnt >> $_ftmp 
+        echo  "               daily:"\;$numfday_calc\;$numfsave_day\;$numfexp_day_cnt\;$numfarc_day_cnt >> $_ftmp 
+        echo  "           dailymean:"\;$numfdmn_calc\;$numfsave_dmn\;$numfexp_dmn_cnt\;$numfarc_dmn_cnt >> $_ftmp 
+        echo  "         MOM outputs:"\;$numfmom_calc\;$numfsave_mom\;$numfexp_mom_cnt\;$numfarc_mom_cnt >> $_ftmp 
+        echo  "            restarts:"\;-\;-\;$numfexp_rst_cnt\;$numfarc_rst_cnt >> $_ftmp 
     else
         echo  "                     "\;"Calculated"\;"Calc_Save"\;"$_thishost_up" >> $_ftmp 
-        echo  "  total # of outputs:"\;$numftotal_calc\;$numfsave_tot\;$numfpfe_total_cnt >> $_ftmp 
-        echo  "        mapl outputs:"\;$numfmonmapl_calc\;$numfsave_mpl\;$numfpfe_monmapl_cnt >> $_ftmp 
-        echo  "             monthly:"\;$numfmonpost_calc\;$numfsave_mon\;$numfpfe_monpost_cnt >> $_ftmp 
-        echo  "             diurnal:"\;$numfdiu_calc\;$numfsave_diu\;$numfpfe_diu_cnt >> $_ftmp 
-        echo  "               daily:"\;$numfday_calc\;$numfsave_day\;$numfpfe_day_cnt >> $_ftmp 
-        echo  "           dailymean:"\;$numfdmean_calc\;$numfsave_dmn\;$numfpfe_dmn_cnt >> $_ftmp 
-        echo  "         MOM outputs:"\;$numfmom_calc\;$numfsave_mom\;$numfpfe_mom_cnt >> $_ftmp 
-        echo  "            restarts:"\;-\;-\;$numfpfe_rst_cnt >> $_ftmp 
+        echo  "  total # of outputs:"\;$numftotal_calc\;$numfsave_tot\;$numfexp_total_cnt >> $_ftmp 
+        echo  "        MAPL monthly:"\;$numfmonmapl_calc\;$numfsave_mpl\;$numfexp_monmapl_cnt >> $_ftmp 
+        echo  "             monthly:"\;$numfmonpost_calc\;$numfsave_mon\;$numfexp_monpost_cnt >> $_ftmp 
+        echo  "             diurnal:"\;$numfdiu_calc\;$numfsave_diu\;$numfexp_diu_cnt >> $_ftmp 
+        echo  "               daily:"\;$numfday_calc\;$numfsave_day\;$numfexp_day_cnt >> $_ftmp 
+        echo  "           dailymean:"\;$numfdmn_calc\;$numfsave_dmn\;$numfexp_dmn_cnt >> $_ftmp 
+        echo  "         MOM outputs:"\;$numfmom_calc\;$numfsave_mom\;$numfexp_mom_cnt >> $_ftmp 
+        echo  "            restarts:"\;-\;-\;$numfexp_rst_cnt >> $_ftmp 
     fi
 
     #todo:  write it
     wmessage
+    msg_wheader_userdefined 55 - "File Counts"
+
     if (( $writetofile == 1 ));then
         rev $_ftmp | column -t -s';' | rev  >> $fmessage
     else
@@ -1713,11 +1784,25 @@ write_table(){
     fi
     wmessage
     ((  ${#arrpst[@]} >  0 )) && wmessage "Incompleted gcm_post: ${#arrpst[@]} "
-    (( $blrmarchready == 0 )) && wmessage "      Missing on $_thishost_up: $numfpfe_mis_cnt"
+    (( $blrmarchready == 0 )) && wmessage "      Missing on $_thishost_up: $numfexp_mis_cnt"
     wmessage "      Missing on $_darchost: $numfarc_mis_cnt"
+    wmessage "Timestamp/Size Differ: $numfmissing"
     $bldelhold && wmessage "  YYYYMM Dir Removed: ${#arrdelyyyymm[@]}"
-    #wmessage "       Corrupted tar: ${#arrftar_crpt[@]} of ${#arrftar[@]}"
     wmessage 
+
+     local _numdiff=$( cat $fdiff_nop 2>/dev/null | wc -l ) 
+
+    if (( $_numdiff > 0 ));then 
+        local _strmsg="\
+@$LINENO ***WARNING: These files do not exist in DEXP/DARC ( diff mkfname vs. file living in dexp/darc )***
+$( cat $fdiff_nop 2>/dev/null | sort -V | sed 's#^#    #g' )
+ Total = $( cat $fdiff_nop | wc -l ) 
+"
+        wmessage "$_strmsg"
+        wmessage
+    fi
+
+
     
     [[ -f $_ftmp ]] && rm -f $_ftmp
 
@@ -1733,8 +1818,8 @@ write_table_collection(){
     
     [[ -f $_ftmp ]] && rm -f $_ftmp
         
-    local _arrfexist=($( find $dexp/* -maxdepth 1 -mindepth 1 -type f -name "$fcstdate.*.nc4*" | grep -vE 'sst|scratch' | sort -V ))
-    echo "$( printf "%${numleadspace3}s" "Collection" )"\;"$( printf "%${numleadspace2}s" "Total" )"\;"$( printf "%${numleadspace1}s" "monthly" )"\;"$( printf "%${numleadspace1}s" "dirunal" )"\;"$( printf "%${numleadspace1}s" "daily" )"\;"$( printf "%${numleadspace1}s" "dailymean" )" >> $_ftmp
+    local _arrfexist=($( find $dexp/* -maxdepth 1 -mindepth 1 -type f -name "$fcstdate.*.nc4*" | grep -vE "$collsst|scratch" | sort -V ))
+    echo "$( printf "%${numleadspace3}s" "Collection ( ${#arrthiscoll[@]} )" )"\;"$( printf "%${numleadspace2}s" "Total" )"\;"$( printf "%${numleadspace1}s" "monthly" )"\;"$( printf "%${numleadspace1}s" "dirunal" )"\;"$( printf "%${numleadspace1}s" "daily" )"\;"$( printf "%${numleadspace1}s" "dailymean" )" >> $_ftmp
 
     for thiscoll in ${arrthiscoll[@]};do 
         #arrfthiscoll=($( printf '%s\n' ${arrfsave[@]} | xargs -i basename {} | sort -V | grep $thiscoll ))
@@ -1780,7 +1865,6 @@ create_shiftc_fin() {
     for fmiss in ${_arrinput[@]};do
         local fname=$( echo $fmiss | rev | cut -d'/' -f1 | rev  )
         local frst=$( echo $fname | cut -d'.' -f1 )
-        local fpfepath=$( grep $fname $fexistexp | tail -1 | cut -d' ' -f3 )
 
         if [[ $frst == $strrst ]];then
             local dcoll=$strrst
@@ -1810,20 +1894,20 @@ divide_fin() {
     unset _arrftmpa
     unset _arrnumline
     #local _ftmpasize=$( stat --printf="%s" $_ftmpa )
-    local _arrfpfe=($( cat $fin | cut -d' ' -f1 ))
+    local _arrfexp=($( cat $fin | cut -d' ' -f1 ))
     local _totalsize=0
     local _cntf=0
     
     [[ -f $fin ]] && cp -p $fin $_ftmpa
 
     #todo:  figure out linenumbers
-    for fpfe in ${_arrfpfe[@]};do
+    for fexp in ${_arrfexp[@]};do
         #todo:  calculate total size of files that will be transferred at once
-        local fpfe_size=$( stat --printf="%s" $fpfe )
-        _totalsize=$(( _totalsize + fpfe_size ))
+        local fexp_size=$( stat --printf="%s" $fexp )
+        _totalsize=$(( _totalsize + fexp_size ))
         _cntf=$(( _cntf + 1 ))
 
-        if (( $_totalsize >= $limsize )) || [[ "$fpfe" == ${_arrfpfe[-1]} ]]; then
+        if (( $_totalsize >= $limsize )) || [[ "$fexp" == ${_arrfexp[-1]} ]]; then
             _arrnumline+=( $_cntf )
             _totalsize=0
             _cntf=0
@@ -1884,8 +1968,9 @@ prepare_archiving() {
         fi
     fi
 
-    #todo:  move mapl monthly files
-    move_maplmon
+#    #todo:  move mapl monthly files
+#    #note: 02/04/2026 - gcm_post seems to move mple monthly outputs
+#    move_maplmon
 
     #todo:  get output file names & its size on lou
     ! $bldarcsame && getfname_arc
@@ -1898,20 +1983,23 @@ prepare_archiving() {
 
     #todo:  create file with existing geosgcm_sst output file name 
     [[ -f $fexistexp_sst ]] && rm -f $fexistexp_sst
-    find $dexp/* -maxdepth 1 -mindepth 1 -type f -name "$fcstdate*.nc*" 2>/dev/null | grep $collsst | grep -v ".monthly.|.daily." | xargs -i stat --printf="%s %Y %n\n" {} > $fexistexp_sst
+    find $dexp/* -maxdepth 1 -mindepth 1 -type f -name "$fcstdate*.nc*" 2>/dev/null | \
+        grep $collsst | grep -v ".monthly.|.daily." | \
+        xargs -i stat --printf="%Y %s %n\n" {} > $fexistexp_sst
+    
+    cat $fexistexp_sst | sed "s#$dexp/##g" >| $fexistexp_sst_nop
 
     #todo:  find missing and existing output files on arc. arrfmiss 
-    #       and arrfexist_readytoberemoved, global arrays, are returned
+    #       and arrfdelrdyexp, global arrays, are returned
     get_fmiss_fexist
 
-    #ref:   s2smkdymean.20240908ens3.atm_inst_6hr_glo_L720x361_p49.completed
-    arrmkdy_miss=($( printf '%s\n' ${arrcolldmean[@]} | xargs -i bash -c "[[ ! -f $dutl/$strmkdy.${fcstdate}${ensm}.{}.completed ]] && echo {}" ))
+#    #ref:   s2smkdymean.20240908ens3.atm_inst_6hr_glo_L720x361_p49.completed
+#    arrmkdy_fmiss=($( printf '%s\n' ${arrcolldymean[@]} | xargs -i bash -c "[[ ! -f $dutl/$strmkdy.${fcstdate}${ensm}.{}.completed ]] && echo {}" ))
+    arrmkdy_fmiss=($( printf '%s\n' ${arrfdymean[@]} | \
+        while read fname ;do
+            [[ ! -f $dexp/$fname ]] && echo $dexp/$fname
+        done ))
 
-    #todo:  find if nonmonthly are available to create tar. 
-    #get_tarable
-    
-    #todo:  find YYYYMM dir that are ready to be deleted. arrdelyyyymm is returned
-    #cooking_hold
 
     return
 }
@@ -1958,7 +2046,6 @@ check_rsync(){
     local _id_running
     local _arrrunning=()
 
-    [[ ! -d $cdir/tmp  ]] && mkdir -p $cdir/tmp
 
 #wmessage \@$LINENO 
 #ahand_print ${_arrfin[@]} 
@@ -2009,7 +2096,7 @@ cooking_hold() {
         local yyyymm=$( echo $collyyyymm | cut -d'/' -f2 )
 
         #todo:  find if collection has diurnal dir.
-        local ind_diu=$( IndexOf $coll ${arrcollmonpost_diu[@]} )
+        local ind_diu=$( IndexOf $coll ${arrcollpost_diu[@]} )
 
         if [[ -d $dexp/$coll ]];then 
             local blstat=0
@@ -2019,20 +2106,20 @@ cooking_hold() {
             [[ ! -f $dexp/$coll/$fcstdate.$coll.daily.$yyyymm.nc4.tar ]] && \
             blstat=$(( blstat + 1 ))
 
-            [[ ! "${arrfexist_readytoberemoved[@]}" =~ *"$dexp/$coll/$fcstdate.$coll.daily.$yyyymm.nc4.tar"* ]] && : || blstat=$(( blstat + 1 ))
+            [[ ! "${arrfdelrdyexp[@]}" =~ *"$dexp/$coll/$fcstdate.$coll.daily.$yyyymm.nc4.tar"* ]] && : || blstat=$(( blstat + 1 ))
 
             #todo: check monthly 
             [[ ! -f $dexp/$coll/$fcstdate.$coll.monthly.$yyyymm.nc4 ]] && \
             blstat=$(( blstat + 1 ))
 
-            [[ ! "${arrfexist_readytoberemoved[@]}" =~ *"$dexp/$coll/$fcstdate.$coll.monthly.$yyyymm.nc4"*   ]] && : || blstat=$(( blstat + 1 ))
+            [[ ! "${arrfdelrdyexp[@]}" =~ *"$dexp/$coll/$fcstdate.$coll.monthly.$yyyymm.nc4"*   ]] && : || blstat=$(( blstat + 1 ))
          
             #todo: check diurnal
             if (( $ind_diu > 0 ));then
                 [[ ! -f $dexp/$coll/$fcstdate.$coll.diurnal.$yyyymm.nc4 ]] && \
                     blstat=$(( blstat + 1 ))
 
-                [[ ! "${arrfexist_readytoberemoved[@]}" =~ *"$dexp/$coll/$fcstdate.$coll.diurnal.$yyyymm.nc4"*   ]] && : ||  blstat=$(( blstat + 1 ))
+                [[ ! "${arrfdelrdyexp[@]}" =~ *"$dexp/$coll/$fcstdate.$coll.diurnal.$yyyymm.nc4"*   ]] && : ||  blstat=$(( blstat + 1 ))
             fi
 
             (( $blstat == 0 )) && _arrdelyyyymm+=( $dexp/holding/$coll/$yyyymm )
@@ -2046,7 +2133,7 @@ cooking_hold() {
         local yyyymm=$( echo $collyyyymm | cut -d'/' -f2 )
 
         #todo:  find if collection has diurnal dir.
-        local ind_diu=$( IndexOf $coll ${arrcollmonpost_diu[@]} )
+        local ind_diu=$( IndexOf $coll ${arrcollpost_diu[@]} )
 
         if [[ -d $dexp/$coll ]];then 
             local blstat=0
@@ -2078,12 +2165,6 @@ cooking_archiving() {
     local _statushere=999
     local fin
     
-    #if $bldir;then
-    #    local thiscmd="$cmd_shiftc --no-cron --no-mail --wait -f -d -r"
-    #else
-    #    local thiscmd="$cmd_shiftc --no-cron --no-mail --wait -f -d"
-    #fi
-       
     if [[ "$hstshort" == "pfe" ]];then  
         local thiscmd="$cmd_shiftc --no-cron --no-mail --wait -f -d"
     elif [[ "$hstshort" == "dis" ]];then 
@@ -2197,10 +2278,10 @@ cooking_archiving_nowait() {
                     fi
                 else
                     if (( $writetofile == 1 ));then
-                        ssh pfe "hostname; $cmd_shiftc --no-cron --no-mail -f -d < $fin >> $fmessage 2>&1"
+                        ssh $hstshort "hostname; $cmd_shiftc --no-cron --no-mail -f -d < $fin >> $fmessage 2>&1"
                         _cntsftc=$(( _cntsftc + 1 ))
                     else
-                        ssh pfe "hostname; $cmd_shiftc --no-cron --no-mail -f -d < $fin"
+                        ssh $hstshort "hostname; $cmd_shiftc --no-cron --no-mail -f -d < $fin"
                         _cntsftc=$(( _cntsftc + 1 ))
                     fi
                 fi
@@ -2536,7 +2617,7 @@ move_maplmon(){
     local _dhold=$dexp/holding
     local coll
 
-    for coll in ${arrcollmon_mapl[@]};do
+    for coll in ${arrcollmapl[@]};do
         mv $_dhold/$coll/$fcstdate.$coll.*.nc* $dexp/$coll/ 2>/dev/null
         local _arrfmonmapl=($( find $_dhold/$coll/* -maxdepth 1 -mindepth 1 -type f -name "$fcstdate.$coll.*.nc*"  2>/dev/null ))
         if (( ${#_arrfmonmapl[@]} > 0 ));then 
@@ -2552,16 +2633,17 @@ move_partial(){
     local fhold
 
     for fhold in ${arrmvpartial[@]};do
-        #19911202.ice_tavg_1dy_glo_T1440x1080_slv.daily.199201.nc4.tar
         local fhold_bname=$( basename $fhold ) 
         local coll=$( echo $fhold_bname | cut -d'.' -f2 ) 
 
-        mv $fhold $dexp/$coll/ 2>/dev/null
+        #mv $fhold $dexp/$coll/ 2>/dev/null
+        rsync -az $fhold $dexp/$coll/ 2>/dev/null
         local status_mv=$?
         if (( $status_mv > 0 ));then 
-            wmessage "... moving $fhold_bname failed"
+            wmessage "... rsyncing $fhold_bname failed"
         fi
     done 
+
     return
 }
 
@@ -2626,16 +2708,16 @@ exp_sherlockpst(){
     local strmon=monthly
     local strday=daily
 
-    if (( $numfdiu_calc != $numfpfe_diu_cnt ));then
-        arrfpst+=($( check_post $strdiu "${arrcollmonpost_diu[@]}" ))
+    if (( $numfdiu_calc != $numfexp_diu_cnt ));then
+        arrfpst+=($( check_post $strdiu "${arrcollpost_diu[@]}" ))
     fi
     
-    if (( $numfmonpost_calc != $numfpfe_monpost_cnt ));then
-        arrfpst+=($( check_post $strmon "${arrcollmonpost[@]}" ))
+    if (( $numfmonpost_calc != $numfexp_monpost_cnt ));then
+        arrfpst+=($( check_post $strmon "${arrcollpost[@]}" ))
     fi
 
-    if (( $numfday_calc != $numfpfe_day_cnt ));then
-        arrfpst+=($( check_post $strday "${arrcollmonpost[@]}" ))
+    if (( $numfday_calc != $numfexp_day_cnt ));then
+        arrfpst+=($( check_post $strday "${arrcollpost[@]}" ))
     fi
 
     arr=($( printf '%s\n' ${arrfpst[@]} | sort -V | uniq ))
@@ -2726,38 +2808,53 @@ exp_editfpst() {
 
 cooking_configarch (){
     #description:   archive config files.
+    local _dtmp=$cdir/tmp_cofing
     local _ftar=config.tar
+
+    [[ ! -d $_dtmp        ]] && mkdir -p $_dtmp
+    [[   -f $_dtmp/$_ftar ]] && rm    -f $_dtmp/$_ftar
+
+    #+++++ cd dexp (start) +++++
     cd $dexp
+
     shopt -s nullglob
     local _arrfconfig1=( AGCM.rc AGCM_*.rc CAP_*.rc HISTORY_*.rc input.nml gcm_run.j \
 archive/run_gcm*.sh archive/stderr_gcmarch cap_* note*_cont note_ocnpert_* message_rstmkpert_* $fnote )
     [[ -f $frstpert ]] && _arrfconfig1+=( $frstpert ) 
     shopt -u nullglob
-    _arrfconfig1=($( printf '%s\n' ${_arrfconfig1[@]} | xargs -i bash -c "[[ -f {} ]] && echo {}" ))
-    
 
-    local _arrfconfig=($( printf "$dexp/%s\n" ${_arrfconfig1[@]} | xargs -i bash -c "[[ -f {} ]] && echo {}" ))
+    cd - >/dev/null
+    #+++++ cd dexp ( end ) +++++
+    
+    local_arrfconfig=($( printf "$dexp/%s\n" ${_arrfconfig1[@]} | xargs -i bash -c "[[ -f {} ]] && echo {}" ))
+    
+    cp -p ${_arrfconfig[@]} $_dtmp/ 2>/dev/null
+
+    #todo:  create config tar file
+    #+++++ cd _dtmp (start) +++++
+    cd $_dtmp
+    tar -cf $_ftar --remove-files * 
+    cd - >/dev/null 
+    #+++++ cd _dtmp ( end ) +++++
 
     wmessage "$(date +'%m/%d/%Y %H:%M' ) ... archiving config files"
     wmessage
 
     if [[ "$hstshort" == "pfe" ]];then
         #$cmd_shiftc --no-cron --no-mail --wait -L ${_arrfconfig[@]} $hostarc:$darc/
-        ssh -q $hostarc $cmd_rsync -azPqW ${_arrfconfig[@]} $darc/
+        #ssh -q $hostarc $cmd_rsync -azPqW ${_arrfconfig[@]} $darc/
+        [[ -f $_dtmp/$_ftar ]] && ssh -q $hostarc $cmd_rsync -azqW $_dtmp/$_ftar $darc/
 
     elif $blarc2os;then 
         $cmd_sup ssh $hostarc test -d $darc
         local _status_darc=$?
 
         if (( $_status_darc == 0 ));then
-wmessage \@$LINENO
             if $blrsync;then 
-wmessage \@$LINENO
                 $cmd_sup rsync -azPqW ${_arrfconfig[@]} $hostarc:$darc/
             else
                 #$cmd_sup shiftc --wait -L --no-cron --no-mail ${_arrfconfig[@]} $hostarc:$darc/
-                tar -cf $_ftar ${_arrfconfig1[@]} 
-                $cmd_sup shiftc --wait --no-cron --no-mail $_ftar $hostarc:$darc/
+                [[ -f $_dtmp/$_ftar ]] && $cmd_sup shiftc --wait --no-cron --no-mail $_dtmp/$_ftar $hostarc:$darc/
             fi
         else
             wmessage "@$LINENO ... FAILED"
@@ -2765,38 +2862,38 @@ wmessage \@$LINENO
 
     elif [[ "$hstshort" == "dis" ]];then 
         #$cmd_rsync -azPqW ${_arrfconfig[@]} $hostarc:$darc/
-
-        tar -cf $_ftar ${_arrfconfig1[@]} 
-        $cmd_sup shiftc --wait --no-cron --no-mail $_ftar $hostarc:$darc/
+        [[ -f $_dtmp/$_ftar ]] && $cmd_sup shiftc --wait --no-cron --no-mail $_dtmp/$_ftar $hostarc:$darc/
     fi
 
-    cd - >/dev/null
+    [[ -d $_dtmp ]] && rm -rf $_dtmp 2>/dev/null
+
     return
 }
 
 clean_output(){
+    local _arrdelme=( "$@" )
+    local stuff
+    
     bldelout=false
 
     ! $blheader && writeheader && blheader=true
 
     #todo:  delete
     wmessage "... delete output files in collection dir"
-    del_stuff "${arrfremove[@]}"
+
+    for stuff in ${_arrdelme[@]};do
+        [[ -d $stuff ]] && rm -rf $stuff
+
+        if [[ -f $stuff ]];then 
+            rm -f $stuff
+            grep -w $stuff $fexistexp >> $fdelout 2>/dev/null 
+        fi
+    done
+
+    cat $fdelout 2>/dev/null | sed "s#$dexp/##g" >> $fdelout_nop
 
     bldelout=true 
 
-    return
-}
-
-del_stuff() {
-    #description:   delete holding/coll/YYYYMM dir
-    local arr=( "$@" )
-    local stuff
-    for stuff in ${arr[@]};do
-        [[ -d $stuff ]] && rm -rf $stuff
-        [[ -f $stuff ]] && rm -f $stuff && \
-            grep $stuff $fexistexp >> $fdelout 2>/dev/null 
-    done
     return
 }
 
@@ -2864,7 +2961,7 @@ recooking_hold(){
         local _coll=$( echo $dhold_yyyymm2check | rev | cut -d'/' -f2 | rev ) 
         local _yyyymm=$( echo $dhold_yyyymm2check | rev | cut -d'/' -f1 | rev ) 
     
-        [[ "${arrcollmonpost_diu[@]}" =~ "$_coll" ]] && local _bldiu=true || local _bldiu=false
+        [[ "${arrcollpost_diu[@]}" =~ "$_coll" ]] && local _bldiu=true || local _bldiu=false
     
         if $_bldiu;then 
             local arrfname=( $fcstdate.${_coll}.monthly.${_yyyymm}.nc4 $fcstdate.${_coll}.daily.${_yyyymm}.nc4.tar $fcstate.${_coll}.diurnal.${_yyyymm}.nc4)
@@ -2884,7 +2981,7 @@ recooking_hold(){
 
 exp_arcfempty(){
     #todo:  check empty files on arc
-    local _scrarc=$dexp/archive/${strscr}_arcempf.sh
+    local _scrarc=$cdir/${strscr}_arcempf.sh
     if $bldarcsame;then 
         local _blfzeroexist=false
         
@@ -2932,68 +3029,82 @@ debug_wnumbers(){
         wmessage
     fi
 
-    wmessage "# of Output Files when blleaveout is true:"
-    wmessage $numftotal_calc   $numfarc_total_cnt   $numfsave_tot $numfpfe_total_cnt  
-    wmessage $numfmonmapl_calc $numfarc_monmapl_cnt $numfsave_mpl $numfpfe_monmapl_cnt
-    wmessage $numfmonpost_calc $numfarc_monpost_cnt $numfsave_mon $numfpfe_monpost_cnt 
-    wmessage $numfdiu_calc     $numfarc_diu_cnt     $numfsave_diu $numfpfe_diu_cnt     
-    wmessage $numfday_calc     $numfarc_day_cnt     $numfsave_day $numfpfe_day_cnt     
-    wmessage $numfmom_calc     $numfarc_mom_cnt     $numfsave_mom $numfpfe_mom_cnt   
-    wmessage $numfmissing      0
-    wmessage  
+    local _strblleaveout=" \
+# of Output Files when blleaveout is true:
+    #TOTAL: $numftotal_calc   $numfarc_fmomfout_cnt   $numfsave_tot $numfexp_total_cnt  
+     #MAPL: $numfmonmapl_calc $numfarc_monmapl_cnt $numfsave_mpl $numfexp_monmapl_cnt
+  #Monthly: $numfmonpost_calc $numfarc_monpost_cnt $numfsave_mon $numfexp_monpost_cnt 
+  #Diurnal: $numfdiu_calc     $numfarc_diu_cnt     $numfsave_diu $numfexp_diu_cnt     
+    #Daily: $numfday_calc     $numfarc_day_cnt     $numfsave_day $numfexp_day_cnt     
+#Dailymean: $numfdmn_calc   $numfarc_dmn_cnt     $numfsave_dmn $numfexp_dmn_cnt
+      #MOM: $numfmom_calc     $numfarc_mom_cnt     $numfsave_mom $numfexp_mom_cnt   
+  #Missing: $numfmissing      0
+
+"
+    wmessage "$_strblleaveout"
+ 
     if $blleaveout && $bl10morun;then  
-        wmessage "# of Output Files supposed to be Saved on PFE + Removed after 10mo run:"
-        wmessage $numftotal_calc   $numfarc_total_cnt   $numfsavePfrm_tot $numfpfe_total_cnt  
-        wmessage $numfmonmapl_calc $numfarc_monmapl_cnt $numfsavePfrm_mpl $numfpfe_monmapl_cnt
-        wmessage $numfmonpost_calc $numfarc_monpost_cnt $numfsavePfrm_mon $numfpfe_monpost_cnt 
-        wmessage $numfdiu_calc     $numfarc_diu_cnt     $numfsavePfrm_diu $numfpfe_diu_cnt     
-        wmessage $numfday_calc     $numfarc_day_cnt     $numfsavePfrm_day $numfpfe_day_cnt     
-        wmessage $numfmom_calc     $numfarc_mom_cnt     $numfsavePfrm_mom $numfpfe_mom_cnt   
-        wmessage $numfmissing      0
-        wmessage  
+        local _strblleaveout10=" \
+# of Output Files supposed to be Saved on PFE + Removed after 10mo run:
+    #TOTAL: $numftotal_calc   $numfarc_fmomfout_cnt   $numfsavePfrm_tot $numfexp_total_cnt  
+     #MAPL: $numfmonmapl_calc $numfarc_monmapl_cnt $numfsavePfrm_mpl $numfexp_monmapl_cnt
+  #Monthly: $numfmonpost_calc $numfarc_monpost_cnt $numfsavePfrm_mon $numfexp_monpost_cnt 
+  #Diurnal: $numfdiu_calc     $numfarc_diu_cnt     $numfsavePfrm_diu $numfexp_diu_cnt     
+    #Daily: $numfday_calc     $numfarc_day_cnt     $numfsavePfrm_day $numfexp_day_cnt     
+#Dailymean: $numfdmn_calc     $numfarc_dmn_cnt     $numfsavePfrm_dmn $numfexp_dmn_cnt
+      #MOM: $numfmom_calc     $numfarc_mom_cnt     $numfsavePfrm_mom $numfexp_mom_cnt   
+  #Missing: $numfmissing      0
+
+"       wmessage "$_strblleaveout10"
     fi
-    wmessage "Total # of Output Files:"
-    wmessage $numftotal_calc   $numfarc_total_cnt   $numftotal_calc   $numfpfe_total_cnt
-    wmessage $numfmonmapl_calc $numfarc_monmapl_cnt $numfmonmapl_calc $numfpfe_monmapl_cnt
-    wmessage $numfmonpost_calc $numfarc_monpost_cnt $numfmonpost_calc $numfpfe_monpost_cnt 
-    wmessage $numfdiu_calc     $numfarc_diu_cnt     $numfdiu_calc     $numfpfe_diu_cnt     
-    wmessage $numfday_calc     $numfarc_day_cnt     $numfday_calc     $numfpfe_day_cnt     
-    wmessage $numfmom_calc     $numfarc_mom_cnt     $numfmom_calc     $numfpfe_mom_cnt    
-    wmessage $numfmissing      0
+
+    local _strtot=" \
+Total # of Output Files:
+    #TOTAL: $numftotal_calc   $numfarc_fmomfout_cnt   $numftotal_calc   $numfexp_total_cnt
+     #MAPL: $numfmonmapl_calc $numfarc_monmapl_cnt $numfmonmapl_calc $numfexp_monmapl_cnt
+  #Monthly: $numfmonpost_calc $numfarc_monpost_cnt $numfmonpost_calc $numfexp_monpost_cnt 
+  #Diurnal: $numfdiu_calc     $numfarc_diu_cnt     $numfdiu_calc     $numfexp_diu_cnt     
+    #Daily: $numfday_calc     $numfarc_day_cnt     $numfday_calc     $numfexp_day_cnt     
+#Dailymean: $numfdmn_calc     $numfarc_dmn_cnt     $numfdmn_calc     $numfexp_dmn_cnt
+      #MOM: $numfmom_calc     $numfarc_mom_cnt     $numfmom_calc     $numfexp_mom_cnt    
+  #Missing: $numfmissing      0
+
+"
+
+    wmessage "$_strtot"
 
     return
 }
 
 double_checking(){
 
-    if ((   $numftotal_calc   == $numfarc_total_cnt   && $numfsave_tot == $numfpfe_total_cnt   && \
-            $numfmonmapl_calc == $numfarc_monmapl_cnt && $numfsave_mpl == $numfpfe_monmapl_cnt && \
-            $numfmonpost_calc == $numfarc_monpost_cnt && $numfsave_mon == $numfpfe_monpost_cnt && \
-            $numfdiu_calc     == $numfarc_diu_cnt     && $numfsave_diu == $numfpfe_diu_cnt     && \
-            $numfday_calc     == $numfarc_day_cnt     && $numfsave_day == $numfpfe_day_cnt     && \
-            $numfmom_calc     == $numfarc_mom_cnt     && $numfmissing  == 0       )) ;then
+    if ((   $numftotal_calc   == $numfarc_fmomfout_cnt && $numfsave_tot == $numfexp_total_cnt   && \
+            $numfmonmapl_calc == $numfarc_monmapl_cnt  && $numfsave_mpl == $numfexp_monmapl_cnt && \
+            $numfmonpost_calc == $numfarc_monpost_cnt  && $numfsave_mon == $numfexp_monpost_cnt && \
+            $numfdiu_calc     == $numfarc_diu_cnt      && $numfsave_diu == $numfexp_diu_cnt     && \
+            $numfday_calc     == $numfarc_day_cnt      && $numfsave_day == $numfexp_day_cnt     && \
+            $numfmom_calc     == $numfarc_mom_cnt      && $numfmissing  == 0       )) ;then
         local _blrmarchready=true
 
     elif $bl10morun && $blleaveout && \
-        (( $numftotal_calc   == $numfarc_total_cnt   && $numfsavePfrm_tot == $numfpfe_total_cnt   && \
-            $numfmonmapl_calc == $numfarc_monmapl_cnt && $numfsavePfrm_mpl == $numfpfe_monmapl_cnt && \
-            $numfmonpost_calc == $numfarc_monpost_cnt && $numfsavePfrm_mon == $numfpfe_monpost_cnt && \
-            $numfdiu_calc     == $numfarc_diu_cnt     && $numfsavePfrm_diu == $numfpfe_diu_cnt     && \
-            $numfday_calc     == $numfarc_day_cnt     && $numfsavePfrm_day == $numfpfe_day_cnt     && \
-            $numfmom_calc     == $numfarc_mom_cnt     && $numfmissing      == 0      ));then
+        ((  $numftotal_calc   == $numfarc_fmomfout_cnt && $numfsavePfrm_tot == $numfexp_total_cnt   && \
+            $numfmonmapl_calc == $numfarc_monmapl_cnt  && $numfsavePfrm_mpl == $numfexp_monmapl_cnt && \
+            $numfmonpost_calc == $numfarc_monpost_cnt  && $numfsavePfrm_mon == $numfexp_monpost_cnt && \
+            $numfdiu_calc     == $numfarc_diu_cnt      && $numfsavePfrm_diu == $numfexp_diu_cnt     && \
+            $numfday_calc     == $numfarc_day_cnt      && $numfsavePfrm_day == $numfexp_day_cnt     && \
+            $numfmom_calc     == $numfarc_mom_cnt      && $numfmissing      == 0      ));then
         local _blrmarchready=true
 
-    elif (( $numftotal_calc   == $numfarc_total_cnt   && $numftotal_calc   == $numfpfe_total_cnt   && \
-            $numfmonmapl_calc == $numfarc_monmapl_cnt && $numfmonmapl_calc == $numfpfe_monmapl_cnt && \
-            $numfmonpost_calc == $numfarc_monpost_cnt && $numfmonpost_calc == $numfpfe_monpost_cnt && \
-            $numfdiu_calc     == $numfarc_diu_cnt     && $numfdiu_calc     == $numfpfe_diu_cnt     && \
-            $numfday_calc     == $numfarc_day_cnt     && $numfday_calc     == $numfpfe_day_cnt     && \
-            $numfmom_calc     == $numfarc_mom_cnt     && $numfmissing      == 0       )) ;then
+    elif (( $numftotal_calc   == $numfarc_fmomfout_cnt && $numftotal_calc   == $numfexp_total_cnt   && \
+            $numfmonmapl_calc == $numfarc_monmapl_cnt  && $numfmonmapl_calc == $numfexp_monmapl_cnt && \
+            $numfmonpost_calc == $numfarc_monpost_cnt  && $numfmonpost_calc == $numfexp_monpost_cnt && \
+            $numfdiu_calc     == $numfarc_diu_cnt      && $numfdiu_calc     == $numfexp_diu_cnt     && \
+            $numfday_calc     == $numfarc_day_cnt      && $numfday_calc     == $numfexp_day_cnt     && \
+            $numfmom_calc     == $numfarc_mom_cnt      && $numfmissing      == 0       )) ;then
         local _blrmarchready=true
 
     else
         local _blrmarchready=false
-        #[[ -f $fcomp ]] && rm -f $fcomp
     fi
 
     echo $_blrmarchready
@@ -3093,13 +3204,14 @@ Difference between blleaveall vs. bldarcsame
 #                                     Begin
 #================================================================================
 #starthere
+pdir=$( dirname $( realpath $0 ) )
 cdir=@DFCST/@FCSTDATE/@ENSEMBLE_MEMBER/archive
 strscr=gcmarch
 hstname=$( hostname )
 hstshort=$( get_host )
 blnode_nas=false
 blnode_nccs=false
-if [[ ${hstname:0:3} == pfe ]];then
+if [[ ${hstname:0:3} == "pfe" ]];then
     :
 elif [[ ${hstname:0:3} == dis ]];then
     :
@@ -3221,19 +3333,33 @@ elif [[ "$hstshort" == "dis" ]];then
     export SQUEUE_FORMAT='%.10i %.8u %.9P %.20j %.8T %.10M %.9l %.6D %.5C %15f'
 fi
 
-   
 #================================================================================
 #                    Set Global Variables and Source Scripts
 #================================================================================
 #mid
      dexp=@DFCST/@FCSTDATE/@ENSEMBLE_MEMBER
      darc=@DARCH/@FCSTDATE/@ENSEMBLE_MEMBER
-     ferr=$dexp/archive/stderr_${strscr}
+
+[[ "$pdir" != "$dexp/archive" ]] && exit
+
+     ferr=$cdir/stderr_${strscr}
      dutl=$dexp/s2s_util
-     ferr=$dexp/archive/stderr_${strscr}
-    fcomp=$dexp/archive/${strscr}_archcompleted
-fcomp_del=$dexp/archive/${strscr}_deloutcompleted
- fsubstop=$dexp/archive/${strscr}_SUBSTOPPED
+     ferr=$cdir/stderr_${strscr}
+    fcomp=$cdir/${strscr}_archcompleted
+fcomp_del=$cdir/${strscr}_deloutcompleted
+ fsubstop=$cdir/${strscr}_SUBSTOPPED
+
+dtmp=$cdir/tmp 
+ [[ ! -d $dtmp  ]] && mkdir -p $dtmp
+
+fdatapost_savedy3=$cdir/data_${strscr}_GEOSS2S3_collpost_savedy3
+    fdatapost_lst=$cdir/data_${strscr}_GEOSS2S3_collpost_lst
+
+[[ ! -f $fdatapost_savedy3 ]] && wmessage "File missing: $( basename $fdatapost_savedy3 )" && exit
+[[ ! -f $fdatapost_lst     ]] && wmessage "File missing: $( basename $fdatapost_lst )"     && exit
+
+fmkfname_nop=$cdir/${strscr}_mkfname_fname_nop
+fmkfsave_nop=$cdir/${strscr}_mkfname_fsave_nop
 
 #todo:  get expid for fcst
 strexpid=$( echo $dexp | rev | cut -d'/' -f3 | rev ) 
@@ -3267,19 +3393,35 @@ $bldarcsame && [[ -f $fcomp ]] && exit
 #todo:  set various vars
 setvars $dexp
 
-#        cdate=$( date +%Y%m%d%H%M )
-     fshiftin=$dexp/archive/${strscr}_shiftin
-fshiftin_base=$( basename $dexp/archive/${strscr}_shiftin )
-    fexistexp=$dexp/archive/${strscr}_exp
+        cdate=$( date +%Y%m%d%H%M )
+        fshiftin_base=${strscr}_shiftin
+      fshiftin=$cdir/$fshiftin_base
+     fdiff_nop=$cdir/${strscr}_diff_fmkflive
+fdelrdyexp_nop=$cdir/${strscr}_exp_fdelrdy_nop
 
-$bldarcsame && fexistarc=$fexistexp || fexistarc=$dexp/archive/${strscr}_arc
+        fexistexp=$cdir/${strscr}_wftmsz_exp
+    fexistexp_nop=$cdir/${strscr}_wftmsz_exp_nop
+    fexistexp_sst=$cdir/${strscr}_wftmsz_exp_sst
+fexistexp_sst_nop=$cdir/${strscr}_wftmsz_exp_sstnop
 
-fexistexp_sst=$dexp/archive/${strscr}_exp_sst
-   fdelyyyymm=$dexp/archive/${strscr}_delyyyymm
-      fdelout=$dexp/archive/${strscr}_delout
-        fnote=$dexp/archive/note_${strscr}
-       fempty=$dexp/archive/${strscr}_arcempf
-    frsyncfin=$dexp/archive/${strscr}_rsync
+if $bldarcsame;then 
+        fexistarc=$fexistexp
+    fexistarc_nop=$fexistexp_nop
+else
+        fexistarc=$cdir/${strscr}_wftmsz_arc
+    fexistarc_nop=$cdir/${strscr}_wftmsz_arc_nop
+fi
+
+  ftmp_fmissarc_nop=$cdir/tmp_${strscr}_arc_fmiss_nop
+
+arrfrm=( $ftmp_fmissarc_nop )
+
+   fdelyyyymm=$cdir/${strscr}_delyyyymm
+      fdelout=$cdir/${strscr}_delout
+  fdelout_nop=$cdir/${strscr}_delout_nop
+        fnote=$cdir/note_${strscr}
+       fempty=$cdir/${strscr}_arcempf
+    frsyncfin=$cdir/${strscr}_rsync
 
 frsyncfin_base=${strscr}_rsync
 ferrrsync_base=stderr_rsync_
@@ -3358,15 +3500,13 @@ blheader=false
 bldelout=false
 blrunning=false
 rundelfout=0
-rundelhold=0
 
-strloc="exp location:"
 strbtc="shiftc batch file ="
 strsid="Shift id is "
 strpbs_output="Output_Path"
 strsbt_wrkdir="WorkDir"
 strpbs_resource="Resource_List.select"
-model_default=ivy
+model_default=sky_ele
 
 if $optq;then 
     numdelimit=$( echo $userqid | grep -o ":" | wc -l ) 
@@ -3443,7 +3583,7 @@ fi
 (( ${#arrjobs_mkdy[@]} == 0 )) && blmkdyrunning=false || blmkdyrunning=true
 
 #todo:  delete unnecessary files
-rm -f $dexp/archive/${strscr}_??? 2>/dev/null
+rm -f $cdir/${strscr}_??? 2>/dev/null
 rm -f $fshiftin 2>/dev/null
 [[ -f $fnote ]] && rm -f $fnote
 [[ -f $fcomp ]] && rundelfout=1
@@ -3456,21 +3596,6 @@ rm -f $fshiftin 2>/dev/null
 #todo:  find YYYYMM dir to delete, get output file names on archive host & exp host, and find missing outputs, etc.
 prepare_archiving
 count_files
-
-#todo:  delete holding/coll/YYYYMM dir and archived outputs.
-#note:  05/11/2023 This code will delete outputs even though all archiving is still on-going. 
-#       This caused some of files to be empty on archive dir in the past due to 
-#       various reasons such as archiving host unavailable, system issues. 
-#       Unless this is absolutely necessary (i.e. because of quota limit, etc), this 
-#       is not a preferred. 
-#if (( $rundelhold == 1 )) && (( ${#arrdelyyyymm[@]} > 0 || ${#arrfexist_readytoberemoved[@]} > 0 ));then 
-if (( $rundelhold == 1 )) && (( ${#arrdelyyyymm[@]} > 0 ));then 
-    #del_stuff "${arrdelyyyymm[@]}"
-    #del_stuff "${arrfexist_readytoberemoved[@]}"
-    #numfexit_readytoberemoved=${#arrfexist_readytoberemoved[@]}
-    #bldelhold=true
-    :
-fi
 
 write_table
 $optt && wmessage "exit @$LINENO" && exit
@@ -3491,7 +3616,7 @@ if $blmkdy;then
         #+++++ cd dutl (start) +++++
         cd $dutl
 
-        if (( ${#arrmkdy_miss[@]} > 0 ));then 
+        if (( ${#arrmkdy_fmiss[@]} > 0 ));then 
             ./$fscr_mkdy >> stderr_${strmkdy}
         fi
 
@@ -3550,7 +3675,7 @@ if ! $blpstrunning;then
         pstyyyymm=$( echo $pst_dholdmiss | rev | cut -c1-6 | rev ) 
          pst_coll=$( echo $pst_dholdmiss | cut -d'.' -f2 ) 
 
-        printf '%s\n' ${arrcollmon_part[@]} | grep $pst_coll >> /dev/null 2>&1
+        printf '%s\n' ${arrcollpost_part[@]} | grep $pst_coll >> /dev/null 2>&1
         statusgrep=$?
         if (( $pstyyyymm != $capric_yyyymm && $statusgrep > 0 ));then 
             arrpst_dmiss+=( $pst_dholdmiss )
@@ -3604,10 +3729,9 @@ if ! $blrsync ;then
             printf '    %s\n' ${arrfsft_running[@]}
             wmessage
 
-            #note:  05/09/2023 Save these shiftc_* files in a dir
+            #note:  05/09/2023 Save these shiftc_* files in a tmp dir
             #rm -f ${arrfsft_notinuse[@]} 2>/dev/null
-            [[ ! -d $cdir/tmp  ]] && mkdir -p $cdir/tmp
-            (( ${#arrfsft_notinuse[@]} > 0 )) && mv ${arrfsft_notinuse[@]} $cdir/tmp/ 2>>/dev/null
+            (( ${#arrfsft_notinuse[@]} > 0 )) && mv ${arrfsft_notinuse[@]} $dtmp/ 2>>/dev/null
 
             if (( $numsid_running >= $limsftc ));then 
                 wmessage "exit @ $LINENO" && exit
@@ -3643,9 +3767,9 @@ elif $blrsync ;then
 fi
 
 #todo:  start to archive output to archiving host
-#note:  create fshiftin even for archiving with rsync. when blrsync is true, 
-#       create_shiftc_fin function will write fshiftin file with "[pfe filename] [DEST]"
-#       When archive, use this file as datafile.
+#note:  - create fshiftin even when archiving with rsync. when blrsync is true, 
+#       create_shiftc_fin function will write fshiftin file with "[exp filename] [DEST]"
+#       - when archive, use this file as datafile.
 ! $bldarcsame && create_shiftc_fin $fshiftin $hostarc $darc "${arrfmiss[@]}"
 [[ -f $fshiftin ]] && arrdiv=($( divide_fin $numflast $fshiftin ))
 
@@ -3683,11 +3807,10 @@ count_files
 
 #note:  these if statements do the same thing but one for after 3-months run and the other one for
 #       after 10month run.
-if (( $numftotal_calc == $numfarc_total_cnt && $numfmom_calc == $numfarc_mom_cnt && $numfmissing == 0 ));then
+if (( $numftotal_calc == $numfarc_fmomfout_cnt && $numfmom_calc == $numfarc_mom_cnt && $numfmissing == 0 ));then
 
     #note:  05/09/2023 Save these shiftc_* files in a dir
-    [[ ! -d $cdir/tmp  ]] && mkdir -p $cdir/tmp
-    mv $dexp/archive/${strscr}_*_shiftin* $cdir/tmp 2>/dev/null
+    mv $cdir/${strscr}_*_shiftin* $cdir/tmp 2>/dev/null
 
     #todo:  check empty files on archive
     barcmptyexist=$( exp_arcfempty ) 
@@ -3700,11 +3823,10 @@ if (( $numftotal_calc == $numfarc_total_cnt && $numfmom_calc == $numfarc_mom_cnt
         blrmarchready=true
     fi
 
-elif $blrmarchready && (( $numftotal_calc == $numfarc_total_cnt && $numfmom_calc == $numfarc_mom_cnt && $numfmissing == 0 ));then
+elif $blrmarchready && (( $numftotal_calc == $numfarc_fmomfout_cnt && $numfmom_calc == $numfarc_mom_cnt && $numfmissing == 0 ));then
 
     #note:  05/09/2023 Save these shiftc_* files in a dir
-    [[ ! -d $cdir/tmp  ]] && mkdir -p $cdir/tmp
-    mv $dexp/archive/${strscr}_*_shiftin* $cdir/tmp 2>/dev/null
+    mv $cdir/${strscr}_*_shiftin* $cdir/tmp 2>/dev/null
 
     #todo:  check empty files on archive
     barcmptyexist=$( exp_arcfempty ) 
@@ -3727,7 +3849,11 @@ fi
 #todo:  double check before delete outputs!!
 blrmarchready=$( double_checking ) 
 
-if [[ -f $fcomp ]] && (( ${#arrfmiss[@]} == 0 && ${#arrmkdy_miss[@]} == 0 ));then
+#wmessage "@$LINENO blrmarchready = $blrmarchready"
+#wmessage "exit @$LINENO" && exit
+
+
+if [[ -f $fcomp ]] && (( ${#arrfmiss[@]} == 0 && ${#arrmkdy_fmiss[@]} == 0 ));then
 
     if $bldarcsame;then 
         #todo:  keep all output files when dexp and archive dir are the same
@@ -3740,17 +3866,30 @@ if [[ -f $fcomp ]] && (( ${#arrfmiss[@]} == 0 && ${#arrmkdy_miss[@]} == 0 ));the
         #note: double_checking gives false if there are more files in each category 
         #      of output (i.e. daily, monthly, mom, restarts, etc). 
         if ! $blrmarchready;then
-            if ! $blleaveall;then 
-                wmessage "@$LINENO ... clean output here"
-                clean_output
-            fi
+wmessage \@$LINENO "you are here? why? ... interesting."
+            #if ! $blleaveall;then 
+            #    wmessage "@$LINENO ... clean output here"
+            #   
+            #    arrfdel=($( cat $fdelrdyexp_nop | cut -d' ' -f3 | xargs -i echo $dexp/{} ))
+
+            #    #clean_output ${arrfdel[@]}
+            #fi
             blrmarchready=$( double_checking ) 
         fi
 
         if $blrmarchready;then
             if ! $blleaveall;then 
                 wmessage "@$LINENO ... clean output here"
-                clean_output
+                arrfdel=($( cat $fdelrdyexp_nop | cut -d' ' -f3 | xargs -i echo $dexp/{} ))
+
+                clean_output ${arrfdel[@]} 
+
+
+                #todo:  backup files
+                [[ -s $fdelout_nop    ]] && mv $fdelout_nop    $dtmp/$( basename $fdelout_nop )_$cdate
+                [[ -s $fdelout        ]] && mv $fdelout        $dtmp/$( basename $fdelout )_$cdate
+                [[ -s $fdelrdyexp_nop ]] && mv $fdelrdyexp_nop $dtmp/$( basename $fdelrdyexp_nop )_$cdate
+
                 $bldelout && touch $fcomp_del
             fi
 
