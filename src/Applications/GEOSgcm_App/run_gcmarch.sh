@@ -3352,8 +3352,8 @@ fcomp_del=$cdir/${strscr}_deloutcompleted
 dtmp=$cdir/tmp 
  [[ ! -d $dtmp  ]] && mkdir -p $dtmp
 
-fdatapost_savedy3=$cdir/data_${strscr}_GEOSS2S3_collpost_savedy3
-    fdatapost_lst=$cdir/data_${strscr}_GEOSS2S3_collpost_lst
+fdatapost_savedy3=$cdir/data_${strscr}_collpost_savedy3
+    fdatapost_lst=$cdir/data_${strscr}_collpost_lst
 
 [[ ! -f $fdatapost_savedy3 ]] && wmessage "File missing: $( basename $fdatapost_savedy3 )" && exit
 [[ ! -f $fdatapost_lst     ]] && wmessage "File missing: $( basename $fdatapost_lst )"     && exit
