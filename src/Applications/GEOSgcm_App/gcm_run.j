@@ -787,8 +787,6 @@ if( -e EGRESS ) then
 else
    set rc = -1
 >>>withODAS<<<   echo 'MODEL BOMBED IN gcm_run.j'
->>>withODAS<<<   mkdir -p $EXPDIR/morgue/${qdate}
->>>withODAS<<<   mv $SCRDIR $EXPDIR/morgue/${qdate}
 >>>withODAS<<<   exit
 endif
 echo GEOSgcm Run Status: $rc
