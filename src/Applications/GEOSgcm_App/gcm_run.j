@@ -48,9 +48,11 @@ setenv LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:${BASEDIR}/${ARCH}/lib
 
 
 setenv  EXPID   @EXPID
+set firstdate = `cat cap_restart | cut -c1-8`
+echo ${firstdate}
 setenv  EXPDIR  @EXPDIR
+/usr/bin/qalter -o "${EXPDIR}/${EXPID}.${firstdate}.${SLURM_JOB_ID}.FAILED" ${SLURM_JOB_ID}
 setenv  HOMDIR  @HOMDIR
-
 setenv  RSTDATE @RSTDATE
 setenv  GCMEMIP @GCMEMIP
 
@@ -145,6 +147,9 @@ chmod +x $FILE
 
 set year  = `echo $RSTDATE | cut -d_ -f1 | cut -b1-4`
 set month = `echo $RSTDATE | cut -d_ -f1 | cut -b5-6`
+set init_date = `echo $RSTDATE | cut -d_ -f1 | cut -b1-8`
+set qdate = `/home/dao_ops/bin/tick ${init_date} 000000 4 0 | cut -c1-8`
+$PBS_BIN/qalter -N GiO_e1_${qdate} {SLURM_JOB_ID}
 
 # Copy MERRA-2 Restarts
 # ---------------------
@@ -715,6 +720,8 @@ if ( -x $GEOSBIN/rs_numtiles.x ) then
    if ( $N_SALT_TILES_EXPECTED != $N_SALT_TILES_FOUND ) then
       echo "Error! Found $N_SALT_TILES_FOUND tiles in saltwater. Expect to find $N_SALT_TILES_EXPECTED tiles."
       echo "Your restarts are probably for a different ocean."
+      mkdir -p $EXPDIR/morgue/${qdate}
+      mv $SCRDIR $EXPDIR/morgue/${qdate}
       exit 7
    endif    
 
@@ -761,6 +768,8 @@ if( $USE_SHMEM == 1 ) $GEOSBIN/RmShmKeys_sshmpi.csh
 >>>withODAS<<<set ODARUNSTATUS = $status
 >>>withODAS<<<if ($ODARUNSTATUS == 1) then
 >>>withODAS<<<   echo "BAD ODA_RUN.j "
+>>>withODAS<<<   mkdir -p $EXPDIR/morgue/${qdate}
+>>>withODAS<<<   mv $SCRDIR $EXPDIR/morgue/${qdate}
 >>>withODAS<<<   exit(1)
 >>>withODAS<<<endif
 >>>withODAS<<<
@@ -778,6 +787,8 @@ if( -e EGRESS ) then
 else
    set rc = -1
 >>>withODAS<<<   echo 'MODEL BOMBED IN gcm_run.j'
+>>>withODAS<<<   mkdir -p $EXPDIR/morgue/${qdate}
+>>>withODAS<<<   mv $SCRDIR $EXPDIR/morgue/${qdate}
 >>>withODAS<<<   exit
 endif
 echo GEOSgcm Run Status: $rc
@@ -976,7 +987,7 @@ endif
 >>>withODAS<<< # add the stat plot check
 >>>withODAS<<< echo "Running plot_V3_rt.csh"
 >>>withODAS<<< $GEOSUTIL/plots/odas_plots/plot_V3_rt.csh
-
+>>>withODAS<<< /usr/bin/qalter -o "${EXPDIR}/${EXPID}.${firstdate}.${SLURM_JOB_ID}.out" ${SLURM_JOB_ID}
 >>>withODAS<<< exit
 
 if ( $rc == 0 ) then
