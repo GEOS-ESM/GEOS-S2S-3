@@ -761,7 +761,7 @@
                 corner(1) = i
                 rc = NF90_GET_VAR(fid,timeID,ltime_array,corner,(/1/))
                 ltime = ltime_array(1)
-                incVecLong(i) = time_to_seconds_i16(timeUnits, ltime)
+                incVecLong(i) = time_to_seconds_i32(timeUnits, ltime)
            else
                 if (err("GetDateTimeVec: invalid time data type",&
                    1,-44) .NE. 0) return
