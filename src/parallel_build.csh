@@ -4,6 +4,7 @@
 # purpose: This subroutine builds using pinstall
 #          for compilation parallelization.
 #
+#
 # !REVISION HISTORY
 # 15Mar2007  Stassi  Modified version of g5das_parallel_build.csh
 # 22Mar2007  Kokron  Add support for discover
@@ -26,6 +27,7 @@
 # 10Oct2017  MAT     Added Skylake at NAS. Added option to pass in 
 #                    account
 # 18Feb2022  MAT     Added Rome nodes to NAS
+# 19Mar2026  MAT     Added Turin nodes to NAS
 #------------------------------------------------------------------------
 set name = $0
 set scriptname = $name
@@ -47,9 +49,11 @@ if ( ($node == dirac)   \
    setenv SITE NCCS
 
 else if (($node =~ pfe*)      \
-      || ($node =~ tfe*)      \
+      || ($node =~ afe*)   \
+      || ($node =~ athfe*)   \
       || ($node =~ r[0-9]*i[0-9]*n[0-9]*) \
-      || ($node =~ r[0-9]*c[0-9]*t[0-9]*n[0-9]*)) then
+      || ($node =~ r[0-9]*c[0-9]*t[0-9]*n[0-9]*) \
+      || ($node =~ x[0-9]*c[0-9]*s[0-9]*b[0-9]*n[0-9]*) ) then
    setenv SITE NAS
 
 else
@@ -132,8 +136,9 @@ while ($#argv)
 
    # specify node type
    #------------------
-   if ("$1" == "-rom")  set nodeTYPE = "Rome"
+   if ("$1" == "-tur")  set nodeTYPE = "Turin"
    if ("$1" == "-mil")  set nodeTYPE = "Milan"
+   if ("$1" == "-rom")  set nodeTYPE = "Rome"
    if ("$1" == "-cas")  set nodeTYPE = "CascadeLake"
    if ("$1" == "-sky")  set nodeTYPE = "Skylake"
    if ("$1" == "-bro")  set nodeTYPE = "Broadwell"
@@ -231,7 +236,7 @@ set ntaskspernode = ''
 if ($SITE == NCCS) then
 
    set nT = `echo $nodeTYPE| tr "[A-Z]" "[a-z]" | cut -c1-3 `
-   if (($nT != has) && ($nT != sky) && ($nT != cas) && ($nT != mil) && ($nT != 15c)) then
+   if ( ($nT != cas) && ($nT != mil) ) then
       echo "ERROR. Unknown node type at NCCS: $nodeTYPE"
       exit 1
    endif
@@ -264,27 +269,41 @@ endif
 if ( $SITE == NAS ) then
 
    set nT = `echo $nodeTYPE | cut -c1-3 | tr "[A-Z]" "[a-z]"`
-   if (($nT != has) && ($nT != bro) && ($nT != sky) && ($nT != cas) && ($nT != rom) && ($nT != mil)) then
+   if (($nT != bro) && ($nT != sky) && ($nT != cas) && ($nT != rom) && ($nT != mil) && ($nT != tur)) then
       echo "ERROR. Unknown node type at NAS: $nodeTYPE"
       exit 2
    endif
 
+   # At NAS, you must submit to Milan nodes from afe nodes
+   if ( ($nT == mil) && ($node !~ afe*) ) then
+      echo "ERROR. Milan nodes can only be accessed from afe nodes."
+      exit 2
+   endif
+
+   # At NAS, you must submit to Turin nodes from athfe nodes
+   if ( ($nT == tur) && ($node !~ athfe*) ) then
+      echo "ERROR. Turin nodes can only be accessed from athfe nodes."
+      exit 2
+   endif
+
+   if ($nT == tur) set nT = 'tur_ath'
    if ($nT == mil) set nT = 'mil_ait'
    if ($nT == rom) set nT = 'rom_ait'
-   if ($nT == sky) set nT = 'sky_ele'
    if ($nT == cas) set nT = 'cas_ait'
+   if ($nT == sky) set nT = 'sky_ele'
+   if ($nT == bro) set nT = 'bro_ele'
    set proc = ":model=$nT"
 
-   if ($nT == has)     @ NCPUS_DFLT = 24
-   if ($nT == bro)     @ NCPUS_DFLT = 28
+   if ($nT == bro_ele) @ NCPUS_DFLT = 28
    if ($nT == sky_ele) @ NCPUS_DFLT = 40
    if ($nT == cas_ait) @ NCPUS_DFLT = 40
    if ($nT == rom_ait) @ NCPUS_DFLT = 128
    if ($nT == mil_ait) @ NCPUS_DFLT = 128
+   if ($nT == tur_ath) @ NCPUS_DFLT = 256
 
    # TMPDIR needs to be reset
    #-------------------------
-   if (! "$tmpdir") then
+   if ($tmpdir == '') then
       set tmpdirDFLT = "/nobackup/$USER/scratch/"
       if ($prompt) then
          echo ""
@@ -293,6 +312,8 @@ if ( $SITE == NAS ) then
          echo -n "TMPDIR [$tmpdirDFLT] "
          setenv tmpdir $<
          if ("$tmpdir" == "") setenv tmpdir $tmpdirDFLT
+      else
+         setenv tmpdir $tmpdirDFLT
       endif
    endif
    echo "TMPDIR: $tmpdir"
@@ -775,10 +796,10 @@ flagged options
    -tmpdir dir         alternate Fortran TMPDIR location
    -walltime hh:mm:ss  time to use as batch walltime at job submittal
 
-   -rom                 compile on Rome nodes (only at NAS)
-   -mil                 compile on Milan nodes
+   -tur                 compile on Turin nodes (only at NAS, must be submitted from athfe nodes)
+   -mil                 compile on Milan nodes (default at NCCS; at NAS must be submitted from afe nodes)
+   -rom                 compile on Rome nodes (default at NAS, only at NAS)
    -cas                 compile on Cascade Lake nodes
    -sky                 compile on Skylake nodes (only at NAS)
    -bro                 compile on Broadwell nodes (only at NAS)
-   -has                 compile on Haswell nodes (only at NAS)
 EOF

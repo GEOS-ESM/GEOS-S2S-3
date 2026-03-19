@@ -7,8 +7,7 @@
 #    * provide single location for BASEDIR and module values
 #    * initialize the following:
 #      - set BASEDIR
-#      - set MOMDIR
-#      - update LD_LIBRARY_PATH with BASEDIR lib
+#      - update LD_LIBRARY_PATH with BASEDIR lib (if useldlibs is set)
 #      - load library modules
 #    * echo expected BASEDIR and library module values when queried
 #
@@ -45,7 +44,6 @@
 #  21Jul2011  Kokron   Overlay older MKL module as on discover to gain reproducible results from dgeev in GSI 
 #  24Aug2012  Stassi   Added sh option to write bash source-able file
 #  03Nov2016  Thompson Remove JIBB
-#  31Oct2017  Thompson Add momdir
 ########################################################################
 
 # NOTE: Spell out scriptname--DO NOT SET EQUAL TO $0!
@@ -76,21 +74,20 @@ if (($node =~ discover*) || ($node =~ borg*)  || \
 
    set site = "NCCS"
 
-else if (($node =~ pfe*) || ($node =~ afe*) || \
+else if (($node =~ pfe*) || ($node =~ afe*) || ($node =~ athfe*) || \
          ($node =~ r[0-9]*i[0-9]*n[0-9]*) || \
-         ($node =~ r[0-9]*c[0-9]*t[0-9]*n[0-9]*)) then
+         ($node =~ r[0-9]*c[0-9]*t[0-9]*n[0-9]*) || \
+         ($node =~ x[0-9]*c[0-9]*s[0-9]*b[0-9]*n[0-9]*) ) then
 
    # We are on NAS...
    set site = "NAS"
 
-else if ($node =~ janus*) then
-   set site = "GMAO.janus"
-
-else if ( $node =~ bender* ) then
-   set site = "ACDL.bender"
-
-else if ( $node =~ *niteroi* ) then
-   set site = "GMAO.niteroi"
+   set OS_VERSION_ID=`grep VERSION_ID /etc/os-release | cut -d= -f2 | cut -d. -f1 | sed 's/"//g'`
+   if ( "$OS_VERSION_ID" == "8" ) then
+      set TOSS_VERSION = "TOSS4"
+   else if ( "$OS_VERSION_ID" == "9" ) then
+      set TOSS_VERSION = "TOSS5"
+   endif
 
 else if ( -d /ford1/share/gmao_SIteam/ && -d /ford1/local/ && $arch == Linux ) then
    set site = "GMAO.desktop"
@@ -124,6 +121,7 @@ X86_64:
 set modinit = DUMMY
 
 set loadmodules = 0
+set switchmodules = 0
 set usemodules = 0
 
 #========#
@@ -159,73 +157,47 @@ if ( $site == NCCS ) then
 #=======#
 else if ( $site == NAS ) then
 
-   # Due to Intel 2018's age, it does not compile ESMF on TOSS4. Intel 2020 seems to
-   set basedir = /nobackup/gmao_SIteam/Baselibs/ESMA-Baselibs-4.0.11/x86_64-unknown-linux-gnu/ifort_2020.4.304-mpt_2.28_25Apr23_rhel87-gcc_8.4.0-TOSS4
-   set mod1 = gcc/8.4
-   set mod2 = comp-intel/2020.4.304
-   set mod3 = mpi-hpe/mpt
-   set mod4 = math-mkl/2020.4.304
-   set mod5 = python/GEOSpyD/Min23.5.2-0_py3.11
+   if ( $TOSS_VERSION == "TOSS4" ) then
+      # Due to Intel 2018's age, it does not compile ESMF on TOSS4. Intel 2020 seems to
+      set basedir = /nobackup/gmao_SIteam/Baselibs/ESMA-Baselibs-4.0.11/x86_64-unknown-linux-gnu/ifort_2020.4.304-mpt_2.28_25Apr23_rhel87-gcc_8.4.0-TOSS4
+      set mod1 = gcc/8.4
+      set mod2 = comp-intel/2020.4.304
+      set mod3 = mpi-hpe/mpt
+      set mod4 = math-mkl/2020.4.304
+      set mod5 = python/GEOSpyD/Min23.5.2-0_py3.11
 
-   set mod6 = git/2.40.1
-   set mod7 = cmake/3.28.3
+      set mod6 = git/2.40.1
+      set mod7 = cmake/3.28.3
 
-#  set momdir = /nobackup/gmao_SIteam/ModelData/mom5
+   #  set momdir = /nobackup/gmao_SIteam/ModelData/mom5
 
-   set mods = ( $mod1 $mod2 $mod3 $mod4 $mod5 $mod6 $mod7 )
-   set modinit = /usr/share/modules/init/tcsh
-   set loadmodules = 0
-   set usemodules = 1
+      set mods = ( $mod1 $mod2 $mod3 $mod4 $mod5 $mod6 $mod7 )
+      set modinit = /usr/share/modules/init/tcsh
+      set loadmodules = 0
+      set usemodules = 1
 
-#=========#
-#  JANUS  #
-#=========#
-else if ( $site == GMAO.janus ) then
-   set basedir=/ford1/share/gmao_SIteam/Baselibs/GMAO-Baselibs-4_0_8/x86_64-unknown-linux-gnu/pgfortran_17.5-openmpi_2.1.1
-   set mod1 = comp/pgi/17.5
-   set mod2 = mpi/openmpi/2.1.1/pgi-17.5
-   set mod3 = lib/mkl/17.0.4.196
-   set mod4 = other/python/canopy
-   set mod5 = other/git/latest
+   else
 
-   setenv GPU_CC_REV cc20
+      set basedir = /nobackup/gmao_SIteam/Baselibs/ESMA-Baselibs-4.0.11/x86_64-unknown-linux-gnu/ifort_2023.2.1-craympich_8.1.33-TOSS5
 
-#  set momdir = /ford1/share/gmao_SIteam/ModelData/mom5
+      set mod1 = python/GEOSpyD/25.3.1-0/3.13
+      set mod2 = GEOSenv
 
-   set mods = ( $mod1 $mod2 $mod3 $mod4 $mod5 )
-   set modinit = /usr/share/Modules/init/tcsh
-   set loadmodules = 0
-   set usemodules = 1
+      set mod3 = comp-gcc/12.5.0
+      set mod4 = PrgEnv-intel/8.6.0
+      set mod5 = comp-intel/2023.2.1
+      set mod6 = mpi/mpich-ifort-icc
 
-#===========#
-#  Bender   #
-#===========#
-else if ( $site == ACDL.bender ) then
-    set basedir=/ford1/share/gmao_SIteam/Baselibs/GMAO-Baselibs-4_0_6/x86_64-unknown-linux-gnu/ifort_13.1.1.163-openmpi_1.8.1    
-    set BASEBIN=$basedir/$arch/bin
-    set PYBIN = /share/dasilva/epd/epd-7.3-2-rh5-x86_64/bin
-    set IFCBIN = /opt/intel/composer_xe_2013.5.192/bin
-    set MPIBIN = /ford1/share/gmao_SIteam/MPI/openmpi-1.8.1-ifort-13.1.1.163/bin 
-    source $IFCBIN/ifortvars.csh intel64
-    setenv MKLPATH $MKLROOT/lib
-    set path = ( $BASEBIN $MPIBIN $PYBIN $path )
-    set loadmodules = 0
-    set usemodules = 0
+      set mods = ( $mod1 $mod2 $mod3 $mod4 $mod5 $mod6 )
+      set modinit = /opt/cray/pe/modules/3.2.11.7/init/csh
 
-#===========#
-#  Niteroi  #
-#===========#
-else if ( $site == GMAO.niteroi ) then
-    set basedir = /Users/mathomp4/Baselibs/GMAO-Baselibs-4_0_6/x86_64-apple-darwin14.0.0/ifort_15.0.1.108-openmpi_1.8.3
-    set BASEBIN = $basedir/$arch/bin
-    set PYBIN   = /Library/Frameworks/EPD64.framework/Versions/7.3/bin
-    set IFCPATH = /opt/intel/composer_xe_2015.1.108
-    set MPIBIN  = /Users/mathomp4/MPI/openmpi/1.8.3/ifort-15.0.1.108
-    source $IFCPATH/bin/compilervars.csh intel64
-    setenv MKLPATH $MKLROOT/lib
-    set path = ( $BASEBIN $MPIBIN $PYBIN $path )
-    set loadmodules = 0
-    set usemodules = 0
+      set switchmods = ( intel/latest:intel-classic/2023.2.1 )
+      set switchmodules = 1
+
+      set loadmodules = 0
+      set usemodules = 1
+
+   endif
 
 #=================#
 #  GMAO DESKTOP   #
@@ -266,9 +238,6 @@ if ( $#argv > 0 ) then
    if ( $1 == basedir ) then
       echo $basedir
 
-#  else if ( $1 == momdir ) then
-#     echo $momdir
-
    else if ( $1 == modules ) then
       echo $mods
 
@@ -277,6 +246,9 @@ if ( $#argv > 0 ) then
 
    else if ( $1 == loadmodules ) then
       echo $loadmodules
+
+      else if ( $1 == switchmodules ) then
+      echo $switchmods
 
    else if ( $1 == usemodules ) then
       echo $usemodules
@@ -325,19 +297,6 @@ else
    exit 3
 endif
 
-# setenv MOMDIR
-#--------------
-#f ($?momdir) then
-#  if (! $wrapper) echo -n " and MOMDIR"
-#  setenv MOMDIR $momdir
-#lse if ($?MOMDIR) then
-#  if (! $wrapper) echo -n " and MOMDIR found in environment"
-#lse
-#  echo
-#  echo "MOMDIR not found in environment or set by ${scriptname}"
-#  exit 4
-#ndif
-
 # add BASEDIR lib to LD_LIBRARY_PATH, if not already there
 #---------------------------------------------------------
 if ($?LD_LIBRARY_PATH) then
@@ -383,15 +342,27 @@ if (-e $modinit) then
       endif
 
       if ($site == NAS) then
-         module use -a /u/scicon/tools/modulefiles
-         module use -a /nobackup/gmao_SIteam/modulefiles
-         module use -a /nasa/intel/Compiler/2018.1.163
-         module use -a /nasa/modulefiles/testing
+         if ( $TOSS_VERSION == "TOSS4" ) then
+            module use -a /u/scicon/tools/modulefiles
+            module use -a /nobackup/gmao_SIteam/modulefiles
+            module use -a /nasa/intel/Compiler/2018.1.163
+            module use -a /nasa/modulefiles/testing
+         else
+            module use -a /nobackup/gmao_SIteam/modulefiles-TOSS5
+         endif
       endif
 
       if ($site =~ "GMAO.*" ) then
          module use -a /ford1/share/gmao_SIteam/modulefiles
       endif
+   endif
+
+   if ($switchmodules) then
+      foreach switchmod ( $switchmods )
+         set frommodule = `echo $switchmod | cut -d: -f1`
+         set tomodule = `echo $switchmod | cut -d: -f2`
+         module switch $frommodule $tomodule
+      end
    endif
 
    foreach mod ( $mods )
@@ -409,9 +380,6 @@ if ($wrapper) then
    if ($?BASEDIR) then
       echo "export BASEDIR=$BASEDIR"                     >! $outfil
    endif
-#  if ($?MOMDIR) then
-#     echo "export MOMDIR=$MOMDIR"                       >> $outfil
-#  endif
    if ($?LD_LIBRARY_PATH) then
       echo "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH"     >> $outfil
    endif
@@ -478,7 +446,6 @@ OPTIONS
 
      help                echo usage
      basedir             echo expected value for BASEDIR environment variable
-     momdir              echo expected value for MOMDIR environment variable
      modules             echo expected list of modules
      modinit             echo location of csh module initialization script
      loadmodules         echo logical indicating whether "module load modules"
