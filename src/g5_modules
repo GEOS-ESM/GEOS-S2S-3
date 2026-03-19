@@ -185,10 +185,9 @@ else if ( $site == NAS ) then
 
       set mod3 = comp-gcc/12.5.0
       set mod4 = PrgEnv-intel/8.6.0
-      set mod5 = comp-intel/2023.2.1
-      set mod6 = mpi/mpich-ifort-icc
+      set mod5 = mpi/mpich-ifort-icc
 
-      set mods = ( $mod1 $mod2 $mod3 $mod4 $mod5 $mod6 )
+      set mods = ( $mod1 $mod2 $mod3 $mod4 $mod5 )
       set modinit = /opt/cray/pe/modules/3.2.11.7/init/csh
 
       set switchmods = ( intel/latest:intel-classic/2023.2.1 )
@@ -247,7 +246,7 @@ if ( $#argv > 0 ) then
    else if ( $1 == loadmodules ) then
       echo $loadmodules
 
-      else if ( $1 == switchmodules ) then
+   else if ( $1 == switchmodules ) then
       echo $switchmods
 
    else if ( $1 == usemodules ) then
@@ -357,6 +356,10 @@ if (-e $modinit) then
       endif
    endif
 
+   foreach mod ( $mods )
+      module load $mod
+   end
+
    if ($switchmodules) then
       foreach switchmod ( $switchmods )
          set frommodule = `echo $switchmod | cut -d: -f1`
@@ -364,10 +367,6 @@ if (-e $modinit) then
          module switch $frommodule $tomodule
       end
    endif
-
-   foreach mod ( $mods )
-      module load $mod
-   end
 
 endif
 if (! $wrapper) echo " for $node"
