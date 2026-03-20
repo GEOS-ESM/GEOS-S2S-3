@@ -1702,6 +1702,9 @@ set tmpDIR = $EXPDIR/.tmpDIR
 /bin/cp $APPDIR/*.setup  $tmpDIR >& /dev/null
 /bin/cp $APPDIR/*_table  $tmpDIR >& /dev/null
 /bin/cp $APPDIR/*.sh     $tmpDIR >& /dev/null
+/bin/cp $APPDIR/data_*   $tmpDIR >& /dev/null
+
+echo "knnote: $APPDIR"
 
     set check =  FALSE
 while( $check == FALSE )
@@ -2139,19 +2142,14 @@ endif
 #######################################################################
 #               Create Local Scripts and Resource Files
 #######################################################################
-#knnote (2024/11/13):    copy a data file required for s2smkdymean.sh
-if(! -e $EXPDIR/s2s_util  ) mkdir -p $EXPDIR/s2s_util
-if(  -e data_s2smkdymean_GEOSS2S3_coll         ) /bin/cp data_s2smkdymean_GEOSS2S3_coll         $EXPDIR/s2s_util/data_s2smkdymean_coll
-if(  -e data_gcmarch_GEOSS2S3_collpost_lst     ) /bin/cp data_gcmarch_GEOSS2S3_collpost_lst     $EXPDIR/archive/data_gcmarch_collpost_lst
-if(  -e data_gcmarch_GEOSS2S3_collpost_savedy3 ) /bin/cp data_gcmarch_GEOSS2S3_collpost_savedy3 $EXPDIR/archive/data_gcmarch_collpost_savedy3
-
 set FILES = "gcm_run_GEOSS2S3.j          \
              gcm_run_GEOSS2S3_2017p.j    \
              gcm_post_full_GEOSS2S3.j    \
              gcm_post_part_GEOSS2S3.j    \
              gcm_archive_GEOSS2S3.j      \
-             s2smkdymean_GEOSS2S3.j      \
-             s2smkdymean_GEOSS2S3.sh     \
+             s2smkdymean_GEOSS2S3.j         \
+             s2smkdymean_GEOSS2S3.sh        \
+             data_s2smkdymean_GEOSS2S3_coll \
              gcm_regress.j      \
              gcm_convert.j      \
              gcm_plot.tmpl      \
@@ -2163,7 +2161,9 @@ set FILES = "gcm_run_GEOSS2S3.j          \
              gcm_emip.setup     \
              GAAS_GridComp.rc.tmpl \
              ocean_das_config.tmpl \
-             run_gcmarch.sh                \
+             run_gcmarch.sh                         \
+             data_gcmarch_GEOSS2S3_collpost_lst     \
+             data_gcmarch_GEOSS2S3_collpost_savedy3 \
              CAP_GEOSS2S3_0.rc.tmpl        \
              CAP_GEOSS2S3_1.rc.tmpl        \
              CAP_GEOSS2S3_2.rc.tmpl        \
@@ -2528,12 +2528,12 @@ endif
 # --------------------------------------------
     set FILES = "gcm_run_GEOSS2S3.j            \
                  gcm_run_GEOSS2S3_2017p.j      \
-                 run_gcmarch.sh                \
                  gcm_post_full_GEOSS2S3.j      \
                  gcm_post_part_GEOSS2S3.j      \
                  gcm_archive_GEOSS2S3.j        \
                  s2smkdymean_GEOSS2S3.j        \
                  s2smkdymean_GEOSS2S3.sh       \
+                 data_s2smkdymean_GEOSS2S3_coll \
                  gcm_regress.j                 \
                  gcm_convert.j                 \
                  gcm_plot.tmpl                 \
@@ -2543,6 +2543,9 @@ endif
                  gcm_forecast.tmpl             \
                  gcm_forecast.setup            \
                  gcm_emip.setup                \
+                 run_gcmarch.sh                \
+                 data_gcmarch_GEOSS2S3_collpost_lst     \
+                 data_gcmarch_GEOSS2S3_collpost_savedy3 \
                  CAP_GEOSS2S3_0.rc.tmpl        \
                  CAP_GEOSS2S3_1.rc.tmpl        \
                  CAP_GEOSS2S3_2.rc.tmpl        \
@@ -2623,21 +2626,24 @@ if( $OGCM == "TRUE" ) if(! -e $EXPDIR/RESTART ) mkdir -p $EXPDIR/RESTART
 #/bin/mv $HOMDIR/HISTORY.rc.tmpl        $HOMDIR/HISTORY.rc
 
 echo "Rename coupled forecast specific files"
-/bin/mv $HOMDIR/AGCM_GEOSS2S3_a2017.rc.tmpl     $HOMDIR/AGCM_a2017.rc
-/bin/mv $HOMDIR/AGCM_GEOSS2S3_b2017.rc.tmpl     $HOMDIR/AGCM_b2017.rc
-/bin/mv $HOMDIR/CAP_GEOSS2S3_0.rc.tmpl          $HOMDIR/CAP_0.rc
-/bin/mv $HOMDIR/CAP_GEOSS2S3_1.rc.tmpl          $HOMDIR/CAP_1.rc
-/bin/mv $HOMDIR/CAP_GEOSS2S3_2.rc.tmpl          $HOMDIR/CAP_2.rc
-/bin/mv $HOMDIR/gcm_run_GEOSS2S3.j              $HOMDIR/gcm_run.j
-/bin/mv $HOMDIR/gcm_run_GEOSS2S3_2017p.j        $HOMDIR/gcm_run.j.2017p
-/bin/mv $HOMDIR/HISTORY.AOGCM-S2Sv3_1.rc.tmpl   $HOMDIR/HISTORY_1.rc
-/bin/mv $HOMDIR/HISTORY.AOGCM-S2Sv3_2.rc.tmpl   $HOMDIR/HISTORY_2.rc
-/bin/mv $HOMDIR/run_gcmarch.sh                  $HOMDIR/archive/run_gcmarch.sh
-/bin/mv $HOMDIR/gcm_archive_GEOSS2S3.j          $HOMDIR/archive/gcm_archive.j
-/bin/mv $HOMDIR/gcm_post_full_GEOSS2S3.j        $HOMDIR/post/gcm_post_full.j
-/bin/mv $HOMDIR/gcm_post_part_GEOSS2S3.j        $HOMDIR/post/gcm_post_part.j
-/bin/mv $HOMDIR/s2smkdymean_GEOSS2S3.j          $HOMDIR/s2s_util/s2smkdymean.j
-/bin/mv $HOMDIR/s2smkdymean_GEOSS2S3.sh         $HOMDIR/s2s_util/s2smkdymean.sh
+/bin/mv $HOMDIR/AGCM_GEOSS2S3_a2017.rc.tmpl            $HOMDIR/AGCM_a2017.rc
+/bin/mv $HOMDIR/AGCM_GEOSS2S3_b2017.rc.tmpl            $HOMDIR/AGCM_b2017.rc
+/bin/mv $HOMDIR/CAP_GEOSS2S3_0.rc.tmpl                 $HOMDIR/CAP_0.rc
+/bin/mv $HOMDIR/CAP_GEOSS2S3_1.rc.tmpl                 $HOMDIR/CAP_1.rc
+/bin/mv $HOMDIR/CAP_GEOSS2S3_2.rc.tmpl                 $HOMDIR/CAP_2.rc
+/bin/mv $HOMDIR/gcm_run_GEOSS2S3.j                     $HOMDIR/gcm_run.j
+/bin/mv $HOMDIR/gcm_run_GEOSS2S3_2017p.j               $HOMDIR/gcm_run.j.2017p
+/bin/mv $HOMDIR/HISTORY.AOGCM-S2Sv3_1.rc.tmpl          $HOMDIR/HISTORY_1.rc
+/bin/mv $HOMDIR/HISTORY.AOGCM-S2Sv3_2.rc.tmpl          $HOMDIR/HISTORY_2.rc
+/bin/mv $HOMDIR/gcm_archive_GEOSS2S3.j                 $HOMDIR/archive/gcm_archive.j
+/bin/mv $HOMDIR/run_gcmarch.sh                         $HOMDIR/archive/run_gcmarch.sh
+/bin/mv $HOMDIR/data_gcmarch_GEOSS2S3_collpost_lst     $HOMDIR/archive/data_gcmarch_collpost_lst
+/bin/mv $HOMDIR/data_gcmarch_GEOSS2S3_collpost_savedy3 $HOMDIR/archive/data_gcmarch_collpost_savedy3
+/bin/mv $HOMDIR/gcm_post_full_GEOSS2S3.j               $HOMDIR/post/gcm_post_full.j
+/bin/mv $HOMDIR/gcm_post_part_GEOSS2S3.j               $HOMDIR/post/gcm_post_part.j
+/bin/mv $HOMDIR/s2smkdymean_GEOSS2S3.j                 $HOMDIR/s2s_util/s2smkdymean.j
+/bin/mv $HOMDIR/s2smkdymean_GEOSS2S3.sh                $HOMDIR/s2s_util/s2smkdymean.sh
+/bin/mv $HOMDIR/data_s2smkdymean_GEOSS2S3_coll         $HOMDIR/s2s_util/data_s2smkdymean_coll
 
 /bin/rm $HOMDIR/HISTORY.AOGCM-S2Sv3.rc.tmpl
 #/bin/rm $HOMDIR/CAP.rc    

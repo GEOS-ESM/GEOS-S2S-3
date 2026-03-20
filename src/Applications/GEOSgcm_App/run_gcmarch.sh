@@ -279,7 +279,7 @@ setvars() {
                 numfday_calc=$( echo "$nummon_run * $numcollpost     + $numcollpost_part"    | bc ) 
                 numfdiu_calc=$( echo "$nummon_run * $numcollpost_diu + $numcollpost_partdiu" | bc ) 
               #numfdmn_calc=$( echo "$nummon_run * $numcolldymean   + $numcolldymean_part"  | bc ) 
-                numfdmn_calc=$( echo "$nummon_run * $numcolldymean"                          | bc ) 
+                numfdmn_calc=$( echo "$nummon_3mo * $numcolldymean"                          | bc ) 
 
         else
             #numfmonmapl_calc=$( echo "( $nummon_run - 1 ) * $numcollmapl" | bc ) 
@@ -872,13 +872,14 @@ exp_createfname(){
     #----------------------------------------
     #20250819.sfc_tavg_3hr_glo_L720x361_sfc.dailymean.202508.nc4.tar
     #$fcstdate.$coll.dailymean.$YYYYMM.nc4.tar
+    #note:  dailymeans are calculated for the first 3mon only. Use "3" and "2" to extract them
     if $_bllastday;then 
         #local _arrfdymean_part=($( printf "%s\n" ${arrcolldymean_part[@]} | xargs -i printf '{}/'${fcstdate}'.{}.dailymean.%s.nc4.tar\n' ${_arrmon[0]}   ))
         local _arrfdymean_part=()
-        local      _arrfdymean=($( printf "%s\n" ${arrcolldymean[@]}      | xargs -i printf '{}/'${fcstdate}'.{}.dailymean.%s.nc4.tar\n' ${_arrmon[@]:1} ))
+        local      _arrfdymean=($( printf "%s\n" ${arrcolldymean[@]}      | xargs -i printf '{}/'${fcstdate}'.{}.dailymean.%s.nc4.tar\n' ${_arrmon[@]:1:3} ))
     else
         local _arrfdymean_part=($( printf "%s\n" ${arrcolldymean_part[@]} | xargs -i printf '{}/'${fcstdate}'.{}.dailymean.%s.nc4.tar\n' ${_arrmon[0]}   ))
-        local      _arrfdymean=($( printf "%s\n" ${arrcolldymean[@]}      | xargs -i printf '{}/'${fcstdate}'.{}.dailymean.%s.nc4.tar\n' ${_arrmon[@]:1} ))
+        local      _arrfdymean=($( printf "%s\n" ${arrcolldymean[@]}      | xargs -i printf '{}/'${fcstdate}'.{}.dailymean.%s.nc4.tar\n' ${_arrmon[@]:1:2} ))
     fi
 
     arrfdymean=($( printf '%s\n' ${_arrfdymean_part[@]} ${_arrfdymean[@]} | sort -V ))
@@ -910,14 +911,13 @@ exp_createfname(){
     arrfpost_savediu=($( printf '%s\n' ${_arrfpost_partdiu[@]} ${_arrfpost_diu[@]} | sort -V | grep -E "$_strcoll_savediu" ))
 
     #Daily
-    local _arrsavedy3=($( printf "%s.daily\n" ${arrcollpost_savedy3[@]} | while read strcoll;do
+    local _arrsavedy3=($( printf "%s\n" ${arrcollpost_savedy3[@]} | while read strcoll;do
                                                                               for _yyyymm in ${arrmon_3mo[@]};do
-                                                                                  echo ${strcoll}.$_yyyymm
+                                                                                  echo ${strcoll}/${fcstdate}.${strcoll}.daily.$_yyyymm.nc4.tar
                                                                               done
                                                                           done ))
                                                                                    
-    local _strsavedy3=$( echo ${_arrsavedy3[@]} | sed "s# #|#g" | rev | cut -c2- | rev )
-    arrfpost_savedy3=($( printf '%s\n' ${_arrfpost_partday[@]} ${_arrfpost_day[@]} | sort -V | grep -E "$_strsavedy3" ))
+    arrfpost_savedy3=($( printf '%s\n' ${_arrfpost_partday[@]} ${_arrfpost_day[@]} ${_arrsavedy3[@]} | sort -V | uniq -d ))
 
     #todo:  create fmkfname_nop
     printf '%s\n' ${arrfmapl[@]}              | sort -V >| $fmkfname_nop 
@@ -1183,30 +1183,30 @@ calc_seg_endyyyymmdd(){
         local num_seg=1
     fi
    
-    if (( $num_seg == 0 ));then 
-        local endyyyymmdd=$cap0_endyyyymmdd
-        local seg_y=$seg0_y
-        local seg_m=$seg0_m
-        local seg_d=$seg0_d
-    
-    elif (( $num_seg == 1 ));then 
-        local endyyyymmdd=$cap1_endyyyymmdd
-        local seg_y=$seg1_y
-        local seg_m=$seg1_m
-        local seg_d=$seg1_d
-    
-    elif (( $num_seg == 2 ));then 
-        local endyyyymmdd=$cap2_endyyyymmdd
-        local seg_y=$seg2_y
-        local seg_m=$seg2_m
-        local seg_d=$seg2_d
-    else
-        echo ""
-    fi
-    
     local yyyymmdd=$_userbeg_yyyymmdd 
     while (( $yyyymmdd < $_userend_yyyymmdd ));do
+
+        if (( $num_seg == 0 ));then 
+            local endyyyymmdd=$cap0_endyyyymmdd
+            local seg_y=$seg0_y
+            local seg_m=$seg0_m
+            local seg_d=$seg0_d
     
+        elif (( $num_seg == 1 ));then 
+            local endyyyymmdd=$cap1_endyyyymmdd
+            local seg_y=$seg1_y
+            local seg_m=$seg1_m
+            local seg_d=$seg1_d
+    
+        elif (( $num_seg == 2 ));then 
+            local endyyyymmdd=$cap2_endyyyymmdd
+            local seg_y=$seg2_y
+            local seg_m=$seg2_m
+            local seg_d=$seg2_d
+        else
+            break
+        fi
+ 
         [[ -n $seg_y ]] && local yyyymm=$( date -d "$yyyymmdd +${seg_y}years" +%Y%m )${dd}
         if [[ -n $seg_m ]];then 
             local yyyymm=$( echo $yyyymmdd | cut -c1-6 ) 
@@ -1438,7 +1438,7 @@ get_fmiss_fexist() {
     #----------------------------------------
     #       EXP Ready-to-Delete Files
     #----------------------------------------
-    wmessage "@$LINENO 02/10/2026 Work on this code here ONCE fdelout HAS CONTENTS!!"  
+#wmessage "@$LINENO 02/10/2026 Work on this code here ONCE fdelout HAS CONTENTS!!"  
     grep -Fwvf $fmkfsave_nop $fexistexp_nop 2>/dev/null >| $fdelrdyexp_nop 
 
     #----------------------------------------
@@ -1446,35 +1446,38 @@ get_fmiss_fexist() {
     #----------------------------------------
     #todo:  check if file was written in fdelout. If it is, remove line from fdelout 
     #note:  this is important especially when exp was re-run.
-    wmessage "@$LINENO 02/10/2026 Work on this code here ONCE fdelout HAS CONTENTS!!"  
+#wmessage "@$LINENO 02/10/2026 Work on this code here ONCE fdelout HAS CONTENTS!!"  
     grep -Fxvf $fdelrdyexp_nop $fdelout_nop 2>/dev/null >| $_ftmp_fdeldone_nop 
 
 local str="\
 @$LINENO
-#lines ftmp_fmissarc_nop  : $( cat $ftmp_fmissarc_nop  | wc -l )
-#lines fexistexp_nop      : $( cat $fexistexp_nop      | wc -l )    
-#lines fexistarc_nop      : $( cat $fexistarc_nop      | wc -l )    
-#lines fdelrdyexp_nop     : $( cat $fdelrdyexp_nop     | wc -l )    
-#lines _ftmp_fdeldone_nop : $( cat $_ftmp_fdeldone_nop | wc -l )    
+#lines ftmp_fmissarc_nop  : $( cat $ftmp_fmissarc_nop  2>/dev/null | wc -l )
+#lines fexistexp_nop      : $( cat $fexistexp_nop      2>/dev/null | wc -l )    
+#lines fexistarc_nop      : $( cat $fexistarc_nop      2>/dev/null | wc -l )    
+#lines fdelrdyexp_nop     : $( cat $fdelrdyexp_nop     2>/dev/null | wc -l )    
+#lines _ftmp_fdeldone_nop : $( cat $_ftmp_fdeldone_nop 2>/dev/null | wc -l )    
 "
 #wmessage "$str" 
 
     #----------------------------------------
     #        Create Arrays/Data Files
     #----------------------------------------
-    cat $ftmp_fmissarc_nop | cut -d' ' -f3 >| $_ftmp1 
+    cat $ftmp_fmissarc_nop 2>/dev/null | cut -d' ' -f3 >| $_ftmp1 
     local      _arrfmiss_nop=($( misc_readfbyline $_ftmp1 ))
-    cat $fdelrdyexp_nop    | cut -d' ' -f3 >| $_ftmp1 
+    cat $fdelrdyexp_nop    2>/dev/null | cut -d' ' -f3 >| $_ftmp1 
     local _arrfdelrdyexp_nop=($( misc_readfbyline $_ftmp1 ))
 
     (( ${#_arrfmiss_nop[@]}      > 0 )) &&      arrfmiss=($( printf "$dexp/%s\n" ${_arrfmiss_nop[@]}      | sort -V )) 
     (( ${#_arrfdelrdyexp_nop[@]} > 0 )) && arrfdelrdyexp=($( printf "$dexp/%s\n" ${_arrfdelrdyexp_nop[@]} | sort -V )) 
    
-    mv $_ftmp_fdeldone_nop $fdelout_nop
-    cat $fdelout_nop | xargs -i echo $dexp/{} >| $fdelout
-    
+    [[ -s $_ftmp_fdeldone_nop ]] && mv $_ftmp_fdeldone_nop $fdelout_nop || touch $fdelout_nop
+
+    cat $fdelout_nop 2>/dev/null | while read ftime fsize fname;do 
+                                       echo "$ftime $fsize $dexp/$fname"
+                                   done >| $fdelout
+
     [[ -f $_ftmp1 ]] && rm -f $_ftmp1
-    #rm -f ${_arrfrm[@]} 2>/dev/null
+    rm -f ${_arrfrm[@]} 2>/dev/null
 
     return
 }
@@ -1592,13 +1595,13 @@ count_files(){
         numfexp_mkfname_fmomfout_cnt1=$( cat $fmkfname_nop | grep -Ev "$strrst|$collsst" | wc -l )
          numfexp_mkfname_fmomfout_cnt=$(( $numfexp_mkfname_fmomfout_cnt1 - numfexp_mkfname_misctar_cnt ))
 
-        numfexp_mkfname_monmapl_cnt=$( cat $fmkfname_nop | grep z.nc4            | grep -Ev "$collsst|$strscrach" | wc -l )
-            numfexp_mkfname_day_cnt=$( cat $fmkfname_nop | grep .daily.[0-9]     | grep .nc4.tar | grep -v tar.   | grep -Ev "$collsst|$strscrach" | wc -l )
-            numfexp_mkfname_dmn_cnt=$( cat $fmkfname_nop | grep .dailymean.[0-9] | grep .nc4.tar | grep -v tar.   | wc -l )
-            numfexp_mkfname_diu_cnt=$( cat $fmkfname_nop | grep .diurnal.        | grep -Ev "$collsst|$strscrach" | wc -l )
-        numfexp_mkfname_monpost_cnt=$( cat $fmkfname_nop | grep .monthly.        | grep -Ev "$collsst|$strscrach" | wc -l )
-            numfexp_mkfname_rst_cnt=$( cat $fmkfname_nop | grep $strrst          | wc -l )
-            numfexp_mkfname_mom_cnt=$( cat $fmkfname_nop | grep $strmom_search   | wc -l )
+        numfexp_mkfname_monmapl_cnt=$( cat $fmkfname_nop | grep z.nc4               | grep -Ev "$collsst|$strscrach" | wc -l )
+            numfexp_mkfname_day_cnt=$( cat $fmkfname_nop | grep "\.daily.[0-9]"     | grep .nc4.tar | grep -v tar.   | grep -Ev "$collsst|$strscrach" | wc -l )
+            numfexp_mkfname_dmn_cnt=$( cat $fmkfname_nop | grep "\.dailymean.[0-9]" | grep .nc4.tar | grep -v tar.   | wc -l )
+            numfexp_mkfname_diu_cnt=$( cat $fmkfname_nop | grep "\.diurnal\."       | grep -Ev "$collsst|$strscrach" | wc -l )
+        numfexp_mkfname_monpost_cnt=$( cat $fmkfname_nop | grep "\.monthly\."       | grep -Ev "$collsst|$strscrach" | wc -l )
+            numfexp_mkfname_rst_cnt=$( cat $fmkfname_nop | grep $strrst             | wc -l )
+            numfexp_mkfname_mom_cnt=$( cat $fmkfname_nop | grep $strmom_search      | wc -l )
             numfexp_mkfname_mis_cnt=$( echo "$numftotal_calc - $numfexp_mkfname_fmomfout_cnt" | bc )
     fi
 
@@ -1968,9 +1971,11 @@ prepare_archiving() {
         fi
     fi
 
-#    #todo:  move mapl monthly files
-#    #note: 02/04/2026 - gcm_post seems to move mple monthly outputs
-#    move_maplmon
+    #todo:  move mapl monthly files
+    #note: 02/04/2026 - gcm_post seems to move MAPL monthly outputs
+    #      03/04/2026 - gcm_post sometime failes to copy MAPL monthly... so
+    #                   keep move_maplmon turned on!
+    move_maplmon
 
     #todo:  get output file names & its size on lou
     ! $bldarcsame && getfname_arc
@@ -3031,14 +3036,14 @@ debug_wnumbers(){
 
     local _strblleaveout=" \
 # of Output Files when blleaveout is true:
-    #TOTAL: $numftotal_calc   $numfarc_fmomfout_cnt   $numfsave_tot $numfexp_total_cnt  
+    #TOTAL: $numftotal_calc $numfarc_fmomfout_cnt $numfsave_tot $numfexp_total_cnt  
      #MAPL: $numfmonmapl_calc $numfarc_monmapl_cnt $numfsave_mpl $numfexp_monmapl_cnt
   #Monthly: $numfmonpost_calc $numfarc_monpost_cnt $numfsave_mon $numfexp_monpost_cnt 
-  #Diurnal: $numfdiu_calc     $numfarc_diu_cnt     $numfsave_diu $numfexp_diu_cnt     
-    #Daily: $numfday_calc     $numfarc_day_cnt     $numfsave_day $numfexp_day_cnt     
-#Dailymean: $numfdmn_calc   $numfarc_dmn_cnt     $numfsave_dmn $numfexp_dmn_cnt
-      #MOM: $numfmom_calc     $numfarc_mom_cnt     $numfsave_mom $numfexp_mom_cnt   
-  #Missing: $numfmissing      0
+  #Diurnal: $numfdiu_calc $numfarc_diu_cnt $numfsave_diu $numfexp_diu_cnt     
+    #Daily: $numfday_calc $numfarc_day_cnt $numfsave_day $numfexp_day_cnt     
+#Dailymean: $numfdmn_calc $numfarc_dmn_cnt $numfsave_dmn $numfexp_dmn_cnt
+      #MOM: $numfmom_calc $numfarc_mom_cnt $numfsave_mom $numfexp_mom_cnt   
+  #Missing: $numfmissing 0
 
 "
     wmessage "$_strblleaveout"
@@ -3046,31 +3051,31 @@ debug_wnumbers(){
     if $blleaveout && $bl10morun;then  
         local _strblleaveout10=" \
 # of Output Files supposed to be Saved on PFE + Removed after 10mo run:
-    #TOTAL: $numftotal_calc   $numfarc_fmomfout_cnt   $numfsavePfrm_tot $numfexp_total_cnt  
+    #TOTAL: $numftotal_calc $numfarc_fmomfout_cnt $numfsavePfrm_tot $numfexp_total_cnt  
      #MAPL: $numfmonmapl_calc $numfarc_monmapl_cnt $numfsavePfrm_mpl $numfexp_monmapl_cnt
   #Monthly: $numfmonpost_calc $numfarc_monpost_cnt $numfsavePfrm_mon $numfexp_monpost_cnt 
-  #Diurnal: $numfdiu_calc     $numfarc_diu_cnt     $numfsavePfrm_diu $numfexp_diu_cnt     
-    #Daily: $numfday_calc     $numfarc_day_cnt     $numfsavePfrm_day $numfexp_day_cnt     
-#Dailymean: $numfdmn_calc     $numfarc_dmn_cnt     $numfsavePfrm_dmn $numfexp_dmn_cnt
-      #MOM: $numfmom_calc     $numfarc_mom_cnt     $numfsavePfrm_mom $numfexp_mom_cnt   
-  #Missing: $numfmissing      0
+  #Diurnal: $numfdiu_calc $numfarc_diu_cnt $numfsavePfrm_diu $numfexp_diu_cnt     
+    #Daily: $numfday_calc $numfarc_day_cnt $numfsavePfrm_day $numfexp_day_cnt     
+#Dailymean: $numfdmn_calc $numfarc_dmn_cnt $numfsavePfrm_dmn $numfexp_dmn_cnt
+      #MOM: $numfmom_calc $numfarc_mom_cnt $numfsavePfrm_mom $numfexp_mom_cnt   
+  #Missing: $numfmissing 0
 
-"       wmessage "$_strblleaveout10"
+"       
+        wmessage "$_strblleaveout10"
     fi
 
     local _strtot=" \
 Total # of Output Files:
-    #TOTAL: $numftotal_calc   $numfarc_fmomfout_cnt   $numftotal_calc   $numfexp_total_cnt
+    #TOTAL: $numftotal_calc $numfarc_fmomfout_cnt $numftotal_calc $numfexp_total_cnt
      #MAPL: $numfmonmapl_calc $numfarc_monmapl_cnt $numfmonmapl_calc $numfexp_monmapl_cnt
   #Monthly: $numfmonpost_calc $numfarc_monpost_cnt $numfmonpost_calc $numfexp_monpost_cnt 
-  #Diurnal: $numfdiu_calc     $numfarc_diu_cnt     $numfdiu_calc     $numfexp_diu_cnt     
-    #Daily: $numfday_calc     $numfarc_day_cnt     $numfday_calc     $numfexp_day_cnt     
-#Dailymean: $numfdmn_calc     $numfarc_dmn_cnt     $numfdmn_calc     $numfexp_dmn_cnt
-      #MOM: $numfmom_calc     $numfarc_mom_cnt     $numfmom_calc     $numfexp_mom_cnt    
-  #Missing: $numfmissing      0
+  #Diurnal: $numfdiu_calc $numfarc_diu_cnt $numfdiu_calc $numfexp_diu_cnt     
+    #Daily: $numfday_calc $numfarc_day_cnt $numfday_calc $numfexp_day_cnt     
+#Dailymean: $numfdmn_calc $numfarc_dmn_cnt $numfdmn_calc $numfexp_dmn_cnt
+      #MOM: $numfmom_calc $numfarc_mom_cnt $numfmom_calc $numfexp_mom_cnt    
+  #Missing: $numfmissing 0
 
 "
-
     wmessage "$_strtot"
 
     return
@@ -3864,31 +3869,30 @@ if [[ -f $fcomp ]] && (( ${#arrfmiss[@]} == 0 && ${#arrmkdy_fmiss[@]} == 0 ));th
     else
 
         #note: double_checking gives false if there are more files in each category 
-        #      of output (i.e. daily, monthly, mom, restarts, etc). 
+        #      of output (i.e. daily, monthly, mom, restarts, etc). Going through this
+        #      "if" may take care of those extra files. 
         if ! $blrmarchready;then
-wmessage \@$LINENO "you are here? why? ... interesting."
-            #if ! $blleaveall;then 
-            #    wmessage "@$LINENO ... clean output here"
-            #   
-            #    arrfdel=($( cat $fdelrdyexp_nop | cut -d' ' -f3 | xargs -i echo $dexp/{} ))
+            if ! $blleaveall;then 
+                wmessage "@$LINENO ... clean output here"
+               
+                arrfdel=($( cat $fdelrdyexp_nop | cut -d' ' -f3 | xargs -i echo $dexp/{} ))
 
-            #    #clean_output ${arrfdel[@]}
-            #fi
+                clean_output ${arrfdel[@]}
+            fi
             blrmarchready=$( double_checking ) 
         fi
 
         if $blrmarchready;then
             if ! $blleaveall;then 
-                wmessage "@$LINENO ... clean output here"
                 arrfdel=($( cat $fdelrdyexp_nop | cut -d' ' -f3 | xargs -i echo $dexp/{} ))
+                wmessage "@$LINENO ... Delete ${#arrfdel[@]} outputs"
 
                 clean_output ${arrfdel[@]}
 
-
                 #todo:  backup files
-                [[ -s $fdelout_nop    ]] && mv $fdelout_nop    $dtmp/$( basename $fdelout_nop )_$cdate
-                [[ -s $fdelout        ]] && mv $fdelout        $dtmp/$( basename $fdelout )_$cdate
-                [[ -s $fdelrdyexp_nop ]] && mv $fdelrdyexp_nop $dtmp/$( basename $fdelrdyexp_nop )_$cdate
+                [[ -s $fdelout_nop    ]] && cp -p $fdelout_nop    $dtmp/$( basename $fdelout_nop )_$cdate
+                [[ -s $fdelout        ]] && cp -p $fdelout        $dtmp/$( basename $fdelout )_$cdate
+                [[ -s $fdelrdyexp_nop ]] && mv    $fdelrdyexp_nop $dtmp/$( basename $fdelrdyexp_nop )_$cdate
 
                 $bldelout && touch $fcomp_del
             fi
