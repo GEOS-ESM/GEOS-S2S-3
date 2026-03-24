@@ -1407,8 +1407,8 @@ else if( $SITE == 'NCCS' ) then
               setenv BATCH_TIME "SBATCH --time="                                       # SLURM Syntax for walltime
               setenv BATCH_JOBNAME "SBATCH --job-name="                                # SLURM Syntax for job name
               setenv BATCH_OUTPUTNAME "SBATCH --output="                               # SLURM Syntax for job output name
-              setenv BATCH_CHANGE_JOBNAME "scontrol update JobId=\${SLURM_JOB_ID} JobName=\${EXPID}.\$RUN_STATUS"
-              setenv BATCH_CHANGE_OUTPUTNAME "scontrol update JobId=\${SLURM_JOB_ID} comment=\"stdout\${EXPDIR}/\${EXPID}.\${qdate}.\${SLURM_JOB_ID}.\$RUN_STATUS\" \${SLURM_JOB_ID}"
+              setenv BATCH_CHANGE_JOBNAME 'scontrol update JobId=${SLURM_JOB_ID} JobName=${EXPID}.$RUN_STATUS'
+              setenv BATCH_CHANGE_OUTPUTNAME 'scontrol update JobId=${SLURM_JOB_ID} comment="stdout=${EXPDIR}${EXPID}.${qdate}.${SLURM_JOB_ID}.$RUN_STATUS" ${SLURM_JOB_ID}'
               setenv BATCH_JOINOUTERR "DELETE"                                         # SLURM joins out and err by default
               setenv     RUN_FT "06:00:00"                                             # Wallclock Time   for gcm_forecast.j
               setenv     RUN_T  "12:00:00"                                             # Wallclock Time   for gcm_run.j
