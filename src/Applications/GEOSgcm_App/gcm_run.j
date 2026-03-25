@@ -11,7 +11,7 @@
 #@RUN_Q
 #@BATCH_GROUP
 #@BATCH_JOINOUTERR
-#@BATCH_NAME -o gcm_run.o@RSTDATE.FAILED
+#@BATCH_NAME -o gcm_run.o@RSTDATE
 
 #######################################################################
 #                         System Settings 
