@@ -11,7 +11,7 @@
 #@RUN_Q
 #@BATCH_GROUP
 #@BATCH_JOINOUTERR
-#@BATCH_NAME -o gcm_run.o@RSTDATE
+#@BATCH_NAME -o gcm_run.o@RSTDATE.FAILED
 
 #######################################################################
 #                         System Settings 
@@ -61,7 +61,6 @@ set init_date = `echo $RSTDATE | cut -d_ -f1 | cut -b1-8`
 set qdate = `${GEOSBIN}/tick ${init_date} 000000 4 0 | cut -c1-8`
 set RUN_STATUS = 'BEGINNING'
 @BATCH_CHANGE_JOBNAME
-@BATCH_CHANGE_OUTPUTNAME
 
 #######################################################################
 #                 Create Experiment Sub-Directories
@@ -768,7 +767,6 @@ if( $USE_SHMEM == 1 ) $GEOSBIN/RmShmKeys_sshmpi.csh
 >>>withODAS<<<# RUN ODAS HERE
 >>>withODAS<<< set RUN_STATUS = 'RUNNING_ODAS'
 >>>withODAS<<< @BATCH_CHANGE_JOBNAME
->>>withODAS<<< @BATCH_CHANGE_OUTPUTNAME
 >>>withODAS<<<#$EXPDIR/ocean_das/UMD_Etc/scripts/oda_run.j $NX $NY > $EXPDIR/ocean_das/oda_run.out
 >>>withODAS<<<$EXPDIR/ocean_das/UMD_Etc/scripts/oda_run.j $NX $NY
 >>>withODAS<<<
@@ -928,9 +926,8 @@ end
 #######################################################################
 
 $GEOSUTIL/post/gcmpost.script -source $EXPDIR -movefiles
->>>withODAS<<< set RUN_STATUS = 'RUNNING_POSTPROCESSING'
+>>>withODAS<<< set RUN_STATUS = 'POSTPROCESSING'
 >>>withODAS<<< @BATCH_CHANGE_JOBNAME
->>>withODAS<<< @BATCH_CHANGE_OUTPUTNAME
 >>>withODAS<<<#  new plotting of OMF/OMA stats from ERIC 3/19/21
 >>>withODAS<<<$GEOSUTIL/plots/odas_plots.csh $EXPDIR $nyears $nmonths $ndays $nhours $year $month $day $hour $GEOSUTIL/plots
  
