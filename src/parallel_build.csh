@@ -28,6 +28,8 @@
 #                    account
 # 18Feb2022  MAT     Added Rome nodes to NAS
 # 19Mar2026  MAT     Added Turin nodes to NAS
+# 25Mar2026  MAT     Default NAS node type now based on login node
+#                    (pfe->Rome, afe->Milan, athfe->Turin)
 #------------------------------------------------------------------------
 set name = $0
 set scriptname = $name
@@ -225,7 +227,19 @@ end
 #-----------------
 if (! $?nodeTYPE) then
    if ($SITE == NCCS) set nodeTYPE = "Milan"
-   if ($SITE == NAS)  set nodeTYPE = "Rome"
+   if ($SITE == NAS) then
+      # Default node type depends on which NAS login node we are on:
+      #   pfe*   --> Rome  (rom_ait)
+      #   afe*   --> Milan (mil_ait)
+      #   athfe* --> Turin (tur_ath)
+      if ($node =~ athfe*) then
+         set nodeTYPE = "Turin"
+      else if ($node =~ afe*) then
+         set nodeTYPE = "Milan"
+      else
+         set nodeTYPE = "Rome"
+      endif
+   endif
 endif
 
 # This is a flag needed at NCCS for Cascade Lake. Default is blank
@@ -798,8 +812,13 @@ flagged options
 
    -tur                 compile on Turin nodes (only at NAS, must be submitted from athfe nodes)
    -mil                 compile on Milan nodes (default at NCCS; at NAS must be submitted from afe nodes)
-   -rom                 compile on Rome nodes (default at NAS, only at NAS)
+   -rom                 compile on Rome nodes (only at NAS)
    -cas                 compile on Cascade Lake nodes
    -sky                 compile on Skylake nodes (only at NAS)
    -bro                 compile on Broadwell nodes (only at NAS)
+
+   Default NAS node type is based on login node:
+      pfe*   -> Rome  (-rom)
+      afe*   -> Milan (-mil)
+      athfe* -> Turin (-tur)
 EOF
