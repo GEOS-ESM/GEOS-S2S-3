@@ -315,6 +315,9 @@ if ( $SITE == NAS ) then
    if ($nT == mil_ait) @ NCPUS_DFLT = 128
    if ($nT == tur_ath) @ NCPUS_DFLT = 256
 
+   # Turin requires at least the normal queue
+   if (($nT == tur_ath) && ("$queue" == "")) set queue = "-q normal"
+
    # TMPDIR needs to be reset
    #-------------------------
    if ($tmpdir == '') then
