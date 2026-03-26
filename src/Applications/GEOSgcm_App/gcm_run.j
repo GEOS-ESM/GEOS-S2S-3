@@ -11,7 +11,7 @@
 #@RUN_Q
 #@BATCH_GROUP
 #@BATCH_JOINOUTERR
-#@BATCH_OUTPUTNAME @RUN_N.@RSTDATE.FAILED
+#@BATCH_OUTPUTNAME@RUN_N.@RSTDATE.FAILED
 
 #######################################################################
 #                         System Settings 
