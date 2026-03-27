@@ -54,9 +54,9 @@ setenv  EXPDIR  @EXPDIR
 setenv  HOMDIR  @HOMDIR
 setenv  RSTDATE @RSTDATE
 setenv  GCMEMIP @GCMEMIP
-set year  = `echo $RSTDATE | cut -d_ -f1 | cut -b1-4`
-set month = `echo $RSTDATE | cut -d_ -f1 | cut -b5-6`
-set init_date = `echo $RSTDATE | cut -d_ -f1 | cut -b1-8`
+set year  = `echo $firstdate | cut -d_ -f1 | cut -b1-4`
+set month = `echo $firstdate | cut -d_ -f1 | cut -b5-6`
+set init_date = `echo $firstdate | cut -d_ -f1 | cut -b1-8`
 
 set qdate = `${GEOSBIN}/tick ${init_date} 000000 4 0 | cut -c1-8`
 set RUN_STATUS = 'BEGINNING'
