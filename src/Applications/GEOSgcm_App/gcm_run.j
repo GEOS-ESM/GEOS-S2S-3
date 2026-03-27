@@ -11,7 +11,7 @@
 #@RUN_Q
 #@BATCH_GROUP
 #@BATCH_JOINOUTERR
-#@BATCH_OUTPUTNAME@RUN_N.%j.FAILED
+#@BATCH_OUTPUTNAME@RUN_N.@BATCH_OUTPUTNAME_AMENDMENT
 
 #######################################################################
 #                         System Settings 
