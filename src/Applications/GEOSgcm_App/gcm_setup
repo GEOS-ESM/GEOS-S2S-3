@@ -1355,7 +1355,7 @@ if( $SITE == 'NAS' ) then
               setenv BATCH_TIME "PBS -l walltime="    # PBS Syntax for walltime
               setenv BATCH_JOBNAME "PBS -N "          # PBS Syntax for job name
               setenv BATCH_OUTPUTNAME "PBS -o "       # PBS Syntax for job output name
-              setenv BATCH_CHANGE_JOBNAME 'qalter -N ${EXPID}.${RUN_STATUS} ${PBS_JOBID}'
+              setenv BATCH_CHANGE_JOBNAME ''
               setenv BATCH_CHANGE_OUTPUTNAME 'qalter -o ${EXPDIR}/${EXPID}.${qdate}.${PBS_JOBID}.${RUN_STATUS} ${PBS_JOBID}'
               setenv BATCH_OUTPUTNAME_AMENDMENT ".FAILED"
               setenv BATCH_JOINOUTERR "PBS -j oe -k oed"    # PBS Syntax for joining output and error
@@ -1410,7 +1410,7 @@ else if( $SITE == 'NCCS' ) then
               setenv BATCH_OUTPUTNAME "SBATCH --output="                               # SLURM Syntax for job output name
               setenv BATCH_CHANGE_JOBNAME 'scontrol update JobId=${SLURM_JOB_ID} JobName=${EXPID}.${RUN_STATUS}'
               setenv BATCH_CHANGE_OUTPUTNAME 'scontrol update JobId=${SLURM_JOB_ID} comment="stdout=${EXPDIR}/${EXPID}.${qdate}.${SLURM_JOB_ID}.${RUN_STATUS}"'
-              setenv BATCH_OUTPUTNAME_AMENDMENT "%j.FAILED"
+              setenv BATCH_OUTPUTNAME_AMENDMENT ".%j.FAILED"
               setenv BATCH_JOINOUTERR "DELETE"                                         # SLURM joins out and err by default
               setenv     RUN_FT "06:00:00"                                             # Wallclock Time   for gcm_forecast.j
               setenv     RUN_T  "12:00:00"                                             # Wallclock Time   for gcm_run.j
