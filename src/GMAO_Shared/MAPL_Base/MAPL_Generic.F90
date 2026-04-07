@@ -4376,6 +4376,10 @@ end function MAPL_AddChildFromGC
     integer                               :: I,J
     logical                               :: SKIP
     character(len=ESMF_MAXSTR), allocatable :: SNAMES(:)
+    type (MAPL_ConnectivityWrap)          :: connwrap
+    type (MAPL_Connectivity), pointer     :: conn
+    type (MAPL_VarConn), pointer          :: CONNECT(:)
+    logical :: isConnected
 
     ASSERT_(size(SHORT_NAMES)==size(CHILD_IDS))
 
@@ -4387,6 +4391,12 @@ end function MAPL_AddChildFromGC
        SNAMES(I) = trim(SHORT_NAMES(I))
     enddo
 
+!    call MAPL_ConnectivityGet(gc, connectivityPtr=conn, RC=STATUS)
+!    VERIFY_(STATUS)
+    call ESMF_UserCompGetInternalState(gc, 'MAPL_Connectivity', &
+                                       connwrap, status)
+    VERIFY_(STATUS)
+    CONNECT => connwrap%ptr%CONNECT
     if (associated(META%GCS)) then
        do I=1, size(META%GCS)
           call MAPL_GetObjectFromGC(META%GCS(I), META_CHILD, RC=STATUS)
@@ -4394,7 +4404,18 @@ end function MAPL_AddChildFromGC
           do J=1 ,size(META_CHILD%Import_Spec)
              call MAPL_VarSpecGet(META_CHILD%Import_Spec(J),SHORT_NAME=SHORT_NAME,RC=STATUS)
              SKIP = ANY(SNAMES==TRIM(SHORT_NAME)) .and. (ANY(CHILD_IDS==I))
-             if (.not.SKIP) then
+             isConnected = .false.
+             if (MAPL_VarIsConnected(CONNECT, IMPORT_NAME=SHORT_NAME, &
+                                     IMPORT=J, EXPORT=I, RC=STATUS)) then                        
+                VERIFY_(STATUS)
+                isConnected = .true.
+                if(MAPL_AM_I_ROOT()) print*, 'SHORT_NAME 1 ', trim(SHORT_NAME)
+                if(MAPL_AM_I_ROOT()) print*, 'isConnected 1 ', isConnected
+             endif
+             if(MAPL_AM_I_ROOT()) print*, 'isConnected SKIP', isConnected, SKIP
+             if ((.not.isConnected) .and. (.not.skip)) then
+!             if (.not.skip) then
+                if(MAPL_AM_I_ROOT()) print*, 'SHORT_NAME 2 ', trim(SHORT_NAME)
                 call MAPL_DoNotConnect(GC, SHORT_NAME, I, RC=status)
                 VERIFY_(STATUS)
              end if
@@ -10389,5 +10410,21 @@ end subroutine MAPL_READFORCINGX
      RETURN_(ESMF_SUCCESS)
 
    end subroutine MAPL_ReadImsJmsFromFile
+
+!   subroutine MAPL_ConnectivityGet(gc, connectivityPtr, RC)
+!      type(ESMF_GridComp), intent(inout) :: gc
+!      integer, optional, intent(out) :: rc
+!      type (MAPL_Connectivity), pointer :: connectivityPtr
+            
+!      type (MAPL_MetaComp), pointer :: meta
+!      integer                       :: status
+               
+!      call MAPL_GetObjectFromGC(gc, meta, RC=STATUS)
+!      VERIFY_(STATUS)
+         
+!      connectivityPtr => meta%connectList
+               
+!      RETURN_(ESM_SUCCESS)
+!   end subroutine MAPL_ConnectivityGet
 
 end module MAPL_GenericMod

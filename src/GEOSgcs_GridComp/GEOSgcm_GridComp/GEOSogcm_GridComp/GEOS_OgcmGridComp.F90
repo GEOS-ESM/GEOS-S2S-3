@@ -753,7 +753,13 @@ contains
 ! Children's imports are in the ocean grid and are all satisfied
 !   by OGCM from exchange grid quantities.
 
-  call MAPL_TerminateImport    ( GC, ALL=.true., RC=STATUS  )
+  if(DO_DATA_ATM4OCN==0) then
+     call MAPL_TerminateImport    ( GC, ALL=.true., RC=STATUS  )
+     VERIFY_(STATUS) 
+  else
+     call MAPL_TerminateImport(GC, ['DISCHARGE', 'DISCHARGEOB'], [OCEAN, OBIO], RC=STATUS)
+     VERIFY_(STATUS) 
+  endif
 
 ! Set the Profiling timers
 ! ------------------------
@@ -1815,9 +1821,11 @@ contains
     VERIFY_(STATUS)
 
     if(DO_DATASEAONLY==0) then
-       call MAPL_LocStreamTransform( ExchGrid, DISCHARGEO, DISCHARGE, RC=STATUS) 
-       VERIFY_(STATUS)
-     
+!       if(DO_DATA_ATM4OCN==0) then
+          call MAPL_LocStreamTransform( ExchGrid, DISCHARGEO, DISCHARGE, RC=STATUS) 
+          VERIFY_(STATUS)
+!       endif     
+
        PENUVRM= PENUVRO
        PENUVFM= PENUVFO
        PENPARM= PENPARO 
@@ -2326,7 +2334,7 @@ contains
       call MAPL_GetPointer(GIM(OBIO ), DUDPB   ,  'DUDP'     , notfoundOK=.true., RC=STATUS); VERIFY_(STATUS)
       call MAPL_GetPointer(GIM(OBIO ), DUWTB   ,  'DUWT'     , notfoundOK=.true., RC=STATUS); VERIFY_(STATUS)
       call MAPL_GetPointer(GIM(OBIO ), DUSDB   ,  'DUSD'     , notfoundOK=.true., RC=STATUS); VERIFY_(STATUS)
-      call MAPL_GetPointer(GIM(OBIO ), DISCHARGEOB   ,  'DISCHARGE'     , notfoundOK=.true., RC=STATUS); VERIFY_(STATUS)
+      call MAPL_GetPointer(GIM(OBIO ), DISCHARGEOB   ,  'DISCHARGEOB'     , notfoundOK=.true., RC=STATUS); VERIFY_(STATUS)
       if(DO_DATA_ATM4OCN==0) then
         call MAPL_GetPointer(GIM(OBIO ), BCDPB   ,  'BCDP'     , notfoundOK=.true., RC=STATUS); VERIFY_(STATUS)
         call MAPL_GetPointer(GIM(OBIO ), BCWTB   ,  'BCWT'     , notfoundOK=.true., RC=STATUS); VERIFY_(STATUS)
@@ -2382,6 +2390,7 @@ contains
        end do
       endif
 
+!      if (DO_DATA_ATM4OCN==0 .and. associated(DISCHARGEOB) ) then
       if ( associated(DISCHARGEOB) ) then
          call MAPL_LocStreamTransform( ExchGrid, DISCHARGEOB, DISCHARGE, RC=STATUS)
          VERIFY_(STATUS)
