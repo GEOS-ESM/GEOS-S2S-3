@@ -746,46 +746,33 @@
                 corner(1) = i
                 rc = NF90_GET_VAR(fid,timeID,rtime_array,corner,(/1/))
                 rtime = rtime_array(1)
-                incVecLong(i) = int(rtime,8) 
+                incVecLong(i) = time_to_seconds_sp(timeUnits, rtime)
            else if ( type .eq. NF90_DOUBLE ) then
                 corner(1) = i
                 rc = NF90_GET_VAR(fid,timeID,dtime_array,corner,(/1/))
                 dtime = dtime_array(1)
-                incVecLong(i) = int(dtime,8)
+                incVecLong(i) = time_to_seconds_dp(timeUnits, dtime)
            else if ( type .eq. NF90_SHORT  ) then
                 corner(1) = i
                 rc = NF90_GET_VAR(fid,timeID,itime_array,corner,(/1/))
                 itime = itime_array(1)
-                incVecLong(i) = int(itime,8)
+                incVecLong(i) = time_to_seconds_i16(timeUnits, itime)
            else if ( type .eq. NF90_INT   ) then
                 corner(1) = i
                 rc = NF90_GET_VAR(fid,timeID,ltime_array,corner,(/1/))
                 ltime = ltime_array(1)
-                incVecLong(i) = int(ltime,8)
+                incVecLong(i) = time_to_seconds_i32(timeUnits, ltime)
            else
                 if (err("GetDateTimeVec: invalid time data type",&
                    1,-44) .NE. 0) return
            endif
       end do
 
-!     Convert time increment to seconds if necessary
-!     ----------------------------------------------
-      if ( timeUnits(1:6) .eq.  'minute' ) then
-           tMultLong = 60 
-      else if ( timeUnits(1:4) .eq. 'hour'   ) then
-           tMultLong = 60 * 60 
-      else if ( timeUnits(1:3) .eq.  'day' ) then
-           tMultLong = 60 * 60 * 24
-      else
-           if (err("GetDateTimeVec: invalid time unit name",&
-              1,-44) .NE. 0) return
-      endif
-
 !     Combine the first time offset with the reference time to get the beginning
 !     date and time
 !     -----------------------------------------------------------------------------
       t1Long = incVecLong(1)
-      Call GetDate(begDate,begTime,t1Long*tMultLong,newDate,newTime,rc)
+      Call GetDate(begDate,begTime,t1Long,newDate,newTime,rc)
       begDate=newDate
       begTime=newTime
 
@@ -794,7 +781,7 @@
       incVec(:) = 0
       do i=1,dimsize
          t2Long = incVecLong(i)
-         incSecsLong = (t2Long - t1Long)*tMultLong
+         incSecsLong = t2Long - t1Long
          ! If (incSecsLong.gt.huge(t1)) Then
          !   print *, 'Time interval too large'
          !   rc = -10
@@ -811,6 +798,188 @@
       rc = 0 ! all done
 
       return
+
+      contains
+
+!==============================================================================
+! Helper subroutine: parse the time unit word from a "unit since date" string
+!==============================================================================
+subroutine parse_time_unit(units_str, unit_word)
+    implicit none
+
+    character(len=*), intent(in)  :: units_str
+    character(len=32), intent(out) :: unit_word
+
+    integer :: space_pos
+
+    ! Find the position of the first space
+    space_pos = index(trim(units_str), ' ')
+
+    if (space_pos == 0) then
+        ! No space found, the entire string is the unit word
+        unit_word = trim(units_str)
+    else
+        ! Take everything before the first space
+        unit_word = units_str(1:space_pos-1)
+    end if
+
+    ! Convert to lowercase to make matching case-insensitive
+    call to_lowercase(unit_word)
+
+end subroutine parse_time_unit
+
+
+!==============================================================================
+! Helper subroutine: convert a string to lowercase
+!==============================================================================
+subroutine to_lowercase(str)
+    implicit none
+
+    character(len=*), intent(inout) :: str
+
+    integer :: i, ascii_val
+
+    do i = 1, len_trim(str)
+        ascii_val = iachar(str(i:i))
+        if (ascii_val >= 65 .and. ascii_val <= 90) then
+            str(i:i) = achar(ascii_val + 32)
+        end if
+    end do
+
+end subroutine to_lowercase
+
+
+!==============================================================================
+! Function 1: Convert SINGLE PRECISION time value to seconds (INT64)
+!==============================================================================
+function time_to_seconds_sp(units, value) result(seconds)
+    use iso_fortran_env, only: int64
+    implicit none
+
+    character(len=*), intent(in) :: units
+    real(kind=4),     intent(in) :: value
+    integer(int64)               :: seconds
+    real(kind=4)                 :: total_seconds
+    character(len=32)            :: unit_word
+
+    call parse_time_unit(units, unit_word)
+
+    select case (trim(unit_word))
+        case ('seconds', 'second', 'sec', 's')
+            total_seconds = value
+        case ('minutes', 'minute', 'min', 'm')
+            total_seconds = value * 60.0e0
+        case ('hours', 'hour', 'hr', 'h')
+            total_seconds = value * 3600.0e0
+        case ('days', 'day', 'd')
+            total_seconds = value * 86400.0e0
+        case default
+            write(*,*) 'ERROR: Unknown time unit "', trim(unit_word), '"'
+            seconds = -1_int64
+            return
+    end select
+
+    seconds = nint(total_seconds, kind=int64)
+
+end function time_to_seconds_sp
+
+
+!==============================================================================
+! Function 2: Convert DOUBLE PRECISION time value to seconds (INT64)
+!==============================================================================
+function time_to_seconds_dp(units, value) result(seconds)
+    use iso_fortran_env, only: int64
+    implicit none
+
+    character(len=*), intent(in) :: units
+    real(kind=8),     intent(in) :: value
+    integer(int64)               :: seconds
+    real(kind=8)                 :: total_seconds
+    character(len=32)            :: unit_word
+
+    call parse_time_unit(units, unit_word)
+
+    select case (trim(unit_word))
+        case ('seconds', 'second', 'sec', 's')
+            total_seconds = value
+        case ('minutes', 'minute', 'min', 'm')
+            total_seconds = value * 60.0d0
+        case ('hours', 'hour', 'hr', 'h')
+            total_seconds = value * 3600.0d0
+        case ('days', 'day', 'd')
+            total_seconds = value * 86400.0d0
+        case default
+            write(*,*) 'ERROR: Unknown time unit "', trim(unit_word), '"'
+            seconds = -1_int64
+            return
+    end select
+
+    seconds = nint(total_seconds, kind=int64)
+
+end function time_to_seconds_dp
+
+
+!==============================================================================
+! Function 3: Convert 16-BIT INTEGER time value to seconds (INT64)
+!==============================================================================
+function time_to_seconds_i16(units, value) result(seconds)
+    use iso_fortran_env, only: int16, int64
+    implicit none
+
+    character(len=*), intent(in) :: units
+    integer(int16),   intent(in) :: value
+    integer(int64)               :: seconds
+    character(len=32)            :: unit_word
+
+    call parse_time_unit(units, unit_word)
+
+    select case (trim(unit_word))
+        case ('seconds', 'second', 'sec', 's')
+            seconds = int(value, kind=int64)
+        case ('minutes', 'minute', 'min', 'm')
+            seconds = int(value, kind=int64) * 60_int64
+        case ('hours', 'hour', 'hr', 'h')
+            seconds = int(value, kind=int64) * 3600_int64
+        case ('days', 'day', 'd')
+            seconds = int(value, kind=int64) * 86400_int64
+        case default
+            write(*,*) 'ERROR: Unknown time unit "', trim(unit_word), '"'
+            seconds = -1_int64
+    end select
+
+end function time_to_seconds_i16
+
+
+!==============================================================================
+! Function 4: Convert 32-BIT INTEGER time value to seconds (INT64)
+!==============================================================================
+function time_to_seconds_i32(units, value) result(seconds)
+    use iso_fortran_env, only: int32, int64
+    implicit none
+
+    character(len=*), intent(in) :: units
+    integer(int32),   intent(in) :: value
+    integer(int64)               :: seconds
+    character(len=32)            :: unit_word
+
+    call parse_time_unit(units, unit_word)
+
+    select case (trim(unit_word))
+        case ('seconds', 'second', 'sec', 's')
+            seconds = int(value, kind=int64)
+        case ('minutes', 'minute', 'min', 'm')
+            seconds = int(value, kind=int64) * 60_int64
+        case ('hours', 'hour', 'hr', 'h')
+            seconds = int(value, kind=int64) * 3600_int64
+        case ('days', 'day', 'd')
+            seconds = int(value, kind=int64) * 86400_int64
+        case default
+            write(*,*) 'ERROR: Unknown time unit "', trim(unit_word), '"'
+            seconds = -1_int64
+    end select
+
+end function time_to_seconds_i32
+
       end subroutine GetDateTimeVec
 
 
