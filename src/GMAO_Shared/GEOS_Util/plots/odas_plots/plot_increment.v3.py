@@ -10,7 +10,7 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import matplotlib.cm as cm
 import sys
-import panoply_colormap
+#import panoply_colormap
 
 
 if len(sys.argv) == 8:
@@ -68,13 +68,13 @@ if len(sys.argv) == 8:
         lon, lat = np.meshgrid(lons, lats)
   # Load custom color map
         name = 'my_cmap'
-        fileName = "GMT_panoply.txt"
-        my_cmap = panoply_colormap.from_ascii(fileName, name)
+#        fileName = "GMT_panoply.txt"
+#        my_cmap = panoply_colormap.from_ascii(fileName, name)
 #        colormaps.register(cmap=my_cmap)       
 #        plt.register_cmap(name=name, cmap=my_cmap)
 #        matplotlib.colormaps.register(name=name, cmap=my_cmap)
 #        custom_map = cm.get_cmap(name)
-        custom_map = matplotlib.colormaps.get_cmap(name)
+#        custom_map = matplotlib.colormaps.get_cmap(name)
      
 #        cm.register_cmap(cmap=my_cmap)
 #        custom_map = cm.get_cmap(name)

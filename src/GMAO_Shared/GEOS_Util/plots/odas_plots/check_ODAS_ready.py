@@ -208,11 +208,11 @@ def count_single_sensor(instid_list, obstyp, obs, target_instid, required_obstyp
 #    obstyp   = sys.argv[1]      # 'TZ'
     
 #yyyy = '201[8-9]'
-yyyy = '202[4-5]'
+#yyyy = '202[4-5]'
 #yyyy = '2025'
 #year = '????'
-mm   = '??'
-dd   = '??'
+#mm   = '??'
+#dd   = '??'
 hh   = '12'
 
 expdir=os.environ.get('EXPDIR')
@@ -228,7 +228,7 @@ obsdateend=content
 #flist=glob.glob('ocean_obs*/obs-*.nc')
 #directory = '/gpfsm/dnb42/projects/p17/production/geos5/exp/S2S-2_1_ANA_002/ocean_das/oana-*/ocean_obs*/'
 directory = f'/gpfsm/dnb07/projects/p236/GiOcean-NRT/ocean_das/oana-{obsdatebeg}_00/ocean_obs*/' 
-flist=glob.glob(str(directory)+'obs-'+yyyy+mm+dd+'_'+hh+'.nc')
+flist=glob.glob(str(directory)+'obs-*_'+hh+'.nc')
 flist.sort()
 #    print 'directory is ', directory
 

@@ -14,7 +14,7 @@ obsname = sys.argv[1]
 region  = sys.argv[2]
 lev1    = sys.argv[3]
 lev2    = sys.argv[4]
-
+cyear   = int(sys.argv[5])
 # obstype: SST, SSS, ADT, Tprof, Sprof, Ice Fraction
 
 
@@ -221,7 +221,7 @@ class OdaStats():
 #yyyy = '201[6-7]'
 #yyyy = '201[7-8]'
 #yyyy = '201[8-9]'
-yyyy = '202[4-5]'
+#yyyy = '202[4-5]'
 #yyyy = '2024'
 #year = '????'
 mm   = '??'
@@ -296,11 +296,20 @@ cnt_exp = 0
 file1 = open("LastDate.txt","w")
 file2 = open("ODAS_DATE.txt","w")
 for path in PATH:
-    
-    path2files = path+'/ocean_observer_*/obs-'+yyyy+mm+dd+'_'+hh+'.nc'
-    
-    flist = glob.glob(path2files)
+    flist = []
+    for year in (cyear-1, cyear):
+       yyyy = f"{year}"
+       path2files = (
+           f"{path}/ocean_observer_*/obs-{yyyy}{mm}{dd}_{hh}.nc"
+       )
+       flist.extend(glob.glob(path2files))
+
     flist.sort()
+    
+    #path2files = path+'/ocean_observer_*/obs-'+yyyy+mm+dd+'_'+hh+'.nc'
+    
+    #flist = glob.glob(path2files)
+    #flist.sort()
 
 #    print(flist)
 #    print (path2files)
@@ -350,8 +359,8 @@ for path in PATH:
           ax1.set_ylim(0.5, 1.0)
        elif obsname == 'Sprof':
           ax1.set_ylim(0.1, 0.3)
-    # elif obsname == 'ADT':
-    #     ax1.set_ylim(0.030, 0.055)
+       elif obsname == 'ADT':
+          ax1.set_ylim(0.030, 0.080)
 
        ax1.plot(ymdh, smooth(mae_omf, window_len=window_len), '-', color=COLORS[cnt_exp], lw=2, alpha=0.5, label=expname[cnt_exp])
        ax1.plot(ymdh, smooth(mae_oma, window_len=window_len), '--', color=COLORS[cnt_exp], lw=2, alpha=0.5)
@@ -363,7 +372,7 @@ for path in PATH:
        elif obsname == 'Sprof':
           ax3.set_ylim(-0.1, 0.1)
        elif obsname == 'ADT':
-          ax3.set_ylim(-0.03, 0.03)
+          ax3.set_ylim(-0.01, 0.01)
 
        print('bias:', np.mean(bias_omf), ' std:', np.std(bias_omf))
 
