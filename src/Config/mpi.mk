@@ -22,10 +22,10 @@
       INC_MPI := $(MVAPICH2)/include
       LIB_MPI := -L$(MVAPICH2)/lib  -lmpich
   else
-  ifdef MPICH
+  ifdef MPICH_DIR
       FC := mpifort
-      INC_MPI := $(MPICH)/include
-      LIB_MPI := -L$(MPICH)/lib  -lmpifort -lmpi
+      INC_MPI := $(MPICH_DIR)/include
+      LIB_MPI := -L$(MPICH_DIR)/lib  -lmpifort -lmpi
   else
   ifdef M_MPI_ROOT
       FC := mpif90
