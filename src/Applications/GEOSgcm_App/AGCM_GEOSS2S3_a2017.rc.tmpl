@@ -8,6 +8,9 @@
       AGCM_LM: @AGCM_LM
 AGCM_GRIDNAME: @AGCM_GRIDNAME
 
+DATAATM_LM: @AGCM_LM
+DATAATM_GRIDNAME: @AGCM_GRIDNAME
+
 DYCORE: @DYCORE
 
  SOLAR_DT: 3600
@@ -69,8 +72,8 @@ BKG_FREQUENCY: @OBSERVER_FRQ
 
 # Resolution of state passed to atmos analysis
 # --------------------------------------------
-ANA_GRIDNAME: PC@AGCM_IMx@AGCM_JM-DC
-ANA_LM: @AGCM_LM
+@ACTUAL_ATM4OCN ANA_GRIDNAME: PC@AGCM_IMx@AGCM_JM-DC
+@ACTUAL_ATM4OCN ANA_LM: @AGCM_LM
 
 # Restart Record Parameters
 # -------------------------
@@ -253,7 +256,7 @@ RECORD_FINAL:  >>>RECFINL<<<
 ##############################################################################################
 
 #REPLAY_FILE: /gpfsm/dnb02/projects/p53/merra2/scratch/d5124_m2_jan79/ana/Y%y4/M%m2/d5124_m2_jan79.bkg.eta.%y4%m2%d2_%h2z.nc4
->>>COUPLED_DUAL<<<REPLAY_FILE: /discover/nobackup/projects/gmao/merra2/data/ana/MERRA2_all/Y%y4/M%m2/MERRA2.bkg.eta.%y4%m2%d2_%h2z.nc4
+>>>COUPLED_DUAL<<<REPLAY_FILE: /home/dao_ops/d5294_geosit_jan18/run/.../archive/ana/Y%y4/M%m2/d5294_geosit_jan18.bkg.eta.%y4%m2%d2_%h200z.nc4
 >>>COUPLED_DUAL<<<REPLAY_FILE_FREQUENCY: 21600
 >>>COUPLED_DUAL<<<REPLAY_FILE_REFERENCE_TIME: 030000
 
@@ -327,11 +330,11 @@ RECORD_FINAL:  >>>RECFINL<<<
 # -----------------------------
 #PRECIP_FILE: ExtData/PCP/@PRECIP_FILE
 #
->>>COUPLED_DUAL<<< PRECIP_FILE: ExtData/PCP/d5_merra/Y%y4/M%m2/d5_merra.tavg1_2d_lfo_Nx_corr.%y4%m2%d2_%h230z.nc
+>>>COUPLED_DUAL<<< PRECIP_FILE: ExtData/PCP/d5124_rpit_jan12/Y%y4/M%m2/d5124_rpit_jan12.tavg1_2d_lfo_Nx_corr.%y4%m2%d2_%h230z.nc
 #
 # Latitudinal Tapering between 42.5 and 62.5 degrees mimics NCEP's approach of using GCM-based precip at high latitudes
 # --------------------
-#USE_PP_TAPER: 1
+>>>withODAS<<<USE_PP_TAPER: 1
 
 >>>COUPLED_DUAL<<< DISCHARGE_ADJUST_FILE: evall.nc4
 >>>COUPLED_DUAL<<< RATIOCAP: 1.1
@@ -349,7 +352,7 @@ LSM_CHOICE: @LSM_CHOICE
 # -------------------------------------------------------------------------------
 
 >>>DATAOCEAN<<<RUN_ROUTE: @RUN_ROUTE
->>>COUPLED<<<RUN_ROUTE: 1
+>>>COUPLED<<<RUN_ROUTE: @RUN_ROUTE
 
 ##############################################################################################
 ##############################################################################################
@@ -360,7 +363,8 @@ LSM_CHOICE: @LSM_CHOICE
 # AGCM_INTERNAL = BIAS Correction Increment: BIAS(n+1) = ALPHA*IAU(n) + BETA*BIAS(n)
 # ----------------------------------------------------------------------------------
 
->>>withODAS<<<REPLAY_CHECKPOINT_FILE:                  M2OCEAN_S2SV3_agcm_import
+>>>withODAS<<<REPLAY_CHECKPOINT_FILE:                  agcm_import_rst
+>>>withODAS<<<REPLAY_CHECKPOINT_TYPE:                  pnc4
 
 >>>FORCEDAS<<<AGCM_IMPORT_RESTART_FILE:               agcm_import_rst
 
@@ -375,95 +379,123 @@ MAPL_ENABLE_BOOTSTRAP: @BOOT
 
 # Required AGCM Model Restart Files
 # ---------------------------------
-DYN_INTERNAL_RESTART_FILE:              fvcore_internal_rst
-DYN_INTERNAL_CHECKPOINT_FILE:           fvcore_internal_checkpoint
-DYN_INTERNAL_CHECKPOINT_TYPE:           @CHECKPOINT_TYPE
-DYN_INTERNAL_HEADER:                    1
+@ACTUAL_ATM4OCN DYN_INTERNAL_RESTART_FILE:              fvcore_internal_rst
+@ACTUAL_ATM4OCN DYN_INTERNAL_CHECKPOINT_FILE:           fvcore_internal_checkpoint
+@ACTUAL_ATM4OCN DYN_INTERNAL_CHECKPOINT_TYPE:           @CHECKPOINT_TYPE
+@ACTUAL_ATM4OCN DYN_INTERNAL_HEADER:                    1
 
-LAKE_INTERNAL_RESTART_FILE:             lake_internal_rst
-LAKE_INTERNAL_CHECKPOINT_FILE:          lake_internal_checkpoint
-LAKE_INTERNAL_CHECKPOINT_TYPE:          @CHECKPOINT_TYPE
+@ACTUAL_ATM4OCN LAKE_INTERNAL_RESTART_FILE:             lake_internal_rst
+@ACTUAL_ATM4OCN LAKE_INTERNAL_CHECKPOINT_FILE:          lake_internal_checkpoint
+@ACTUAL_ATM4OCN LAKE_INTERNAL_CHECKPOINT_TYPE:          @CHECKPOINT_TYPE
 
-LANDICE_INTERNAL_RESTART_FILE:          landice_internal_rst
-LANDICE_INTERNAL_CHECKPOINT_FILE:       landice_internal_checkpoint
-LANDICE_INTERNAL_CHECKPOINT_TYPE:       @CHECKPOINT_TYPE
+@ACTUAL_ATM4OCN LANDICE_INTERNAL_RESTART_FILE:          landice_internal_rst
+@ACTUAL_ATM4OCN LANDICE_INTERNAL_CHECKPOINT_FILE:       landice_internal_checkpoint
+@ACTUAL_ATM4OCN LANDICE_INTERNAL_CHECKPOINT_TYPE:       @CHECKPOINT_TYPE
 
-CATCH_INTERNAL_RESTART_FILE:            catch_internal_rst
-CATCH_INTERNAL_CHECKPOINT_FILE:         catch_internal_checkpoint
-CATCH_INTERNAL_CHECKPOINT_TYPE:         @CHECKPOINT_TYPE
+@ACTUAL_ATM4OCN CATCH_INTERNAL_RESTART_FILE:            catch_internal_rst
+@ACTUAL_ATM4OCN CATCH_INTERNAL_CHECKPOINT_FILE:         catch_internal_checkpoint
+@ACTUAL_ATM4OCN CATCH_INTERNAL_CHECKPOINT_TYPE:         @CHECKPOINT_TYPE
 
-CATCHCN_INTERNAL_RESTART_FILE:            catchcn_internal_rst
-CATCHCN_INTERNAL_CHECKPOINT_FILE:         catchcn_internal_checkpoint
-CATCHCN_INTERNAL_CHECKPOINT_TYPE:         @CHECKPOINT_TYPE
+@ACTUAL_ATM4OCN CATCHCN_INTERNAL_RESTART_FILE:            catchcn_internal_rst
+@ACTUAL_ATM4OCN CATCHCN_INTERNAL_CHECKPOINT_FILE:         catchcn_internal_checkpoint
+@ACTUAL_ATM4OCN CATCHCN_INTERNAL_CHECKPOINT_TYPE:         @CHECKPOINT_TYPE
 
-MOIST_INTERNAL_RESTART_FILE:            moist_internal_rst
-MOIST_INTERNAL_CHECKPOINT_FILE:         moist_internal_checkpoint
-MOIST_INTERNAL_CHECKPOINT_TYPE:         @CHECKPOINT_TYPE
+@ACTUAL_ATM4OCN MOIST_INTERNAL_RESTART_FILE:            moist_internal_rst
+@ACTUAL_ATM4OCN MOIST_INTERNAL_CHECKPOINT_FILE:         moist_internal_checkpoint
+@ACTUAL_ATM4OCN MOIST_INTERNAL_CHECKPOINT_TYPE:         @CHECKPOINT_TYPE
 
 
 # Boot-Strapable AGCM Model Restart Files
 # ---------------------------------------
-MOIST_IMPORT_RESTART_FILE:              moist_import_rst
-MOIST_IMPORT_CHECKPOINT_FILE:           moist_import_checkpoint
-MOIST_IMPORT_CHECKPOINT_TYPE:           @CHECKPOINT_TYPE
+@ACTUAL_ATM4OCN MOIST_IMPORT_RESTART_FILE:              moist_import_rst
+@ACTUAL_ATM4OCN MOIST_IMPORT_CHECKPOINT_FILE:           moist_import_checkpoint
+@ACTUAL_ATM4OCN MOIST_IMPORT_CHECKPOINT_TYPE:           @CHECKPOINT_TYPE
 
 SURFACE_IMPORT_RESTART_FILE:            surf_import_rst
 SURFACE_IMPORT_CHECKPOINT_FILE:         surf_import_checkpoint
 SURFACE_IMPORT_CHECKPOINT_TYPE:         @CHECKPOINT_TYPE
 
-SOLAR_INTERNAL_RESTART_FILE:            solar_internal_rst
-SOLAR_INTERNAL_CHECKPOINT_FILE:         solar_internal_checkpoint
-SOLAR_INTERNAL_CHECKPOINT_TYPE:         @CHECKPOINT_TYPE
+@ACTUAL_ATM4OCN SOLAR_INTERNAL_RESTART_FILE:            solar_internal_rst
+@ACTUAL_ATM4OCN SOLAR_INTERNAL_CHECKPOINT_FILE:         solar_internal_checkpoint
+@ACTUAL_ATM4OCN SOLAR_INTERNAL_CHECKPOINT_TYPE:         @CHECKPOINT_TYPE
 
-IRRAD_INTERNAL_RESTART_FILE:            irrad_internal_rst
-IRRAD_INTERNAL_CHECKPOINT_FILE:         irrad_internal_checkpoint
-IRRAD_INTERNAL_CHECKPOINT_TYPE:         @CHECKPOINT_TYPE
+@ACTUAL_ATM4OCN IRRAD_INTERNAL_RESTART_FILE:            irrad_internal_rst
+@ACTUAL_ATM4OCN IRRAD_INTERNAL_CHECKPOINT_FILE:         irrad_internal_checkpoint
+@ACTUAL_ATM4OCN IRRAD_INTERNAL_CHECKPOINT_TYPE:         @CHECKPOINT_TYPE
 
-TURBULENCE_INTERNAL_RESTART_FILE:       turb_internal_rst
-TURBULENCE_INTERNAL_CHECKPOINT_FILE:    turb_internal_checkpoint
-TURBULENCE_INTERNAL_CHECKPOINT_TYPE:    @CHECKPOINT_TYPE
+@ACTUAL_ATM4OCN TURBULENCE_INTERNAL_RESTART_FILE:       turb_internal_rst
+@ACTUAL_ATM4OCN TURBULENCE_INTERNAL_CHECKPOINT_FILE:    turb_internal_checkpoint
+@ACTUAL_ATM4OCN TURBULENCE_INTERNAL_CHECKPOINT_TYPE:    @CHECKPOINT_TYPE
 
-TURBULENCE_IMPORT_RESTART_FILE:         turb_import_rst
-TURBULENCE_IMPORT_CHECKPOINT_FILE:      turb_import_checkpoint
-TURBULENCE_IMPORT_CHECKPOINT_TYPE:      @CHECKPOINT_TYPE
+@ACTUAL_ATM4OCN TURBULENCE_IMPORT_RESTART_FILE:         turb_import_rst
+@ACTUAL_ATM4OCN TURBULENCE_IMPORT_CHECKPOINT_FILE:      turb_import_checkpoint
+@ACTUAL_ATM4OCN TURBULENCE_IMPORT_CHECKPOINT_TYPE:      @CHECKPOINT_TYPE
 
-PCHEM_INTERNAL_RESTART_FILE:            pchem_internal_rst
-PCHEM_INTERNAL_CHECKPOINT_FILE:         pchem_internal_checkpoint
-PCHEM_INTERNAL_CHECKPOINT_TYPE:         @CHECKPOINT_TYPE
+@ACTUAL_ATM4OCN PCHEM_INTERNAL_RESTART_FILE:            pchem_internal_rst
+@ACTUAL_ATM4OCN PCHEM_INTERNAL_CHECKPOINT_FILE:         pchem_internal_checkpoint
+@ACTUAL_ATM4OCN PCHEM_INTERNAL_CHECKPOINT_TYPE:         @CHECKPOINT_TYPE
+
+@ACTUAL_ATM4OCN H2O_INTERNAL_RESTART_FILE:              h2o_internal_rst
+@ACTUAL_ATM4OCN H2O_INTERNAL_CHECKPOINT_FILE:           h2o_internal_checkpoint
+@ACTUAL_ATM4OCN H2O_INTERNAL_CHECKPOINT_TYPE:           @CHECKPOINT_TYPE
 
 # Chemistry/AEROSOL Model Restart Files
 # -------------------------------------
-GOCART_IMPORT_RESTART_FILE:             gocart_import_rst
-GOCART_IMPORT_CHECKPOINT_FILE:          gocart_import_checkpoint
-GOCART_IMPORT_CHECKPOINT_TYPE:          @CHECKPOINT_TYPE
+@ACTUAL_ATM4OCN GOCART_IMPORT_RESTART_FILE:             gocart_import_rst
+@ACTUAL_ATM4OCN GOCART_IMPORT_CHECKPOINT_FILE:          gocart_import_checkpoint
+@ACTUAL_ATM4OCN GOCART_IMPORT_CHECKPOINT_TYPE:          @CHECKPOINT_TYPE
 
-GOCART_INTERNAL_RESTART_FILE:           gocart_internal_rst
-GOCART_INTERNAL_CHECKPOINT_FILE:        gocart_internal_checkpoint
-GOCART_INTERNAL_CHECKPOINT_TYPE:        @CHECKPOINT_TYPE
+@ACTUAL_ATM4OCN GOCART_INTERNAL_RESTART_FILE:           gocart_internal_rst
+@ACTUAL_ATM4OCN GOCART_INTERNAL_CHECKPOINT_FILE:        gocart_internal_checkpoint
+@ACTUAL_ATM4OCN GOCART_INTERNAL_CHECKPOINT_TYPE:        @CHECKPOINT_TYPE
 
-GOCART.data_INTERNAL_RESTART_FILE:      gocartdata_internal_rst
-GOCART.data_INTERNAL_CHECKPOINT_FILE:   gocartdata_internal_checkpoint
-GOCART.data_INTERNAL_CHECKPOINT_TYPE:   @CHECKPOINT_TYPE
+@ACTUAL_ATM4OCN GOCART.data_INTERNAL_RESTART_FILE:      gocartdata_internal_rst
+@ACTUAL_ATM4OCN GOCART.data_INTERNAL_CHECKPOINT_FILE:   gocartdata_internal_checkpoint
+@ACTUAL_ATM4OCN GOCART.data_INTERNAL_CHECKPOINT_TYPE:   @CHECKPOINT_TYPE
 
-GEOSACHEM_INTERNAL_RESTART_FILE:        geosachem_internal_rst
-GEOSACHEM_INTERNAL_CHECKPOINT_FILE:     geosachem_internal_checkpoint
-GEOSACHEM_INTERNAL_CHECKPOINT_TYPE:     @CHECKPOINT_TYPE
+@ACTUAL_ATM4OCN CARMA_INTERNAL_RESTART_FILE:            carma_internal_rst
+@ACTUAL_ATM4OCN CARMA_INTERNAL_CHECKPOINT_FILE:         carma_internal_checkpoint
+@ACTUAL_ATM4OCN CARMA_INTERNAL_CHECKPOINT_TYPE:         @CHECKPOINT_TYPE
 
-TR_INTERNAL_RESTART_FILE:               tr_internal_rst
-TR_INTERNAL_CHECKPOINT_FILE:            tr_internal_checkpoint
-TR_INTERNAL_CHECKPOINT_TYPE:            @CHECKPOINT_TYPE
+@ACTUAL_ATM4OCN STRATCHEM_INTERNAL_RESTART_FILE:        stratchem_internal_rst
+@ACTUAL_ATM4OCN STRATCHEM_INTERNAL_CHECKPOINT_FILE:     stratchem_internal_checkpoint
+@ACTUAL_ATM4OCN STRATCHEM_INTERNAL_CHECKPOINT_TYPE:     @CHECKPOINT_TYPE
 
-TR_IMPORT_RESTART_FILE:                 tr_import_rst
-TR_IMPORT_CHECKPOINT_FILE:              tr_import_checkpoint
-TR_IMPORT_CHECKPOINT_TYPE:              @CHECKPOINT_TYPE
+@ACTUAL_ATM4OCN STRATCHEM_IMPORT_RESTART_FILE:          stratchem_import_rst
+@ACTUAL_ATM4OCN STRATCHEM_IMPORT_CHECKPOINT_FILE:       stratchem_import_checkpoint
+@ACTUAL_ATM4OCN STRATCHEM_IMPORT_CHECKPOINT_TYPE:       @CHECKPOINT_TYPE
 
-HEMCO_INTERNAL_RESTART_FILE:            hemco_internal_rst
-HEMCO_INTERNAL_CHECKPOINT_FILE:         hemco_internal_checkpoint
-HEMCO_INTERNAL_CHECKPOINT_TYPE:         @CHECKPOINT_TYPE
+@ACTUAL_ATM4OCN GMICHEM_INTERNAL_RESTART_FILE:          gmichem_internal_rst
+@ACTUAL_ATM4OCN GMICHEM_INTERNAL_CHECKPOINT_FILE:       gmichem_internal_checkpoint
+@ACTUAL_ATM4OCN GMICHEM_INTERNAL_CHECKPOINT_TYPE:       @CHECKPOINT_TYPE
 
-HEMCO_IMPORT_RESTART_FILE:              hemco_import_rst
-HEMCO_IMPORT_CHECKPOINT_FILE:           hemco_import_checkpoint
-HEMCO_IMPORT_CHECKPOINT_TYPE:           @CHECKPOINT_TYPE
+@ACTUAL_ATM4OCN GMICHEM_IMPORT_RESTART_FILE:            gmichem_import_rst
+@ACTUAL_ATM4OCN GMICHEM_IMPORT_CHECKPOINT_FILE:         gmichem_import_checkpoint
+@ACTUAL_ATM4OCN GMICHEM_IMPORT_CHECKPOINT_TYPE:         @CHECKPOINT_TYPE
+
+@ACTUAL_ATM4OCN MAM_INTERNAL_RESTART_FILE:              mam_internal_rst
+@ACTUAL_ATM4OCN MAM_INTERNAL_CHECKPOINT_FILE:           mam_internal_checkpoint
+@ACTUAL_ATM4OCN MAM_INTERNAL_CHECKPOINT_TYPE:           @CHECKPOINT_TYPE
+
+@ACTUAL_ATM4OCN GEOSACHEM_INTERNAL_RESTART_FILE:        geosachem_internal_rst
+@ACTUAL_ATM4OCN GEOSACHEM_INTERNAL_CHECKPOINT_FILE:     geosachem_internal_checkpoint
+@ACTUAL_ATM4OCN GEOSACHEM_INTERNAL_CHECKPOINT_TYPE:     @CHECKPOINT_TYPE
+
+@ACTUAL_ATM4OCN TR_INTERNAL_RESTART_FILE:               tr_internal_rst
+@ACTUAL_ATM4OCN TR_INTERNAL_CHECKPOINT_FILE:            tr_internal_checkpoint
+@ACTUAL_ATM4OCN TR_INTERNAL_CHECKPOINT_TYPE:            @CHECKPOINT_TYPE
+
+@ACTUAL_ATM4OCN TR_IMPORT_RESTART_FILE:                 tr_import_rst
+@ACTUAL_ATM4OCN TR_IMPORT_CHECKPOINT_FILE:              tr_import_checkpoint
+@ACTUAL_ATM4OCN TR_IMPORT_CHECKPOINT_TYPE:              @CHECKPOINT_TYPE
+
+@ACTUAL_ATM4OCN HEMCO_INTERNAL_RESTART_FILE:            hemco_internal_rst
+@ACTUAL_ATM4OCN HEMCO_INTERNAL_CHECKPOINT_FILE:         hemco_internal_checkpoint
+@ACTUAL_ATM4OCN HEMCO_INTERNAL_CHECKPOINT_TYPE:         @CHECKPOINT_TYPE
+
+@ACTUAL_ATM4OCN HEMCO_IMPORT_RESTART_FILE:              hemco_import_rst
+@ACTUAL_ATM4OCN HEMCO_IMPORT_CHECKPOINT_FILE:           hemco_import_checkpoint
+@ACTUAL_ATM4OCN HEMCO_IMPORT_CHECKPOINT_TYPE:           @CHECKPOINT_TYPE
 
 # OCEAN Model Restart Files
 # -------------------------
@@ -487,13 +519,21 @@ SEAICETHERMO_INTERNAL_CHECKPOINT_TYPE:  @CHECKPOINT_TYPE
 >>>COUPLED<<<SEAICE_INTERNAL_CHECKPOINT_FILE:        seaice_internal_checkpoint
 >>>COUPLED<<<SEAICE_INTERNAL_CHECKPOINT_TYPE:        @CHECKPOINT_TYPE
 
-#>>>COUPLED<<<ORAD_IMPORT_RESTART_FILE:               orad_import_rst
-#>>>COUPLED<<<ORAD_IMPORT_CHECKPOINT_FILE:            orad_import_checkpoint
-#>>>COUPLED<<<ORAD_IMPORT_CHECKPOINT_TYPE:            @CHECKPOINT_TYPE
+@COMMENT_OBIOOBIO_IMPORT_RESTART_FILE:               obio_import_rst
+@COMMENT_OBIOOBIO_IMPORT_CHECKPOINT_FILE:            obio_import_checkpoint
+@COMMENT_OBIOOBIO_IMPORT_CHECKPOINT_FILE:            default
 
->>>COUPLED<<<OCEAN_INTERNAL_RESTART_FILE:               ocean_internal_rst
->>>COUPLED<<<OCEAN_INTERNAL_CHECKPOINT_FILE:            ocean_internal_checkpoint
->>>COUPLED<<<OCEAN_INTERNAL_CHECKPOINT_TYPE:            @CHECKPOINT_TYPE
+@COMMENT_OBIOOBIO_INTERNAL_RESTART_FILE:             obio_internal_rst
+@COMMENT_OBIOOBIO_INTERNAL_CHECKPOINT_FILE:          obio_internal_checkpoint
+@COMMENT_OBIOOBIO_INTERNAL_CHECKPOINT_FILE:          default
+
+@COMMENT_OBIOORAD_IMPORT_RESTART_FILE:               orad_import_rst
+@COMMENT_OBIOORAD_IMPORT_CHECKPOINT_FILE:            orad_import_checkpoint
+@COMMENT_OBIOORAD_IMPORT_CHECKPOINT_TYPE:            default
+
+>>>COUPLED<<<OCEAN_INTERNAL_RESTART_FILE:            ocean_internal_rst
+>>>COUPLED<<<OCEAN_INTERNAL_CHECKPOINT_FILE:         ocean_internal_checkpoint
+>>>COUPLED<<<OCEAN_INTERNAL_CHECKPOINT_TYPE:         @CHECKPOINT_TYPE
 
 # Boundary Datasets
 # -----------------
@@ -507,9 +547,9 @@ NDVI_FILE:                 ndvi.data
 TILING_FILE:                tile.bin 
 VISDF_FILE:                visdf.dat
 NIRDF_FILE:                nirdf.dat
->>>COUPLED<<<ROUTING_FILE:             runoff.bin
+>>>COUPLED<<<@ACTUAL_ATM4OCNROUTING_FILE:             runoff.bin
 
-VEGDYN_INTERNAL_RESTART_FILE:  vegdyn.data
+@ACTUAL_ATM4OCNVEGDYN_INTERNAL_RESTART_FILE:  vegdyn.data
 
 KPAR_FILE: SEAWIFS_KPAR_mon_clim.data
 
@@ -605,7 +645,8 @@ CO2:            -1
 # -----------------------
 USE_SATSIM:       @SATSIM
 USE_SATSIM_ISCCP: @ISCCP_SATSIM
-USE_SATSIM_MODIS: @MODIS_SATSIM
+>>>noODAS<<<USE_SATSIM_MODIS: @MODIS_SATSIM
+>>>withODAS<<<USE_SATSIM_MODIS: 1
 USE_SATSIM_RADAR: @RADAR_SATSIM
 USE_SATSIM_LIDAR: @LIDAR_SATSIM
 USE_SATSIM_MISR:  @MISR_SATSIM
@@ -622,6 +663,8 @@ USE_SATSIM_MISR:  @MISR_SATSIM
 OCEAN_DT: @DT
 >>>COUPLED<<<USE_DATASEA:0
 >>>COUPLED<<<USE_DATASEAICE:0
+>>>COUPLED<<<USE_DATA_ATM4OCN: @USE_DATA_ATM4OCN
+>>>COUPLED<<<USE_OCEANOBIOGEOCHEM: @USE_OCEANOBIOGEOCHEM
 >>>COUPLED<<<steady_state_ocean: 0
 >>>COUPLED<<<OCEAN_PICE_SCALING: 0.0
 >>>COUPLED<<<SSS_MIN: 0.5

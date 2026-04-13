@@ -1,0 +1,162 @@
+# ----------------------------
+ifndef ESMADIR
+       ESMADIR := $(PWD)/../..
+endif
+
+# Compilation rules, flags, etc
+# -----------------------------
+  include $(ESMADIR)/Config/ESMA_base.mk  # Generic stuff
+  include $(ESMADIR)/Config/ESMA_arch.mk  # System dependencies
+  include $(ESMADIR)/Config/GMAO_base.mk  # GMAO Generic stuff
+
+  include $(ESMADIR)/Config/vectorize.mk  # Vectorize
+
+#                  ---------------------
+#                  Standard ESMA Targets
+#                  ---------------------
+
+esma_help help:
+	@echo "Standard ESMA targets:"
+
+THIS = ExtDataDriver
+BINS = $(THIS).x
+
+esma_install install: $(BINS)
+	$(MKDIR) $(ESMABIN) $(ESMAETC)
+	$(CP) -p *.x    $(ESMABIN)
+
+esma_clean clean:
+	-$(RM) *~ *.[aox] *.mod *.x $(GCMDOC).*
+
+esma_distclean distclean:
+	-$(RM) *~ *.[aoxd] *.mod *.x $(GCMDOC).*
+
+#                  ---------------------------
+#                  Availability Driven Options
+#                  ---------------------------
+
+LIB_SHARED = $(wildcard \
+             $(ESMALIB)/libMAPL_Base.a \
+             $(ESMALIB)/libMAPL_cfio_r4.a \
+             $(ESMALIB)/libGMAO_gfio_r4.a \
+             $(ESMALIB)/libGMAO_mpeu.a  )
+
+
+
+#                  --------------------
+#                  User Defined Targets
+#                  --------------------# Make sure ESMADIR is defined
+# ----------------------------
+ifndef ESMADIR
+       ESMADIR := $(PWD)/../..
+endif
+
+# Compilation rules, flags, etc
+# -----------------------------
+  include $(ESMADIR)/Config/ESMA_base.mk  # Generic stuff
+  include $(ESMADIR)/Config/ESMA_arch.mk  # System dependencies
+  include $(ESMADIR)/Config/GMAO_base.mk  # GMAO Generic stuff
+
+  include $(ESMADIR)/Config/vectorize.mk  # Vectorize
+
+#                  ---------------------
+#                  Standard ESMA Targets
+#                  ---------------------
+
+esma_help help:
+	@echo "Standard ESMA targets:"
+
+THIS = ExtDataDriver
+BINS = $(THIS).x
+
+esma_install install: $(BINS)
+	$(MKDIR) $(ESMABIN) $(ESMAETC) 
+	$(CP) -p *.x    $(ESMABIN)
+	$(CP) -p *.rc   $(ESMAETC)
+	$(CP) -p *.tmpl $(ESMAETC)
+
+esma_clean clean:
+	-$(RM) *~ *.[aox] *.mod *.x $(GCMDOC).*
+
+esma_distclean distclean:
+	-$(RM) *~ *.[aoxd] *.mod *.x $(GCMDOC).*
+
+#                  ---------------------------
+#                  Availability Driven Options
+#                  ---------------------------
+ifeq ( $(wildcard $(ESMALIB)/libmom.a), $(null) )
+ifeq ($(FV_PRECISION), R4)
+   LIB_FMS = $(ESMALIB)/libGFDL_fms_r4.a
+else
+   LIB_FMS = $(ESMALIB)/libGFDL_fms_r8.a
+endif
+else
+   LIB_FMS = $(ESMALIB)/libGFDL_fms_r8.a
+endif
+
+#LIB_DYN = $(wildcard $(ESMALIB)/libFVdycoreCubed_GridComp.a $(LIB_FMS) )
+
+LIB_DYN = $(wildcard $(ESMALIB)/libGEOSsingcol_GridComp.a\
+                     $(ESMALIB)/libGEOSsuperdyn_GridComp.a\
+                     $(ESMALIB)/libGEOStopo_GridComp.a\
+                     $(ESMALIB)/libFVdycore_GridComp.a \
+                     $(ESMALIB)/libFVdycoreCubed_GridComp.a \
+                     $(ESMALIB)/libARIESg3_GridComp.a \
+                     $(ESMALIB)/libGEOSdatmodyn_GridComp.a\
+                     $(LIB_FMS) \
+                     $(ESMALIB)/libfvdycore.a \
+                     $(ESMALIB)/libGMAO_pilgrim.a \
+                     $(ESMALIB)/libGEOSdataatm_GridComp.a)
+
+
+LIB_SHARED = $(wildcard \
+             $(ESMALIB)/libMAPL_Base.a \
+             $(ESMALIB)/libMAPL_cfio_r4.a \
+             $(ESMALIB)/libGMAO_gfio_r4.a \
+             $(ESMALIB)/libGMAO_mpeu.a  )
+
+
+
+#                  --------------------
+#                  User Defined Targets
+#                  --------------------
+FREAL = $(FREAL4)
+#SRCS = $(THIS).F90 ExtDataRoot_GridComp.F90   # <-- CHANGED
+SRCS = ExtDataRoot_GridComp.F90 $(THIS).F90 # <-- CHANGED
+OBJS = $(SRCS:.F90=.o)
+
+DIR_GC = $(wildcard $(ESMAINC)/GEOS[a-z]*GridComp $(INC_GEOSCHEM) )  
+INC_GC = $(foreach FF,$(DIR_GC),$(M)$(FF))
+
+INC_DIRS = . $(INC_GEOS_GCS) $(INC_GMAO_SHARED) $(INC_ESMF) $(INC_MPI)
+MOD_DIRS = . $(INC_DIRS)
+
+USER_FINCS  = $(foreach dir,$(INC_DIRS),$(I)$(dir))
+USER_FMODS  = $(foreach dir,$(MOD_DIRS),$(M)$(dir))
+USER_FFLAGS = $(USER_DEFS) $(BIG_ENDIAN)
+USER_LDFLAGS += $(MCMODEL)
+
+vpath % $(MOD_DIRS)
+
+LIB_COMP = $(LIB_DYN) $(LIB_SHARED)
+
+ifeq ($(LIB_SDF),$(LIB_HDF))
+   LIB_SDF :=  $(ESMALIB)/libGMAO_mfhdf3.a $(LIB_SDF)
+endif
+
+$(THIS).x : $(OBJS) $(LIB_COMP)
+	$(LD) -o $@ $(LDFLAGS) $(OBJS)  \
+                                   -Wl,--start-group $(LIB_COMP) -Wl,--end-group $(LIB_APROF)   \
+                                   $(LIB_ESMF) $(LIB_SDF) \
+                                   $(LIB_SCI) $(LIB_MPI) $(LIB_SYS)
+
+#                  --------------------
+#                      Dependencies
+#                  --------------------
+
+$(THIS).o: $(LIB_COMP)
+ExtDataRoot_GridComp.o: $(LIB_COMP)
+
+  -include $(ESMADIR)/Config/ESMA_post.mk  # ESMA additional targets, macros
+
+#.

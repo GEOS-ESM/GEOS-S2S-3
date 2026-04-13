@@ -43,16 +43,16 @@ ALLDIRS = Shared \
           GEOScatch_GridComp  \
           GEOSlana_GridComp   \
           GEOScatchCN_GridComp \
-          GEOSroute_GridComp  
+          GEOSroute_GridComp
 
 SUBDIRS = $(wildcard $(ALLDIRS))
 
 TARGETS = esma_install esma_clean esma_distclean esma_doc \
-          install clean distclean doc 
+          install clean distclean doc
 
 export ESMADIR BASEDIR ARCH SITE
 
-$(TARGETS): 
+$(TARGETS):
 	@ t=$@; argv="$(SUBDIRS)" ;\
 	  for d in $$argv; do			 \
 	    ( cd $$d				;\
@@ -83,8 +83,8 @@ local_esma_doc local_doc:
 
 
 SRCS := GEOS_LandGridComp.F90
-OBJS := $(addsuffix .o, $(basename $(SRCS))) 
-DEPS := $(addsuffix .d, $(basename $(SRCS))) 
+OBJS := $(addsuffix .o, $(basename $(SRCS)))
+DEPS := $(addsuffix .d, $(basename $(SRCS)))
 
 FREAL = $(FREAL4) # for now, require 32 bit reals (R4)
 
@@ -92,9 +92,9 @@ INC_DIRS = . $(INC_GEOS_LANDSHR) $(INC_GEOS_SURFSHR) $(INC_GMAO_SHARED) $(INC_ES
 MOD_DIRS = . $(INC_DIRS) \
              $(foreach dir,$(SUBDIRS),$(ESMAINC)/$(dir))
 
-USER_FINCS  = $(foreach dir,$(INC_DIRS),$(I)$(dir)) 
-USER_FMODS  = $(foreach dir,$(MOD_DIRS),$(M)$(dir)) 
-USER_FFLAGS = $(BIG_ENDIAN) 
+USER_FINCS  = $(foreach dir,$(INC_DIRS),$(I)$(dir))
+USER_FMODS  = $(foreach dir,$(MOD_DIRS),$(M)$(dir))
+USER_FFLAGS = $(BIG_ENDIAN)
 
 vpath % $(MOD_DIRS)
 
@@ -113,16 +113,10 @@ $(LIB) lib : $(OBJS)
 #              Package Dependencies for Parallel Install
 #              ------------------------------------------
 
-   ifeq ($(wildcard GEOSroute_GridComp), $(null))
-      GEOSroute_GridComp_install = 
-   else
-      GEOSroute_GridComp_install = GEOSroute_GridComp_install
-   endif
-
-   GEOSlana_GridComp_install   : GEOScatch_GridComp_install
-   GEOScatch_GridComp_install  : Shared_install $(GEOSroute_GridComp_install)
    GEOScatchCN_GridComp_install: Shared_install
-   GEOSroute_GridComp_install  : Shared_install 
+   GEOSroute_GridComp_install  : Shared_install
+   GEOScatch_GridComp_install  : Shared_install GEOSroute_GridComp_install
+   GEOSlana_GridComp_install   : GEOScatch_GridComp_install
 
   -include $(ESMADIR)/Config/ESMA_post.mk  # ESMA additional targets, macros
 
