@@ -1584,6 +1584,9 @@ contains
       TMP(I+1)%CONNPtr%To   = MAPL_VarConnPoint(usableTONAME, &
            usableTO_IMPORT,  usableTO_EXPORT)
 
+      TMP(I+1)%CONNPtr%notRequired   = .false.
+      TMP(I+1)%CONNPtr%used   = .false.
+
       CONN => TMP
 
       RETURN_(ESMF_SUCCESS)
