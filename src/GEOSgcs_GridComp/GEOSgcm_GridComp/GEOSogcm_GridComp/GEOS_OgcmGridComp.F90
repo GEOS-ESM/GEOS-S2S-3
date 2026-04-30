@@ -1821,10 +1821,10 @@ contains
     VERIFY_(STATUS)
 
     if(DO_DATASEAONLY==0) then
-!       if(DO_DATA_ATM4OCN==0) then
+       if(DO_DATA_ATM4OCN==0) then
           call MAPL_LocStreamTransform( ExchGrid, DISCHARGEO, DISCHARGE, RC=STATUS) 
           VERIFY_(STATUS)
-!       endif     
+       endif     
 
        PENUVRM= PENUVRO
        PENUVFM= PENUVFO
@@ -2390,8 +2390,7 @@ contains
        end do
       endif
 
-!      if (DO_DATA_ATM4OCN==0 .and. associated(DISCHARGEOB) ) then
-      if ( associated(DISCHARGEOB) ) then
+      if (DO_DATA_ATM4OCN==0 .and. associated(DISCHARGEOB) ) then
          call MAPL_LocStreamTransform( ExchGrid, DISCHARGEOB, DISCHARGE, RC=STATUS)
          VERIFY_(STATUS)
       end if

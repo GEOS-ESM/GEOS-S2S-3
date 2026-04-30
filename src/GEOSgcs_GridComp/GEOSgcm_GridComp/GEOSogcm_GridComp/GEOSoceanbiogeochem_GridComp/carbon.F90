@@ -60,10 +60,10 @@
 !   DOC
       Pnpe1 = max(P(npe+1),0.0)
       rmmzoo = Pnpe1/(Pzo+Pnpe1)
-!      docexcz  = frdoc*excz*rmmzoo*Pnpe1        !zoopl production DOC
-!      cdocexcz = frcdoc*excz*rmmzoo*Pnpe1       !zoopl production CDOC
-      docexcz  = excz*rmmzoo*Pnpe1        !zoopl production DOC
-      cdocexcz = 0.0       !zoopl production CDOC
+      docexcz  = frdoc*excz*rmmzoo*Pnpe1        !zoopl production DOC
+      cdocexcz = frcdoc*excz*rmmzoo*Pnpe1       !zoopl production CDOC
+!      docexcz  = excz*rmmzoo*Pnpe1        !zoopl production DOC
+!      cdocexcz = 0.0       !zoopl production CDOC
       P_tend(npe+1) = P_tend(npe+1) - (docexcz+cdocexcz)*fnoice
       P_tend(1) = P_tend(1) + bn*(docexcz+cdocexcz)*fnoice
       P_tend(4) = P_tend(4) + bf*(docexcz+cdocexcz)*fnoice
@@ -73,16 +73,16 @@
       Pncs4 = max(P(ncs+4),0.0)
       Pnds = max(P(nds),0.0)
       docdep = Pncs/(rkdoc2+Pncs)
-!      docbac = tfac*frdoc*rndep*docdep*Pncs   !bacterial loss DOC
-!      docdet = tfac*frdoc*rlampoc*Pnds        !detrital production DOC
-      docbac = tfac*rndep*docdep*Pncs   !bacterial loss DOC
-      docdet = tfac*rlampoc*Pnds        !detrital production DOC
+      docbac = tfac*frdoc*rndep*docdep*Pncs   !bacterial loss DOC
+      docdet = tfac*frdoc*rlampoc*Pnds        !detrital production DOC
+!      docbac = tfac*rndep*docdep*Pncs   !bacterial loss DOC
+!      docdet = tfac*rlampoc*Pnds        !detrital production DOC
       doctend = docexcz*mgchltouMC + docdet/uMtomgm3-docbac
       P_tend(ncs) = P_tend(ncs) + doctend*fnoice
-!      cdocbac = tfac*frcdoc*rndep*docdep*Pncs4  !bacterial loss CDOC
-!      cdocdet = tfac*frcdoc*rlampoc*Pnds4       !detrital production CDOC
-      cdocbac = 0.0  !bacterial loss CDOC
-      cdocdet = 0.0       !detrital production CDOC
+      cdocbac = tfac*frcdoc*rndep*docdep*Pncs4  !bacterial loss CDOC
+      cdocdet = tfac*frcdoc*rlampoc*Pnds        !detrital production CDOC
+!      cdocbac = 0.0  !bacterial loss CDOC
+!      cdocdet = 0.0       !detrital production CDOC
       cdoctend = cdocexcz*mgchltouMC + cdocdet/uMtomgm3-cdocbac
       P_tend(ncs+4) = P_tend(ncs+4) + cdoctend*fnoice
 !   adjust detritus
@@ -140,7 +140,6 @@
       destroycdoc = 1.0E-6*cdomabsq
       P_tend(ncs+4) = P_tend(ncs+4) - destroycdoc*fnoice
       P_tend(ncs+1) = P_tend(ncs+1) + destroycdoc*fnoice  !reverts to DIC
-
 
 !  Surface fluxes of carbon 
       if (k .eq. 1)then
