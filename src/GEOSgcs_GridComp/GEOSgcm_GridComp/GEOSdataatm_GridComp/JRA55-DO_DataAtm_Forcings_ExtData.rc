@@ -1,0 +1,29 @@
+PrimaryExports%%
+# -------------|-------|-------|--------|----------------------|--------|--------|-------------|----------|----------------|
+#  Import      |       |       | Regrid |        Refresh       | OffSet | Scale  | Variable On |   File   | Reference Time |
+#  Name        | Units | Clim  | Method |     Time Template    | Factor | Factor |     File    | Template | and Frequency  |
+# -------------|-------|-------|--------|----------------------|--------|--------|-------------|----------|----------------|
+
+PS              'Pa'      N         N             0               none     none      psl        ExtData/JRA55-DO_S2Sv3/v1-5/psl/psl_input4MIPs_atmosphericState_OMIP_MRI-JRA55-do_gr_%y401010000-%y412312100.nc     
+TA              'K'       N         N             0               none     none      tas        ExtData/JRA55-DO_S2Sv3/v1-5/tas/tas_input4MIPs_atmosphericState_OMIP_MRI-JRA55-do_gr_%y401010000-%y412312100.nc     
+QA              '1'       N         N             0               none     none      huss       ExtData/JRA55-DO_S2Sv3/v1-5/huss/huss_input4MIPs_atmosphericState_OMIP_MRI-JRA55-do_gr_%y401010000-%y412312100.nc     
+UA              'm s-1'   N         N             0               none     none      uas        ExtData/JRA55-DO_S2Sv3/v1-5/uas/uas_input4MIPs_atmosphericState_OMIP_MRI-JRA55-do_gr_%y401010000-%y412312100.nc     
+VA              'm s-1'   N         N             0               none     none      vas        ExtData/JRA55-DO_S2Sv3/v1-5/vas/vas_input4MIPs_atmosphericState_OMIP_MRI-JRA55-do_gr_%y401010000-%y412312100.nc     
+PCU             'kg m-2 s-1'  N     N             0               none     none      prra       ExtData/JRA55-DO_S2Sv3/v1-5/prra/prra_input4MIPs_atmosphericState_OMIP_MRI-JRA55-do_gr_%y401010130-%y412312230.nc    
+PLS             'kg m-2 s-1'  N     N             0               none     none      pls        /dev/null
+DISCHARGE       'kg m-2 s-1'  N     N             0               none     none      friver     ExtData/JRA55-DO_S2Sv3/v1-5/friver_remap/friver_input4MIPs_atmosphericState_OMIP_MRI-JRA55-do_gr_%y40101-%y41231.nc     
+DISCHARGEOB     'kg m-2 s-1'  N     N             0               none     none      friver     ExtData/JRA55-DO_S2Sv3/v1-5/friver_remap/friver_input4MIPs_atmosphericState_OMIP_MRI-JRA55-do_gr_%y40101-%y41231.nc     
+SNO             'kg m-2 s-1'  N     N             0               none     none      prsn       ExtData/JRA55-DO_S2Sv3/v1-5/prsn/prsn_input4MIPs_atmosphericState_OMIP_MRI-JRA55-do_gr_%y401010130-%y412312230.nc     
+LWDN            'W m-2'   N         N             0               none     none      rlds       ExtData/JRA55-DO_S2Sv3/v1-5/rlds/rlds_input4MIPs_atmosphericState_OMIP_MRI-JRA55-do_gr_%y401010130-%y412312230.nc     
+SWGDWN          'W m-2'   N         N             0               none     none      rsds       ExtData/JRA55-DO_S2Sv3/v1-5/rsds/rsds_input4MIPs_atmosphericState_OMIP_MRI-JRA55-do_gr_%y401010130-%y412312230.nc     
+DUDT            'm s-2'       N     N             0               none     none      DUDT       /dev/null
+DVDT            'm s-2'       N     N             0               none     none      DVDT       /dev/null
+DTDT           'Pa K s-1'     N     N             0               none     none      DTDT       /dev/null
+DQVANA         'kg kg-1'      N     N             0               none     none      DQVANA     /dev/null
+DQLANA         'kg kg-1'      N     N             0               none     none      DQLANA     /dev/null
+DQIANA         'kg kg-1'      N     N             0               none     none      DQIANA     /dev/null
+DOXANA         'kg kg-1'      N     N             0               none     none      DOXANA     /dev/null
+DPEDT          'Pa s-1'       N     N             0               none     none      DPEDT      /dev/null
+PHIS           'm+2 s-2'      N     N             0               none     none      PHIS       /dev/null
+TRADV          'X'            N     N             0               none     none      TRADV      /dev/null
+%%
