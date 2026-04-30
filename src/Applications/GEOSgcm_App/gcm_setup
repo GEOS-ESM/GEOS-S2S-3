@@ -122,6 +122,15 @@ if ( $SITE != 'NCCS' && $SITE != 'NAS' ) then
    set NOCVS = TRUE
 endif
 
+if ( $SITE == 'NAS') then
+   set OS_VERSION_ID=`grep VERSION_ID /etc/os-release | cut -d= -f2 | cut -d. -f1 | sed 's/"//g'`
+   if ( "$OS_VERSION_ID" == "8" ) then
+      set TOSS_VERSION = "TOSS4"
+   else if ( "$OS_VERSION_ID" == "9" ) then
+      set TOSS_VERSION = "TOSS5"
+   endif
+endif
+
 #######################################################################
 #           CVS: Test for Environment Variable
 #######################################################################
@@ -174,6 +183,8 @@ else if ( `echo $BASEDIR | grep -i intelmpi` != '') then
    set MPI = intelmpi
 else if ( `echo $BASEDIR | grep -i mpt`      != '') then
    set MPI = mpt
+else if ( `echo $BASEDIR | grep -i craympich` != '') then
+   set MPI = craympich
 else
    # Assume default is Intel MPI in case of older baselibs
    set MPI = intelmpi 
@@ -192,6 +203,8 @@ if ( $MPI == mvapich2 ) then
 else if ( $MPI == openmpi ) then
    setenv RUN_CMD 'mpirun -map-by core -bind-to core -np ' # mpi run for OpenMPI 
 else if ( $MPI == intelmpi ) then
+   setenv RUN_CMD 'mpirun -np '              # mpi run for Intel MPI
+else if ( $MPI == craympich ) then
    setenv RUN_CMD 'mpirun -np '              # mpi run for Intel MPI
 else if ( $MPI == mpt ) then
    setenv RUN_CMD 'mpiexec_mpt -np '         # mpi run for MPT
@@ -1366,9 +1379,15 @@ if( $SITE == 'NAS' ) then
                  set MODEL = "san_gpu"                                                 # Model of CPU
                  set QTYPE = "gpu_k40"                                                 # Queue to use
               else
-                 set NCPUS = 120                                                       # CPUS per node
-                 set MODEL = "rom_ait"                                                 # Model of CPU
-                 set QTYPE = "normal"                                                  # Queue to use
+                 if ( "$TOSS_VERSION" == "TOSS4" ) then
+                    set NCPUS = 120                                                       # CPUS per node
+                    set MODEL = "rom_ait"                                                 # Model of CPU
+                    set QTYPE = "normal"                                                  # Queue to use
+                 else
+                    set NCPUS = 240                                                       # CPUS per node
+                    set MODEL = "tur_ath"                                                 # Model of CPU
+                    set QTYPE = "normal"                                                  # Queue to use
+                 endif
               endif
               @ NCUS  = `echo "($NPES + $NCPUS - 1)/$NCPUS" | bc`
               @ NPCUS = `echo "($POST_NPES + $NCPUS - 1)/$NCPUS" | bc`
@@ -1901,6 +1920,23 @@ endif
 EOF
 
 endif # if NCCS
+
+else if ( $MPI == craympich ) then
+
+if ( $SITE == 'NAS' ) then
+
+cat > $HOMDIR/SETENV.commands << EOF
+# Testing on Athena/Turin at NAS shows these
+# settings are needed for oserver use
+# NOTE: These should probably only be used by
+# *Cray* MPICH at NAS, but for now, that's
+# the only MPICH being used there.
+
+setenv FI_CXI_OPTIMIZED_MRS 0
+setenv FI_CXI_RX_MATCH_MODE hybrid
+EOF
+
+endif # if NAS
 
 endif # if mpi
 

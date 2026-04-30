@@ -344,7 +344,7 @@
 	use_this_module=.true.
 	debug_this_module=.false.
 	river_insertion_thickness=40.0
-	river_diffusion_thickness=0.0      
+	river_diffusion_thickness=0.0
 	river_diffusivity=0.0
 	river_diffuse_salt=.false.
 	river_diffuse_temp=.false.
@@ -643,5 +643,9 @@
  &xgrid_nml
          make_exchange_reproduce=.false.
 	    interp_method = 'second_order'
+/
+
+&fms_io_nml
+    checksum_required=.false.
 /
 

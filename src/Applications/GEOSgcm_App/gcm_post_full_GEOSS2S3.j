@@ -1,4 +1,4 @@
-#!/bin/csh -x
+#!/bin/csh -f
 
 #######################################################################
 #                Batch Parameters for Post-Processing Job
@@ -11,6 +11,7 @@
 #@POST_Q
 #@BATCH_JOBNAMEP@FCSTDATE@ENSEMBLE_MEMBER.@COLLECTION.@YYYYMM
 #@GEOSS2S3_OPT2
+##@GEOSS2S3_OPT3
 #@BATCH_GROUP
 #@BATCH_OUTPUTNAME@POST_O
 #@BATCH_JOINOUTERR

@@ -105,9 +105,16 @@ module GEOS_SurfaceGridCompMod
   type T_Routing
      integer :: srcTileID, dstTileID,     &
                 srcIndex=-1, dstIndex=-1, &
-                srcPE=-1, dstPE=-1 
+                srcPE=-1, dstPE=-1, SeqIdx=-1
      real    :: weight
   end type T_Routing
+
+  type T_RiverRouting
+     type(T_Routing), pointer :: LocalRoutings(:) => NULL()
+     integer, pointer :: karray(:)
+     integer, pointer :: kdx(:)
+     integer, pointer :: BlockSizes(:), displ(:)
+  end type T_RiverRouting
 
 ! Internal state and its wrapper
 ! ------------------------------
@@ -116,7 +123,7 @@ module GEOS_SurfaceGridCompMod
      private
      type (MAPL_LocStreamXFORM)  :: XFORM_IN (NUM_CHILDREN)
      type (MAPL_LocStreamXFORM)  :: XFORM_OUT(NUM_CHILDREN)
-     type (T_Routing), pointer   :: LocalRoutings(:) => NULL()                
+     type (T_RiverRouting), pointer   :: RoutingType => NULL()
   end type T_SURFACE_STATE
 
   type SURF_WRAP
@@ -3083,6 +3090,30 @@ module GEOS_SurfaceGridCompMod
     call MAPL_TimerAdd(GC,    name="-RUN2"   ,RC=STATUS)
     VERIFY_(STATUS)
 
+    ! Fine-grained RUN2 timers
+    call MAPL_TimerAdd(GC,    name="--RUN2_Setup"   ,RC=STATUS)
+    VERIFY_(STATUS)
+    call MAPL_TimerAdd(GC,    name="--RUN2_GetPointers"   ,RC=STATUS)
+    VERIFY_(STATUS)
+    call MAPL_TimerAdd(GC,    name="--RUN2_PrecipHandling"   ,RC=STATUS)
+    VERIFY_(STATUS)
+    call MAPL_TimerAdd(GC,    name="--RUN2_SolarCalc"   ,RC=STATUS)
+    VERIFY_(STATUS)
+    call MAPL_TimerAdd(GC,    name="--RUN2_AllocTiles"   ,RC=STATUS)
+    VERIFY_(STATUS)
+    call MAPL_TimerAdd(GC,    name="--RUN2_TransformToTiles"   ,RC=STATUS)
+    VERIFY_(STATUS)
+    call MAPL_TimerAdd(GC,    name="--RUN2_ChildrenLoop"   ,RC=STATUS)
+    VERIFY_(STATUS)
+    call MAPL_TimerAdd(GC,    name="---RUN2_Ocean"   ,RC=STATUS)
+    VERIFY_(STATUS)
+    call MAPL_TimerAdd(GC,    name="---RUN2_Discharge"   ,RC=STATUS)
+    VERIFY_(STATUS)
+    call MAPL_TimerAdd(GC,    name="--RUN2_TransformToGrid"   ,RC=STATUS)
+    VERIFY_(STATUS)
+    call MAPL_TimerAdd(GC,    name="--RUN2_Cleanup"   ,RC=STATUS)
+    VERIFY_(STATUS)
+
     do I=1,NUM_CHILDREN
        call MAPL_TimerAdd(GC,    name="--RUN2_"//trim(GCNames(I))  ,RC=STATUS)
        VERIFY_(STATUS)
@@ -3348,7 +3379,7 @@ module GEOS_SurfaceGridCompMod
     VERIFY_(STATUS)
 
     if (RoutingFile /= "") then
-       call InitializeRiverRouting(SURF_INTERNAL_STATE%LocalRoutings, &
+       call InitializeRiverRouting(SURF_INTERNAL_STATE%RoutingType, &
             RoutingFile, LocStream, rc=STATUS)
        VERIFY_(STATUS)
 
@@ -3388,9 +3419,9 @@ module GEOS_SurfaceGridCompMod
           call MAPL_LocStreamTransform( LOCSTREAM, PCMETILE, PCME, RC=STATUS)
           VERIFY_(STATUS)
 
-          call RouteRunoff(SURF_INTERNAL_STATE%LocalRoutings, PUMETILE, PUMEDISTILE, RC=STATUS)
+          call RouteRunoff(SURF_INTERNAL_STATE%RoutingType, PUMETILE, PUMEDISTILE, RC=STATUS)
           VERIFY_(STATUS)
-          call RouteRunoff(SURF_INTERNAL_STATE%LocalRoutings, PCMETILE, PCMEDISTILE, RC=STATUS)
+          call RouteRunoff(SURF_INTERNAL_STATE%RoutingType, PCMETILE, PCMEDISTILE, RC=STATUS)
           VERIFY_(STATUS)
 
           call MAPL_GetPointer(INTERNAL, DISCHARGE_ADJUST, 'DISCHARGE_ADJUST',  RC=STATUS)
@@ -3424,11 +3455,16 @@ module GEOS_SurfaceGridCompMod
     RETURN_(ESMF_SUCCESS)
   end subroutine Initialize
 
-  subroutine InitializeRiverRouting(LocalRoutings, RoutingFile, Stream, rc)
-    type(T_Routing), pointer         :: LocalRoutings(:)
+  subroutine InitializeRiverRouting(RoutingType, RoutingFile, Stream, rc)
+    type(T_RiverRouting), pointer    :: RoutingType
     character(len=*),        intent(IN) :: RoutingFile
     type(MAPL_LocStream), intent(IN) :: Stream
     integer, optional,    intent(OUT):: rc
+
+    type(T_Routing), pointer         :: LocalRoutings(:) => NULL()
+    integer, pointer :: karray(:)
+    integer, pointer :: kdx(:)
+    integer, pointer :: BlockSizes(:), displ(:)
 
     type(ESMF_VM)            :: VM
     integer                  :: comm, nDEs, myPE, i, numRoutings
@@ -3438,9 +3474,11 @@ module GEOS_SurfaceGridCompMod
     integer, pointer         :: Active(:,:)
     integer, pointer         :: ActiveGlobal(:,:)
     integer                  :: numActive, numLocalRoutings
-    integer, allocatable     :: BlockSizes(:), displ(:)
     integer, pointer         :: Local_Id(:)
     integer                  :: unit
+    integer :: ksum, n, nsdx
+    integer :: ntotal, k
+    integer, allocatable :: kn(:), kseq(:), tmparray(:)
 #ifdef DEBUG
     character(len=ESMF_MAXSTR)  :: routefile
 #endif
@@ -3511,6 +3549,7 @@ module GEOS_SurfaceGridCompMod
 !  assigned an index of -1.
 
        Routing => tmpLocalRoutings(i)
+       Routing%seqIdx = i
 
        call Tile2Index(Routing, Local_Id)
 
@@ -3622,6 +3661,77 @@ module GEOS_SurfaceGridCompMod
     close(unit)
 
 #endif
+
+    !ALT NEW ROUTING to make communication more effective
+
+    nsdx=0
+    do i=1,numLocalRoutings
+       !notneeded if (mype == Routing(i)%dstPE) nddx = nddx+1
+       if (mype == LocalRoutings(i)%srcPE) nsdx = nsdx+1
+    end do
+    allocate(kdx(nsdx), blocksizes(nDEs), stat=STATUS)
+    VERIFY_(STATUS)
+    blocksizes=0
+
+    ! exchange with everybody else
+    call MPI_AllGather(nsdx, 1, MP_Integer, &
+         blocksizes, 1, MP_Integer, comm, status)
+    VERIFY_(status)
+
+    ! now everybody has blocksizes(nDEs)
+
+    ntotal = sum(blocksizes) ! should be same as # of paired sources and sinks (npairs)
+    ASSERT_(ntotal==numRoutings)
+    allocate (karray(numRoutings), stat=STATUS) !declare as target!!!
+    VERIFY_(STATUS)
+    karray = 0
+    allocate (displ(0:nDEs), stat=STATUS) !declare as target!!!
+    VERIFY_(STATUS)
+
+    ksum = 0
+    displ(0)=ksum
+    do n=1,nDEs
+       ksum = ksum + blocksizes(n)
+       displ(n)=ksum
+    end do
+    ! as another sanity check: ksum should be the same as npairs
+    ASSERT_(displ(nDEs)==ntotal)
+
+    allocate(kseq(nsdx), stat=STATUS)
+    VERIFY_(STATUS)
+    allocate(tmparray(numRoutings), stat=STATUS)
+    VERIFY_(STATUS)
+    ! local k index
+    k=0
+    do i=1,size(LocalRoutings)
+       if (mype==LocalRoutings(i)%srcPE) then
+          k=k+1
+          kseq(k) = LocalRoutings(i)%seqIdx
+          kdx(k) = i
+       end if
+    end do
+
+    call MPI_AllGatherV(kseq, nsdx, MP_Integer, &
+         tmparray, blocksizes, displ, MP_Integer, comm, status)
+    VERIFY_(STATUS)
+
+    deallocate(kseq)
+    do n=1,nDEs
+       do k=1,blocksizes(n)
+          i=tmparray(displ(n-1)+k)
+          karray(i)=k
+       end do
+    end do
+    deallocate(tmparray)
+
+    allocate(RoutingType, stat=STATUS)
+    VERIFY_(STATUS)
+    RoutingType%LocalRoutings => LocalRoutings
+    RoutingType%karray => karray
+    RoutingType%kdx => kdx
+    RoutingType%BlockSizes => BlockSizes
+    RoutingType%displ => displ
+
     return
 
   contains
@@ -5347,6 +5457,8 @@ module GEOS_SurfaceGridCompMod
 ! Get parameters from generic state.
 !-----------------------------------
 
+    call MAPL_TimerOn(MAPL,"--RUN2_Setup")
+
     call MAPL_Get(MAPL,             &
          LOCSTREAM = LOCSTREAM,                  &
          GCS       = GCS,                        &
@@ -5382,8 +5494,12 @@ module GEOS_SurfaceGridCompMod
     call MAPL_GetResource ( MAPL, RUN_ROUTE, Label="RUN_ROUTE:", DEFAULT=0, RC=STATUS)
     VERIFY_(STATUS)
 
+    call MAPL_TimerOff(MAPL,"--RUN2_Setup")
+
 ! Pointers to gridded imports
 !----------------------------
+
+    call MAPL_TimerOn(MAPL,"--RUN2_GetPointers")
 
     call MAPL_GetPointer(IMPORT  , PS      , 'PS'     ,  RC=STATUS); VERIFY_(STATUS)
     call MAPL_GetPointer(IMPORT  , DZ      , 'DZ'     ,  RC=STATUS); VERIFY_(STATUS)
@@ -5691,8 +5807,12 @@ module GEOS_SurfaceGridCompMod
     call MAPL_GetPointer(IMPORT, SNOFL   , 'SNO'    ,  RC=STATUS); VERIFY_(STATUS)
     call MAPL_GetPointer(IMPORT, TA      , 'TA'     ,  RC=STATUS); VERIFY_(STATUS)
 
+    call MAPL_TimerOff(MAPL,"--RUN2_GetPointers")
+
 ! This is the default behavior, with all surface components seeing uncorrected precip
 !------------------------------------------------------------------------------------
+
+    call MAPL_TimerOn(MAPL,"--RUN2_PrecipHandling")
 
     RCU = PCU
     RLS = PLS
@@ -5816,8 +5936,12 @@ module GEOS_SurfaceGridCompMod
 
     end if REPLACE_PRECIP
 
+    call MAPL_TimerOff(MAPL,"--RUN2_PrecipHandling")
+
 ! Pointers to gridded internals
 !------------------------------
+
+    call MAPL_TimerOn(MAPL,"--RUN2_GetPointers")
 
     call MAPL_GetPointer(INTERNAL, CM      , 'CM'     ,  RC=STATUS); VERIFY_(STATUS)
     call MAPL_GetPointer(INTERNAL, CT      , 'CT'     ,  RC=STATUS); VERIFY_(STATUS)
@@ -6081,13 +6205,17 @@ module GEOS_SurfaceGridCompMod
 !-----------------------------------------------------------------------
 
     if (associated(DISCHARGE)) then
-       ASSERT_(associated(SURF_INTERNAL_STATE%LocalRoutings))
+       ASSERT_(associated(SURF_INTERNAL_STATE%RoutingType))
 !ALT       call MAPL_GetPointer(EXPORT, RUNOFF, 'RUNOFF', alloc=.true.,  RC=STATUS)
 !ALT       VERIFY_(STATUS)
     end if
 
+    call MAPL_TimerOff(MAPL,"--RUN2_GetPointers")
+
 ! Allocate some work arrays in grid and tile space
 !-------------------------------------------------
+
+    call MAPL_TimerOn(MAPL,"--RUN2_AllocTiles")
 
     NT = size(TILETYPE)
 
@@ -6130,8 +6258,12 @@ module GEOS_SurfaceGridCompMod
     allocate(  DQSTILE(NT), STAT=STATUS)
     VERIFY_(STATUS)
 
+    call MAPL_TimerOff(MAPL,"--RUN2_AllocTiles")
+
 ! Get the insolation and zenith angle on grid and tiles
 !------------------------------------------------------
+
+    call MAPL_TimerOn(MAPL,"--RUN2_SolarCalc")
 
     call ESMF_ClockGet(CLOCK,     TIMESTEP=DELT, RC=STATUS)
     VERIFY_(STATUS)
@@ -6187,8 +6319,12 @@ module GEOS_SurfaceGridCompMod
 
     ZTHTILE = max(0.0,ZTHTILE)
 
+    call MAPL_TimerOff(MAPL,"--RUN2_SolarCalc")
+
 ! We need atmsopheric version of the run1 outputs put back on tiles
 !------------------------------------------------------------------
+
+    call MAPL_TimerOn(MAPL,"--RUN2_AllocTiles")
 
     allocate(   TSTILE(NT), STAT=STATUS)
     VERIFY_(STATUS)
@@ -6208,6 +6344,10 @@ module GEOS_SurfaceGridCompMod
     VERIFY_(STATUS)
     allocate(   CMTILE(NT), STAT=STATUS)
     VERIFY_(STATUS)
+
+    call MAPL_TimerOff(MAPL,"--RUN2_AllocTiles")
+
+    call MAPL_TimerOn(MAPL,"--RUN2_TransformToTiles")
 
     call MAPL_LocStreamTransform( LOCSTREAM, THTILE, TH, RC=STATUS); VERIFY_(STATUS)
     call MAPL_LocStreamTransform( LOCSTREAM, QHTILE, QH, RC=STATUS); VERIFY_(STATUS)
@@ -6624,7 +6764,7 @@ module GEOS_SurfaceGridCompMod
 
 !ALT    call MKTILE(RUNOFF  ,RUNOFFTILE  ,NT,RC=STATUS); VERIFY_(STATUS)
 !ALT    call MKTILE(DISCHARGE,DISCHARGETILE,NT,RC=STATUS); VERIFY_(STATUS)
-    if (associated(SURF_INTERNAL_STATE%LocalRoutings) .or. DO_DATA_ATM4OCN /=0) then !routing file exists or we run DataAtm 
+    if (associated(SURF_INTERNAL_STATE%RoutingType) .or. DO_DATA_ATM4OCN /=0) then !routing file exists or we run DataAtm 
        allocate(DISCHARGETILE(NT),stat=STATUS); VERIFY_(STATUS)
        DISCHARGETILE=MAPL_Undef
        allocate(RUNOFFTILE(NT),stat=STATUS); VERIFY_(STATUS)
@@ -6717,8 +6857,12 @@ module GEOS_SurfaceGridCompMod
 
     FRTILE = 0.0
 
+    call MAPL_TimerOff(MAPL,"--RUN2_TransformToTiles")
+
 !  Cycle through all continental children (skip ocean),
 !   collecting RUNOFFTILE exports.
+
+    call MAPL_TimerOn(MAPL,"--RUN2_ChildrenLoop")
 
     if (associated(RUNOFFTILE)) RUNOFFTILE       = 0.0
 
@@ -6736,6 +6880,7 @@ module GEOS_SurfaceGridCompMod
 !  between the globally tiled discharge and the ocean only tiled discharge.
 !--------------------------------------------------------------
 
+    call MAPL_TimerOn(MAPL,"---RUN2_Discharge")
     if(associated(DISCHARGETILE)) then
 
        ! Create discharge at exit tiles by routing runoff
@@ -6749,7 +6894,7 @@ module GEOS_SurfaceGridCompMod
           ! and not to change the existing code too much
           DISCHARGETILE = RUNOFFTILE 
        else
-          call RouteRunoff(SURF_INTERNAL_STATE%LocalRoutings, RUNOFFTILE, DISCHARGETILE, RC=STATUS)
+          call RouteRunoff(SURF_INTERNAL_STATE%RoutingType, RUNOFFTILE, DISCHARGETILE, RC=STATUS)
           VERIFY_(STATUS)
        endif       
 
@@ -6809,17 +6954,24 @@ module GEOS_SurfaceGridCompMod
        end if
 
     endif
+    call MAPL_TimerOff(MAPL,"---RUN2_Discharge")
 
 ! Run the Ocean
 !--------------
 
+    call MAPL_TimerOn(MAPL,"---RUN2_Ocean")
     call DOTYPE(TYPE=OCEAN, RC=STATUS)
     VERIFY_(STATUS)
+    call MAPL_TimerOff(MAPL,"---RUN2_Ocean")
+
+    call MAPL_TimerOff(MAPL,"--RUN2_ChildrenLoop")
 
 
 ! Total precipitation diagnostic from SurfaceGridComp,
 !  including any correction. The uncorrected comes from moist.
 !-------------------------------------------------------------
+
+    call MAPL_TimerOn(MAPL,"--RUN2_TransformToGrid")
 
     call MAPL_GetPointer(EXPORT, PRECTOT, 'PRECTOT', RC=STATUS)
     VERIFY_(STATUS)
@@ -7786,8 +7938,12 @@ module GEOS_SurfaceGridCompMod
 !          where ( FRLANDICE > 0.9 ) SNOMAS = 4
 !      endif
 
+    call MAPL_TimerOff(MAPL,"--RUN2_TransformToGrid")
+
 ! Clean-up
 !---------
+
+    call MAPL_TimerOn(MAPL,"--RUN2_Cleanup")
 
     deallocate(TMP)
     deallocate(TTM)
@@ -8081,6 +8237,8 @@ module GEOS_SurfaceGridCompMod
 
     call ESMF_VMBarrier(VMG, rc=status)
     VERIFY_(STATUS)
+
+    call MAPL_TimerOff(MAPL,"--RUN2_Cleanup")
 
     call MAPL_TimerOff(MAPL,"-RUN2" )
     call MAPL_TimerOff(MAPL,"TOTAL")
@@ -9326,8 +9484,8 @@ module GEOS_SurfaceGridCompMod
 
   end subroutine FILLOUT_UNGRIDDED
 
-    subroutine RouteRunoff(Routing, Runoff, Discharge, rc)
-      type(T_Routing),  intent(IN ) :: Routing(:)
+    subroutine RouteRunoff(RoutingType, Runoff, Discharge, rc)
+      type(T_RiverRouting),  intent(IN ) :: RoutingType
       real,             intent(IN ) :: Runoff(:)
       real,             intent(OUT) :: Discharge(:)
       integer, optional,intent(OUT) :: rc
@@ -9335,12 +9493,18 @@ module GEOS_SurfaceGridCompMod
       character(len=ESMF_MAXSTR)   :: IAm="RouteRunoff"
       integer                      :: STATUS
 
+      type(T_Routing), pointer :: Routing(:)
+      integer, pointer :: karray(:)
+      integer, pointer :: kdx(:)
+      integer, pointer :: BlockSizes(:), displ(:)
+
       type(ESMF_VM) :: VM
       integer       :: myPE, nDEs, comm
       integer       :: i
       real          :: TileDischarge
       integer       :: mpstatus(MP_STATUS_SIZE)
-
+      integer :: n, k
+      real, allocatable :: td(:), tarray(:)
 
       call ESMF_VMGetCurrent(VM,                                RC=STATUS)
       VERIFY_(STATUS)
@@ -9349,28 +9513,42 @@ module GEOS_SurfaceGridCompMod
       call ESMF_VMGet       (VM, localpet=MYPE, petcount=nDEs,  RC=STATUS)
       VERIFY_(STATUS)
 
+      Routing => RoutingType%LocalRoutings
+      karray => RoutingType%karray
+      kdx => RoutingType%kdx
+      BlockSizes => RoutingType%BlockSizes
+      displ => RoutingType%displ
+
       Discharge   = 0.0
 
-      do i=1,size(Routing)
-         if(Routing(i)%SrcPE==myPE) then
+      n=size(kdx)
+      allocate(td(n), stat=STATUS)
+      VERIFY_(STATUS)
+      allocate(tarray(displ(nDEs)), stat=STATUS)
+      VERIFY_(STATUS)
+      do k=1,n
+         i=kdx(k)
+
             TileDischarge = Runoff(Routing(i)%SrcIndex)*Routing(i)%weight
             TileDischarge = max(TileDischarge, 0.0)
-            if(Routing(i)%DstPE==myPE) then
-               Discharge(Routing(i)%DstIndex) = Discharge(Routing(i)%DstIndex) + TileDischarge
-            else
-               call MPI_Send(TileDischarge,1,MP_REAL,Routing(i)%DstPE,123,comm,status)
-               VERIFY_(STATUS)
-            end if
-         else
-            if(Routing(i)%DstPE==myPE) then
-               call MPI_Recv(TileDischarge,1,MP_REAL, Routing(i)%SrcPE,123,comm,mpstatus,status)
-               VERIFY_(STATUS)
-               Discharge(Routing(i)%DstIndex) = Discharge(Routing(i)%DstIndex) + TileDischarge
-            else
-               ASSERT_(.false.)
-            end if
+         td(k) = TileDischarge
+      end do
+      call MPI_AllGatherV(td, n, MP_Real, &
+           tarray, blocksizes, displ, MP_Real, comm, status)
+      VERIFY_(STATUS)
+
+      do i=1,size(Routing)
+         if(Routing(i)%DstPE==myPE) then
+            n=Routing(i)%srcPe
+            k=karray(Routing(i)%seqIdx)
+            TileDischarge=tarray(displ(n)+k)
+            Discharge(Routing(i)%DstIndex) = Discharge(Routing(i)%DstIndex) + TileDischarge
          end if
       end do
+      deallocate(td, stat=STATUS)
+      VERIFY_(STATUS)
+      deallocate(tarray, stat=STATUS)
+      VERIFY_(STATUS)
 
       RETURN_(ESMF_SUCCESS)
     end subroutine RouteRunoff

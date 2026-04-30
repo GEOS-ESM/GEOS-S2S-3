@@ -1,0 +1,19 @@
+#Partial Month Output Producing Collections For:
+# Collection Type: gcm_post
+#         IC Date: the LAST day of the month
+#         Example: 20260101
+aci_tavg_1dy_glo_L360x181_p27
+aci_tavg_1dy_glo_L720x361_sfc
+dis_tavg_1dy_glo_T1440x1080_slv
+ice_tavg_1dy_glo_T1440x1080_slv
+ict_tavg_1dy_glo_T1440x1080_slv
+idn_tavg_1dy_glo_T1440x1080_slv
+iin_tavg_1dy_glo_T1440x1080_zi4
+int_tavg_1dy_glo_L720x361_slv
+ith_tavg_1dy_glo_T1440x1080_slv
+mjo_tavg_1dy_glo_L720x361_slv
+ocn_tavg_1dy_glo_T1440x1080_slv
+ocn_tavg_1dy_glo_T1440x1080_z50
+rad_tavg_3hr_glo_L720x361_sfc
+sfc_tavg_1hr_glo_L720x361_sfc
+sfc_tavg_3hr_glo_L720x361_sfc
