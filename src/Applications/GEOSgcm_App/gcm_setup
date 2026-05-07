@@ -1368,7 +1368,7 @@ if( $SITE == 'NAS' ) then
               setenv BATCH_TIME "PBS -l walltime="    # PBS Syntax for walltime
               setenv BATCH_JOBNAME "PBS -N "          # PBS Syntax for job name
               setenv BATCH_OUTPUTNAME "PBS -o "       # PBS Syntax for job output name
-              setenv BATCH_CHANGE_JOBNAME 'qalter -N ${EXPID}.${RUN_STATUS} ${PBS_JOBID}'
+              setenv BATCH_CHANGE_JOBNAME ''
               setenv BATCH_CHANGE_OUTPUTNAME 'qalter -o ${EXPDIR}/${EXPID}.${qdate}.${PBS_JOBID}.${RUN_STATUS} ${PBS_JOBID}'
               setenv BATCH_OUTPUTNAME_AMENDMENT ""
               setenv BATCH_JOINOUTERR "PBS -j oe -k oed"    # PBS Syntax for joining output and error
