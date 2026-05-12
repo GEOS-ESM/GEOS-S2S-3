@@ -4377,7 +4377,7 @@ end function MAPL_AddChildFromGC
     logical                               :: SKIP
     character(len=ESMF_MAXSTR), allocatable :: SNAMES(:)
 
-    ASSERT_(size(SHORT_NAMES)==size(CHILD_IDS))
+!ALT: no need for this    ASSERT_(size(SHORT_NAMES)==size(CHILD_IDS))
 
     call MAPL_GetObjectFromGC(GC, META, RC=STATUS)
     VERIFY_(STATUS)
@@ -4395,7 +4395,7 @@ end function MAPL_AddChildFromGC
              call MAPL_VarSpecGet(META_CHILD%Import_Spec(J),SHORT_NAME=SHORT_NAME,RC=STATUS)
              SKIP = ANY(SNAMES==TRIM(SHORT_NAME)) .and. (ANY(CHILD_IDS==I))
              if (.not.SKIP) then
-                call MAPL_DoNotConnect(GC, SHORT_NAME, I, RC=status)
+                call MAPL_DoNotConnect(GC, SHORT_NAME, CHILD=I, RC=status)
                 VERIFY_(STATUS)
              end if
           enddo
@@ -5884,6 +5884,8 @@ recursive subroutine MAPL_WireComponent(GC, RC)
     type (MAPL_VarConn), pointer                :: CONNECT(:)
     type (MAPL_VarConn), pointer                :: DONOTCONN(:)
 
+    logical                                     :: PARENTIMPV
+    
 ! Begin
 
 ! Get my name and set-up traceback handle
@@ -5984,6 +5986,7 @@ recursive subroutine MAPL_WireComponent(GC, RC)
 
        do K=1,size(IM_SPECS)
 
+          PARENTIMPV = .true.
           call MAPL_VarSpecGet(IM_SPECS(K), SHORT_NAME=SHORT_NAME, &
                                STAT=STAT, RC=STATUS) 
           VERIFY_(STATUS)
@@ -5999,7 +6002,8 @@ recursive subroutine MAPL_WireComponent(GC, RC)
           if (MAPL_VarIsListed(DONOTCONN, SHORT_NAME=SHORT_NAME, &
                                IMPORT=I, RC=STATUS)) then
              VERIFY_(STATUS)
-             cycle
+             PARENTIMPV = .false.
+!@             cycle
           end if
           VERIFY_(STATUS)
 
@@ -6081,7 +6085,8 @@ recursive subroutine MAPL_WireComponent(GC, RC)
 ! Imports that are not internally satisfied have their specs put in the GC's
 ! import spec to be externally satisfied.  Their status is left unaltered. 
 ! --------------------------------------------------------------------------
-                if (.not. SATISFIED .and. PARENTIMPORT) then
+                PARENTIMPV = PARENTIMPORT .and. PARENTIMPV
+                if (.not. SATISFIED .and. PARENTIMPV) then
                    VERIFY_(STATUS) 
                    call MAPL_VarSpecGet(IM_SPECS(K), STAT=STAT, RC=STATUS)
                    VERIFY_(STATUS) 
