@@ -1584,6 +1584,9 @@ contains
       TMP(I+1)%CONNPtr%To   = MAPL_VarConnPoint(usableTONAME, &
            usableTO_IMPORT,  usableTO_EXPORT)
 
+      TMP(I+1)%CONNPtr%notRequired   = .false.
+      TMP(I+1)%CONNPtr%used   = .false.
+
       CONN => TMP
 
       RETURN_(ESMF_SUCCESS)
@@ -1791,17 +1794,9 @@ contains
        FE = CONN(I)%CONNptr%FROM%EXPORT
        TI = CONN(I)%CONNptr%TO%IMPORT
        TE = CONN(I)%CONNptr%TO%EXPORT
-! first check consistency
-       IF(MIN(FI,TI) /= MAPL_ConnUnknown) then
-          MAPL_VarIsListed = .false.
-          RETURN_(ESMF_FAILURE)
-       end IF
-       IF(MIN(FE,TE) /= MAPL_ConnUnknown) then
-          MAPL_VarIsListed = .false.
-          RETURN_(ESMF_FAILURE)
-       end IF
-! check for a match
-       IF(MAX(FI,TI) == IMPORT)  then
+
+       ! check for a match  (this is used for DONOTCONNECT only)
+       IF(FI == IMPORT .or. TI == IMPORT)  then
           MAPL_VarIsListed = .true.
           CONN(I)%CONNptr%used = .true.
           RETURN_(ESMF_SUCCESS)
