@@ -216,7 +216,9 @@ endif
 # --------------------
 setenv ARCH `   uname`
 setenv HOST `hostname`
-set name = `echo $HOST` ; if ( ($name =~ pfe*) || ($name =~ tfe*) || ($name =~ r[0-9]*i[0-9]*n[0-9]*)  || ($name =~ r[0-9]*c[0-9]*t[0-9]*n[0-9]*) ) setenv HOST pleiades
+set name = `echo $HOST` ; if ( ($name =~ pfe*) || ($name =~ afe*) || ($name =~ athfe*) || \
+     ($name =~ r[0-9]*i[0-9]*n[0-9]*) || ($name =~ r[0-9]*c[0-9]*t[0-9]*n[0-9]*) || \
+     ($name =~ x[0-9]*c[0-9]*s[0-9]*b[0-9]*n[0-9]*) ) setenv HOST pleiades
 
 set name = `echo $HOST | cut -b 1-8` ; if( $name == 'discover' ) setenv HOST $name
 set name = `echo $HOST | cut -b 1-4` ; if( $name == 'borg'     ) setenv HOST discover
