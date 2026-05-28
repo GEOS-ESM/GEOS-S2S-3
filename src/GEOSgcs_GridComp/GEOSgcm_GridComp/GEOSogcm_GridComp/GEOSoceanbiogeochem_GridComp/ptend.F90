@@ -158,8 +158,9 @@
                         + tfac*remin(3)*Pnde*fnoice                  &
                         - fescav
       doctend = exc*mgchltouMC + regen*dzoo2*mgchltouMC
-!      P_tend(ncs) = frdoc*doctend*fnoice                         !DOC
-      P_tend(ncs) = doctend*fnoice                         !DOC
+      P_tend(ncs) = frdoc*doctend*fnoice                         !DOC
+      P_tend(ncs+4) = frcdoc*doctend*fnoice    !CDOC
+!      P_tend(ncs) = doctend*fnoice                         !DOC
 !      P_tend(ncs+4) = (P_tend(ncs+4)+(frcdoc*doctend))*fnoice    !CDOC
       dphyt = 0.0
       do n = nnut+1,npe

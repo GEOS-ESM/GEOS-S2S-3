@@ -87,6 +87,7 @@ module GEOS_DataAtmGridCompMod
    real, pointer, dimension(:,:)  :: b
   end type bandptr
 
+  real               :: CO2
   character(len = 3) :: suffix
   character(len = 3) :: label
   integer k, nl
@@ -216,13 +217,13 @@ module GEOS_DataAtmGridCompMod
       VLOCATION  = MAPL_VLocationNone,      RC=STATUS)
     VERIFY_(STATUS)
 
-    call MAPL_AddImportSpec(GC,              &
-      SHORT_NAME = 'RUNOFF',                      &
-      LONG_NAME  = 'overland_runoff_including_throughflow', &
-      UNITS      = 'kg m-2 s-1',                  &
-      DIMS       = MAPL_DimsHorzOnly,             &
-      VLOCATION  = MAPL_VLocationNone,      RC=STATUS)
-    VERIFY_(STATUS)
+!    call MAPL_AddImportSpec(GC,              &
+!      SHORT_NAME = 'RUNOFF',                      &
+!      LONG_NAME  = 'overland_runoff_including_throughflow', &
+!      UNITS      = 'kg m-2 s-1',                  &
+!      DIMS       = MAPL_DimsHorzOnly,             &
+!      VLOCATION  = MAPL_VLocationNone,      RC=STATUS)
+!    VERIFY_(STATUS)
 
     call MAPL_AddImportSpec(GC,                   &
       SHORT_NAME = 'PCU',                         &
@@ -270,6 +271,7 @@ module GEOS_DataAtmGridCompMod
       LONG_NAME  = 'surface_temperature',         &
       UNITS      = 'K',                           &
       DIMS       = MAPL_DimsHorzOnly,             &
+      DEFAULT    = -1000.0,                       &
       VLOCATION  = MAPL_VLocationNone,      RC=STATUS)
     VERIFY_(STATUS)
 
@@ -346,15 +348,20 @@ module GEOS_DataAtmGridCompMod
       integer, optional,      intent(  OUT) ::  RC
       integer                               :: STATUS
 
+      call MAPL_GetResource( MAPL, CO2, 'CO2:', RC=STATUS)
+      VERIFY_(STATUS)
+
 ! obgc imports
 
-      call MAPL_AddImportSpec(GC,                  &
-        SHORT_NAME     = 'CO2SC',                        &
-        LONG_NAME      = 'Atmospheric CO2',              &
-        UNITS          = '1e-6',                         &
-        DIMS           = MAPL_DimsHorzOnly,              &
-        VLOCATION      = MAPL_VLocationNone,       RC=STATUS)
-      VERIFY_(STATUS)
+      if (CO2>0.0) then
+        call MAPL_AddImportSpec(GC,                  &
+          SHORT_NAME     = 'CO2SC',                        &
+          LONG_NAME      = 'Atmospheric CO2',              &
+          UNITS          = '1e-6',                         &
+          DIMS           = MAPL_DimsHorzOnly,              &
+          VLOCATION      = MAPL_VLocationNone,       RC=STATUS)
+        VERIFY_(STATUS)
+      endif
 
       do k=1,NUM_DUDP
         write(unit = suffix, fmt = '(i3.3)') k
@@ -721,6 +728,7 @@ subroutine RUN ( GC, IMPORT, EXPORT, CLOCK, RC )
   real, dimension(:,:), pointer             :: ALW, BLW, SPEED, DISCHARGE, rPCU, rPLS, sSNO
   real, dimension(:,:), pointer             :: CT, CQ, CM, SH, EVAP, TAUX, TAUY, Tskin, lwdnsrf
   real, dimension(:,:), pointer             :: DRPARN, DFPARN, DRNIRN, DFNIRN, DRUVRN, DFUVRN
+  real, dimension(:,:), pointer             :: DSH, DEVAP
   real, dimension(:,:), pointer             :: EMISSRF
 
   real, allocatable, dimension(:,:) :: ZTH
@@ -775,12 +783,13 @@ subroutine RUN ( GC, IMPORT, EXPORT, CLOCK, RC )
 !  real LATSO, LONSO
 
    real, parameter :: HW_hack = 2.
-   logical :: firsttime = .true.
+   logical :: firsttime = .false.
 
    real :: TAU_TS
+   real :: REF_HEIGHT
    real :: DT
 
-   integer :: year, month, day, hr, mn, se
+   integer :: year, month, doy, day, hr, mn, se
 
 !  Begin...
 !----------
@@ -813,7 +822,7 @@ subroutine RUN ( GC, IMPORT, EXPORT, CLOCK, RC )
     call ESMF_ClockGet(CLOCK, currTime=CurrentTime, RC=STATUS)
     VERIFY_(STATUS)
 
-    call esmf_timeget(CurrentTime, yy=year, mm=month, dd=day, h=hr, m=mn, s=se, rc = status);
+    call esmf_timeget(CurrentTime, yy=year, mm=month, dayofyear=doy, dd=day, h=hr, m=mn, s=se, rc = status);
 
     call MAPL_Get (MAPL, GCS=GCS, GIM=GIM, GEX=GEX, RC=STATUS)
     VERIFY_(STATUS)
@@ -825,6 +834,8 @@ subroutine RUN ( GC, IMPORT, EXPORT, CLOCK, RC )
     call MAPL_GetResource ( MAPL, DT, Label="DT:", DEFAULT=DT, RC=STATUS)
     VERIFY_(STATUS)
     call MAPL_GetResource ( MAPL, TAU_TS, Label="TAU_TS:", DEFAULT=7200.0, RC=STATUS)
+    VERIFY_(STATUS)
+    call MAPL_GetResource ( MAPL, REF_HEIGHT, Label="REFERENCE_HEIGHT:", DEFAULT=10.0, RC=STATUS)
     VERIFY_(STATUS)
 
 ! Pointers to Imports
@@ -924,6 +935,7 @@ subroutine RUN ( GC, IMPORT, EXPORT, CLOCK, RC )
 
     call MAPL_GetPointer(SurfImport, DZ, 'DZ', RC=STATUS)
     VERIFY_(STATUS)
+!    DZ = REF_HEIGHT
     DZ = 50.0 ! meters
 
 ! River runoff
@@ -931,9 +943,11 @@ subroutine RUN ( GC, IMPORT, EXPORT, CLOCK, RC )
 !   VERIFY_(STATUS)
     call MAPL_GetPointer(SurfImport, DISCHARGE, 'DISCHARGE', RC=STATUS)
     VERIFY_(STATUS)
-    call MAPL_GetPointer(import, RUNOFF, 'RUNOFF', RC=STATUS)
-    VERIFY_(STATUS)
-    DISCHARGE=RUNOFF
+!    call MAPL_GetPointer(import, RUNOFF, 'RUNOFF', RC=STATUS)
+!    VERIFY_(STATUS)
+!    DISCHARGE=RUNOFF
+! runoff is provided directly by Ocean Gc on the tripolar grid
+    DISCHARGE=0.0
 
     !ALT: we should read topo, but for now over ocean this is fine
     call SetVarToZero('PHIS', RC=STATUS)
@@ -945,15 +959,17 @@ subroutine RUN ( GC, IMPORT, EXPORT, CLOCK, RC )
     call SetVarToZero('FRSL', RC=STATUS)
     VERIFY_(STATUS)
 
+    call MAPL_GetPointer(SurfImport, DSH, 'DSH', __RC__)
+    call MAPL_GetPointer(SurfImport, DEVAP, 'DEVAP', __RC__)
 ! these should be set to 0 (for now)
-    call SetVarToZero('DSH', RC=STATUS)
-    VERIFY_(STATUS)
+!    call SetVarToZero('DSH', RC=STATUS)
+!    VERIFY_(STATUS)
     call SetVarToZero('DFU', RC=STATUS)
     VERIFY_(STATUS)
     call SetVarToZero('DFV', RC=STATUS)
     VERIFY_(STATUS)
-    call SetVarToZero('DEVAP', RC=STATUS)
-    VERIFY_(STATUS)
+!    call SetVarToZero('DEVAP', RC=STATUS)
+!    VERIFY_(STATUS)
     call SetVarToZero('DDEWL', RC=STATUS)
     VERIFY_(STATUS)
     call SetVarToZero('DFRSL', RC=STATUS)
@@ -1010,7 +1026,10 @@ subroutine RUN ( GC, IMPORT, EXPORT, CLOCK, RC )
 
     call ESMF_ClockGet(CLOCK,     TIMESTEP=DELT, RC=STATUS)
     VERIFY_(STATUS)
-    DELT = DELT * NINT((86400./DT)) ! emulate daily Solar
+    ! the line below only works for daily forcing e..g. CORE I
+    ! for JRA55-DO or any dataset at higher frequency, this line makes SW much
+    ! higher than what data prescribed
+!    DELT = DELT * NINT((86400./DT)) ! emulate daily Solar
 
     call MAPL_SunGetInsolation(LONS, LATS,      &
               ORBIT, ZTH, SLR, &
@@ -1084,6 +1103,10 @@ subroutine RUN ( GC, IMPORT, EXPORT, CLOCK, RC )
     call MAPL_GetPointer(SurfImport, BLW, 'BLW', RC=STATUS)
     VERIFY_(STATUS)
 
+    if(any(Tskin<0.0)) then !only when DATAATM restart is bootstrapped
+       firsttime = .true. 
+    end if
+
     if (firsttime) then
        firsttime = .false.
        Tskin = TA
@@ -1155,6 +1178,10 @@ subroutine RUN ( GC, IMPORT, EXPORT, CLOCK, RC )
     EVAP = CQ * (Qskin - Qair)
     TAUX = CM * (Uskin - Uair)
     TAUY = CM * (Vskin - Vair)
+
+! these derivatives are important for sea ice
+    DSH = CT !* MAPL_CP (MAPL_CP got multiplied in Surf)
+    DEVAP = CQ
 
 101 format (A, e20.12, 3I3.2)
 
@@ -1269,9 +1296,9 @@ contains
 
     character(len=ESMF_MAXSTR)   :: skinname
     character(len=ESMF_MAXSTR)   :: DATAFILE
-    integer :: i, j, DOY
+    integer :: i, j
 
-    real    :: hr,rday,daycor
+    real    :: ohr,rday,daycor
     real    :: slp,wspd,ozone,wvapor,relhum
     real    :: cov,cldtau,clwp,cldre
     real, dimension(nlt) :: ta,wa,asym
@@ -1281,7 +1308,13 @@ contains
 
     type (ESMF_FieldBundle)       :: Bundle_DP
     type (ESMF_Field)             :: Field
+
+    real, external                  :: GETCO2
     real, pointer, dimension(:,:)   :: CO2SC
+    real, save                      :: CO2_0
+    data                               CO2_0 /0.0/
+    character(len=ESMF_MAXSTR)      :: MSGSTRING
+
 
     real, pointer, dimension(:,:,:) :: DRY_DUST
     real, pointer, dimension(:,:,:) :: WET_DUST
@@ -1309,11 +1342,31 @@ contains
 
 !    print*, 'in obio_extra'
 
-    call MAPL_GetPointer(IMPORT, CO2SC, 'CO2SC',   RC=STATUS)
-    VERIFY_(STATUS)
     call MAPL_GetPointer(SurfImport, ATMCO2, 'CO2SC',   RC=STATUS)
     VERIFY_(STATUS)
-    ATMCO2 = CO2SC
+
+    call MAPL_GetResource( MAPL, CO2, 'CO2:', RC=STATUS)
+    VERIFY_(STATUS)
+
+    if (CO2<0.0) then
+      CO2 = GETCO2(YEAR,DOY)
+!      if (associated(CO2SC)) CO2SC = CO2 * 1.00E+06
+      ATMCO2 = CO2 * 1.00E+06
+      write(MSGSTRING,'(A,I4,A,I3,A,e12.5)') &
+           "Updated CO2 in DataAtm OBIO for year/day ", YEAR, "/", DOY, " is ", CO2*1.00E+06
+      if( MAPL_AM_I_ROOT() ) then
+        if( CO2_0.ne.CO2 ) then
+          CO2_0  = CO2
+          print *
+          print *, trim(msgstring)
+          print *
+        endif
+      endif
+    else
+      call MAPL_GetPointer(IMPORT, CO2SC, 'CO2SC',   RC=STATUS)
+      VERIFY_(STATUS)
+      ATMCO2 = CO2SC
+    endif
 
     do k=1, nlt
        write(unit = suffix, fmt = '(i2.2)') k
@@ -1357,8 +1410,8 @@ contains
     State => WRAP%PTR
 
 ! Obtain Earth-Sun distance
-    hr=1.0
-    rday = float(DOY) + hr/24.0
+    ohr=1.0
+    rday = float(DOY) + ohr/24.0
     daycor = (1.0+1.67E-2*cos(State%pi2*(rday-3.0)/365.0))**2
 
     allocate( Ed  (IM,JM,nlt), STAT=STATUS); VERIFY_(STATUS)

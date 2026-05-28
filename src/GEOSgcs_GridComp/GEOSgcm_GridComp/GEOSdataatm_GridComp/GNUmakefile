@@ -40,6 +40,7 @@ esma_help help:
 LIB  = lib$(THIS).a
 esma_install install: $(LIB)
 	$(MKDIR) $(ESMALIB) $(ESMAINC)/$(THIS)
+	$(CP) -p *.rc           $(ESMAETC)
 	$(CP) -p *.a            $(ESMALIB)
 	$(CP) -p *.mod          $(ESMAINC)/$(THIS)
 #	$(CP) -p GEOS_ErrLog.h  $(ESMAINC)/$(THIS)

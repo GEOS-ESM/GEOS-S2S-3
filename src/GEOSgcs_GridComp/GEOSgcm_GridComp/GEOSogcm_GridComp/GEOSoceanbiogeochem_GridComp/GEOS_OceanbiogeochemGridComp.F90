@@ -453,7 +453,7 @@ module GEOS_OceanbiogeochemGridCompMod
     VERIFY_(STATUS)
 
     call MAPL_AddImportSpec(GC,                               &
-    SHORT_NAME              = 'DISCHARGE',                     &
+    SHORT_NAME              = 'DISCHARGEOB',                     &
     LONG_NAME               = 'river_discharge_at_ocean_points',      &
     UNITS                   = 'kg m-2 s-1',          &
     DIMS                    = MAPL_DimsHorzOnly,              &
@@ -1184,7 +1184,7 @@ module GEOS_OceanbiogeochemGridCompMod
     VERIFY_(STATUS)
     call MAPL_GetPointer(IMPORT, CO2SC,   'CO2SC',   RC=STATUS)
     VERIFY_(STATUS)
-    call MAPL_GetPointer(IMPORT, DISCHARGE,   'DISCHARGE',   RC=STATUS)
+    call MAPL_GetPointer(IMPORT, DISCHARGE,   'DISCHARGEOB',   RC=STATUS)
     VERIFY_(STATUS)
 
 ! Pointers to Internals
