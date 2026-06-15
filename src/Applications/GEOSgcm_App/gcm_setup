@@ -1368,6 +1368,9 @@ if( $SITE == 'NAS' ) then
               setenv BATCH_TIME "PBS -l walltime="    # PBS Syntax for walltime
               setenv BATCH_JOBNAME "PBS -N "          # PBS Syntax for job name
               setenv BATCH_OUTPUTNAME "PBS -o "       # PBS Syntax for job output name
+              setenv BATCH_CHANGE_JOBNAME ''
+              setenv BATCH_CHANGE_OUTPUTNAME 'qalter -o ${EXPDIR}/${EXPID}.${qdate}.${PBS_JOBID}.${RUN_STATUS} ${PBS_JOBID}'
+              setenv BATCH_OUTPUTNAME_AMENDMENT ""
               setenv BATCH_JOINOUTERR "PBS -j oe -k oed"    # PBS Syntax for joining output and error
               setenv     RUN_FT "6:00:00"                                              # Wallclock Time   for gcm_forecast.j
               setenv     RUN_T  "8:00:00"                                              # Wallclock Time   for gcm_run.j
@@ -1424,6 +1427,9 @@ else if( $SITE == 'NCCS' ) then
               setenv BATCH_TIME "SBATCH --time="                                       # SLURM Syntax for walltime
               setenv BATCH_JOBNAME "SBATCH --job-name="                                # SLURM Syntax for job name
               setenv BATCH_OUTPUTNAME "SBATCH --output="                               # SLURM Syntax for job output name
+              setenv BATCH_CHANGE_JOBNAME 'scontrol update JobId=${SLURM_JOB_ID} JobName=${EXPID}.${RUN_STATUS}'
+              setenv BATCH_CHANGE_OUTPUTNAME 'scontrol update JobId=${SLURM_JOB_ID} comment="stdout=${EXPDIR}/${EXPID}.${qdate}.${SLURM_JOB_ID}.${RUN_STATUS}"'
+              setenv BATCH_OUTPUTNAME_AMENDMENT ".%j.FAILED"
               setenv BATCH_JOINOUTERR "DELETE"                                         # SLURM joins out and err by default
               setenv     RUN_FT "06:00:00"                                             # Wallclock Time   for gcm_forecast.j
               setenv     RUN_T  "12:00:00"                                             # Wallclock Time   for gcm_run.j
@@ -2059,6 +2065,14 @@ set FILES = `echo $FILES`
 endif
 
 echo " "
+
+# Write BATCH_CHANGE command files for sed r-insertion
+# -----------------------------------------------------
+/bin/rm -f $HOMDIR/BATCH_CHANGE_JOBNAME.commands
+/bin/rm -f $HOMDIR/BATCH_CHANGE_OUTPUTNAME.commands
+echo "$BATCH_CHANGE_JOBNAME"    > $HOMDIR/BATCH_CHANGE_JOBNAME.commands
+echo "$BATCH_CHANGE_OUTPUTNAME" > $HOMDIR/BATCH_CHANGE_OUTPUTNAME.commands
+
 foreach FILE ($FILES)
 
 /bin/rm -f $HOMDIR/tmpfile
@@ -2070,6 +2084,20 @@ cat >      $HOMDIR/sedfile << EOF
 t success
 : success
 r $HOMDIR/SETENV.commands
+d
+}
+
+/@BATCH_CHANGE_JOBNAME/ {
+t success_bcj
+: success_bcj
+r $HOMDIR/BATCH_CHANGE_JOBNAME.commands
+d
+}
+
+/@BATCH_CHANGE_OUTPUTNAME/ {
+t success_bco
+: success_bco
+r $HOMDIR/BATCH_CHANGE_OUTPUTNAME.commands
 d
 }
 
@@ -2086,7 +2114,7 @@ t success2
 r $HOMDIR/GPUEND.commands
 d
 }
-
+s?@BATCH_OUTPUTNAME_AMENDMENT?$BATCH_OUTPUTNAME_AMENDMENT?g
 s?@GCMVER?$GCMVER?g
 s?@EXPSRC?$GEOSTAG?g
 s?@EXPID?$EXPID?g
@@ -2281,6 +2309,8 @@ echo "Creating ${C1}${FILE}${CN} for Experiment: $EXPID "
 chmod 755 $HOMDIR/$FILE
 end
 /bin/rm -f $HOMDIR/SETENV.commands
+/bin/rm -f $HOMDIR/BATCH_CHANGE_JOBNAME.commands      
+/bin/rm -f $HOMDIR/BATCH_CHANGE_OUTPUTNAME.commands   
 
 if ($GPU == "TRUE") then
 /bin/rm -f $HOMDIR/GPUSTART.commands

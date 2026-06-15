@@ -11,7 +11,7 @@
 #@RUN_Q
 #@BATCH_GROUP
 #@BATCH_JOINOUTERR
-#@BATCH_NAME -o gcm_run.o@RSTDATE
+#@BATCH_OUTPUTNAME@RUN_N@BATCH_OUTPUTNAME_AMENDMENT
 
 #######################################################################
 #                         System Settings 
@@ -51,10 +51,16 @@ setenv  EXPID   @EXPID
 set firstdate = `cat cap_restart | cut -c1-8`
 echo ${firstdate}
 setenv  EXPDIR  @EXPDIR
-/usr/bin/qalter -o "${EXPDIR}/${EXPID}.${firstdate}.${SLURM_JOB_ID}.FAILED" ${SLURM_JOB_ID}
 setenv  HOMDIR  @HOMDIR
 setenv  RSTDATE @RSTDATE
 setenv  GCMEMIP @GCMEMIP
+set year  = `echo $firstdate | cut -d_ -f1 | cut -b1-4`
+set month = `echo $firstdate | cut -d_ -f1 | cut -b5-6`
+set init_date = `echo $firstdate | cut -d_ -f1 | cut -b1-8`
+
+set qdate = `${GEOSBIN}/tick ${init_date} 000000 4 0 | cut -c1-8`
+set RUN_STATUS = 'BEGINNING'
+@BATCH_CHANGE_JOBNAME
 
 #######################################################################
 #                 Create Experiment Sub-Directories
@@ -145,11 +151,6 @@ chmod +x $FILE
 @CPEXEC $HOMDIR/CAP.rc .
 ./strip         CAP.rc
 
-set year  = `echo $RSTDATE | cut -d_ -f1 | cut -b1-4`
-set month = `echo $RSTDATE | cut -d_ -f1 | cut -b5-6`
-set init_date = `echo $RSTDATE | cut -d_ -f1 | cut -b1-8`
-set qdate = `/home/dao_ops/bin/tick ${init_date} 000000 4 0 | cut -c1-8`
-$PBS_BIN/qalter -N GiO_e1_${qdate} {SLURM_JOB_ID}
 
 # Copy MERRA-2 Restarts
 # ---------------------
@@ -751,6 +752,8 @@ cp $HOMDIR/cap_restart $HOMDIR/incr_date
 
 # Run GEOSgcm.x
 # -------------
+
+
 if( $USE_SHMEM == 1 ) $GEOSBIN/RmShmKeys_sshmpi.csh
        @  NPES = $NX * $NY
 
@@ -762,21 +765,26 @@ if( $USE_SHMEM == 1 ) $GEOSBIN/RmShmKeys_sshmpi.csh
 >>>noODAS<<<endif
 
 >>>withODAS<<<# RUN ODAS HERE
+>>>withODAS<<< set RUN_STATUS = 'RUNNING_ODAS'
+>>>withODAS<<< @BATCH_CHANGE_JOBNAME
 >>>withODAS<<<#$EXPDIR/ocean_das/UMD_Etc/scripts/oda_run.j $NX $NY > $EXPDIR/ocean_das/oda_run.out
 >>>withODAS<<<$EXPDIR/ocean_das/UMD_Etc/scripts/oda_run.j $NX $NY
 >>>withODAS<<<
 >>>withODAS<<<set ODARUNSTATUS = $status
 >>>withODAS<<<if ($ODARUNSTATUS == 1) then
 >>>withODAS<<<   echo "BAD ODA_RUN.j "
+>>>withODAS<<<   set RUN_STATUS = 'ODAS_FAILED'
+>>>withODAS<<<   @BATCH_CHANGE_JOBNAME
+>>>withODAS<<<   @BATCH_CHANGE_OUTPUTNAME
 >>>withODAS<<<   mkdir -p $EXPDIR/morgue/${qdate}
 >>>withODAS<<<   mv $SCRDIR $EXPDIR/morgue/${qdate}
 >>>withODAS<<<   exit(1)
 >>>withODAS<<<endif
 >>>withODAS<<<
->>>withODAS<<<echo "OUTOF ODA_RUN.J CAP_RESTART "
+>>>withODAS<<<echo "OUT OF ODA_RUN.J CAP_RESTART "
 >>>withODAS<<<more cap_restart
 >>>withODAS<<<pwd
->>>withODAS<<<echo "OUTOF ODA_RUN.J CAP_RESTART "
+>>>withODAS<<<echo "OUT OF ODA_RUN.J CAP_RESTART "
 
 if( $USE_SHMEM == 1 ) $GEOSBIN/RmShmKeys_sshmpi.csh
 
@@ -787,6 +795,9 @@ if( -e EGRESS ) then
 else
    set rc = -1
 >>>withODAS<<<   echo 'MODEL BOMBED IN gcm_run.j'
+>>>withODAS<<<   set RUN_STATUS = 'GCM_FAILED'
+>>>withODAS<<<   @BATCH_CHANGE_JOBNAME
+>>>withODAS<<<   @BATCH_CHANGE_OUTPUTNAME
 >>>withODAS<<<   exit
 endif
 echo GEOSgcm Run Status: $rc
@@ -915,7 +926,8 @@ end
 #######################################################################
 
 $GEOSUTIL/post/gcmpost.script -source $EXPDIR -movefiles
-
+>>>withODAS<<< set RUN_STATUS = 'POSTPROCESSING'
+>>>withODAS<<< @BATCH_CHANGE_JOBNAME
 >>>withODAS<<<#  new plotting of OMF/OMA stats from ERIC 3/19/21
 >>>withODAS<<<$GEOSUTIL/plots/odas_plots.csh $EXPDIR $nyears $nmonths $ndays $nhours $year $month $day $hour $GEOSUTIL/plots
  
@@ -985,7 +997,9 @@ endif
 >>>withODAS<<< # add the stat plot check
 >>>withODAS<<< echo "Running plot_V3_rt.csh"
 >>>withODAS<<< $GEOSUTIL/plots/odas_plots/plot_V3_rt.csh
->>>withODAS<<< /usr/bin/qalter -o "${EXPDIR}/${EXPID}.${firstdate}.${SLURM_JOB_ID}.out" ${SLURM_JOB_ID}
+>>>withODAS<<< set RUN_STATUS = 'DONE'
+>>>withODAS<<< @BATCH_CHANGE_JOBNAME
+>>>withODAS<<< @BATCH_CHANGE_OUTPUTNAME
 >>>withODAS<<< exit
 
 if ( $rc == 0 ) then
