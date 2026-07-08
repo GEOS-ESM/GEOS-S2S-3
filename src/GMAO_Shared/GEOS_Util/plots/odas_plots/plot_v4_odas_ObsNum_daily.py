@@ -108,7 +108,7 @@ def main(base_path, max_depth, yyyy='202?', mm='??', dd='??', hh='??'):
     # Use the exact same left and right values as the MAE/BIAS script
     fig.subplots_adjust(left=0.12, right=0.95, top=0.92, bottom=0.08, hspace=0.4)
 
-    output_filename = 'stats_odas_obs_v3_modern.png'
+    output_filename = 'odas_counts.png'
     fig.savefig(output_filename, dpi=300)
 
 # ==========================================
