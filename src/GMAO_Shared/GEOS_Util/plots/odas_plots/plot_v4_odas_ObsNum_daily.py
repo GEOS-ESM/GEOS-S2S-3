@@ -121,7 +121,7 @@ if __name__ == "__main__":
     # ----------------------------------------
     # User-Modifiable Configuration
     # ----------------------------------------
-    BASE_PATH = '/gpfsm/dnb07/projects/p236/GiOcean-NRT'
+    BASE_PATH = os.environ['EXPDIR']
     MAX_DEPTH = 300.0  # Depth limit for profiles
     
     # Date variables

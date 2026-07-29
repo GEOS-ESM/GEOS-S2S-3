@@ -225,7 +225,7 @@ if __name__ == "__main__":
     CONFIG_LEV1     = 0.0
     CONFIG_LEV2     = 300.0
     
-    BASE_PATH       = '/gpfsm/dnb07/projects/p236/GiOcean-NRT'
+    BASE_PATH = os.environ['EXPDIR']
     YYYY, MM, DD, HH = '202?', '??', '??', '12'
     
     main(
