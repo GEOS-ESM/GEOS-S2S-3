@@ -1,13 +1,7 @@
-#!/bin/csh -fv
-#
+#!/bin/csh -v
 
-#setenv TMPDIR /tmp/
-
-#module purge
-#module load comp/gcc/8.3.0
-#module load python/GEOSpyD/Min24.4.0-0_py3.11
-module load other/ImageMagick/latest
-module load ncview/2.1.7
+#module load other/ImageMagick/latest
+#module load ncview/2.1.7
 
 cd $EXPDIR
 # Get date of increment to plot
@@ -18,12 +12,8 @@ set model_path = $EXPDIR/ocean_das
 echo 'Increment Date and Final Restart: '$incr_date
 rm -f ODAS_Check.txt
 $GEOSUTIL/plots/odas_plots/plot_increment.v3.py $model_path/oana-$incr_date/mean_ana_restart/incr.nc 'temp' '1' 'Tinc' 4. -4. Tinc.png
-$GEOSUTIL/plots/odas_plots/plot_stats.latest.v4.py
-$GEOSUTIL/plots/odas_plots/plot_v4_odas_ObsNum_daily.py
-#$GEOSUTIL/plots/odas_plots/plot_stats.latest.v3.py Tprof glb 0 300 $yyyy
-#$GEOSUTIL/plots/odas_plots/plot_stats.latest.v3.py Sprof glb 0 300 $yyyy
-#$GEOSUTIL/plots/odas_plots/plot_stats.latest.v3.py ADT glb 0 300 $yyyy
-#$GEOSUTIL/plots/odas_plots/plot_v3_odas_ObsNum_daily.py $yyyy
+$GEOSUTIL/plots/odas_plots/plot_stats.latest.v4.py $EXPDIR
+$GEOSUTIL/plots/odas_plots/plot_v4_odas_ObsNum_daily.py $EXPDIR
 
 #set p1 = stats_Tprof.png
 #set p2 = stats_Sprof.png
@@ -36,13 +26,9 @@ $GEOSUTIL/plots/odas_plots/plot_v4_odas_ObsNum_daily.py
 #convert -resize 600x400 -background white $p3 p3.png
 #convert -resize 600x400 -background white $p4 p4.png
 
-convert stats_combined.png odas_counts.png  -background white -append timeseries.png
+convert Tinc.png stats_combined.png odas_counts.png  -background white -append timeseries.png
 #convert p0.png p1.png p2.png p3.png p4.png  -background white -append timeseries.png
-#rm -f p*png
-pwd
-echo "GiOcean-NRT ODAS Stats" > mail.txt
-/usr/bin/mailx -s "GiOcean-NRT ODAS stats" -a timeseries.png li.ren@nasa.gov,kazumi.nakada@nasa.gov,andrea.m.molod@nasa.gov< mail.txt
 
-
-
-
+echo "${EXPID} ODAS Stats" > mail.txt
+echo "MAIL LIST: >>>${ODAS_MAILLIST}<<<"
+/usr/bin/mailx -v -s  "${EXPID} ODAS stats" -a timeseries.png $ODAS_MAILLIST < mail.txt

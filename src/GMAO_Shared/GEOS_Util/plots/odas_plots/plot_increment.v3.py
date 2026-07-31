@@ -32,14 +32,7 @@ if len(sys.argv) == 8:
 
         lons = np.array([(i * 0.25) - 180. for i in range(1440)])
         lats = np.array([(j * 0.25) - 90. for j in range(721)])
-#	lons=np.zeros(720)
-#	for i in range(0,720):
-#	 lons[i] = (i*0.5)-180.
-#	lats=np.zeros(361)
-#	for j in range(0,361):
-#	 lats[j] = (j*0.5)-90.
 
-	#print lats
         level=int(lev)-1
         temp = fh.variables[var][0][level][:][:]
         minvar = np.min(temp)
@@ -49,13 +42,6 @@ if len(sys.argv) == 8:
             with open("ODAS_Check.txt", "w") as file1:
                file1.write('1')
         temp_units = 'PSU' if var == 'salt' else 'Degrees C' if var == 'temp' else ''
-	#temp_units = 'Degrees C'
-	#if (var == 'salt'):
-	# temp_units = 'PSU'
-	#if (var == 'temp'):
-	# temp_units = 'Degrees C'
-
-#        depths= [' 5',' 15',' 25',' 35',' 45',' 55',' 65',' 75',' 85',' 95',' 105',' 115',' 125',' 135',' 145',' 155',' 165',' 175',' 185',' 195',' 205',' 215',' 225',' 238',' 262',' 303',' 367',' 459',' 586',' 747',' 950',' 1194',' 1480',' 1807',' 2175',' 2579',' 3017',' 3483',' 3972',' 4478']
 
         depths = [' 5',' 15',' 25',' 35',' 45',' 56',' 66',' 77',' 88',' 99',' 110',' 122',' 135', \
                 ' 149',' 164',' 181',' 201','225',' 253',' 288',' 330', '382',' 447',' 525',' 619', \
@@ -66,20 +52,9 @@ if len(sys.argv) == 8:
         print ('depth is',depths[int(lev)-1])
         fh.close()
         lon, lat = np.meshgrid(lons, lats)
-  # Load custom color map
-        name = 'my_cmap'
-#        fileName = "GMT_panoply.txt"
-#        my_cmap = panoply_colormap.from_ascii(fileName, name)
-#        colormaps.register(cmap=my_cmap)       
-#        plt.register_cmap(name=name, cmap=my_cmap)
-#        matplotlib.colormaps.register(name=name, cmap=my_cmap)
-#        custom_map = cm.get_cmap(name)
-#        custom_map = matplotlib.colormaps.get_cmap(name)
-     
-#        cm.register_cmap(cmap=my_cmap)
-#        custom_map = cm.get_cmap(name)
 
-        fig=plt.figure(figsize=(12,8) )
+        #fig=plt.figure(figsize=(12,8) )
+        fig=plt.figure(figsize=(10,7))
         ax = plt.axes(projection=ccrs.PlateCarree())
         ax.set_global()
 
@@ -99,7 +74,7 @@ if len(sys.argv) == 8:
     # Title
         plottit = plottit + ' ' + depths[int(lev) - 1] + ' m'
         plt.title(plottit, fontweight='bold', fontsize=14)
-        plt.savefig(outname)
+        fig.savefig(outname, dpi=300)
 else:
         print(' ')
         print('# * Args: ')
