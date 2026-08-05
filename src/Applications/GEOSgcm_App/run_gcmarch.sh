@@ -356,7 +356,9 @@ getnumcore(){
     local _model=$1
     local thst=$( get_host )
     
-    if [[ $thst == pfe ]];then
+    if [[ "$thst" == "athfe" ]];then
+        declare -A _arrcores=( ["tur_ath"]=240 )
+    elif [[ $thst == pfe ]];then
         declare -A _arrcores=( ["rom_ait"]=128 ["sky_ele"]=40 ["cas_ait"]=40 ["bro"]=28 ["bro_ele"]=28 ["has"]=24 ["ivy"]=20 )
     elif [[ $thst == dis ]];then
         declare -A _arrcores=( ["hasw"]=28 ["sky"]=40 ["cas"]=40 )
@@ -370,8 +372,11 @@ get_host(){
     local hst1=$( hostname | cut -c1 ) 
     local hst3=$( hostname | cut -c1-3 ) 
     local hst4=$( hostname | cut -c1-4 ) 
+    local hst5=$( hostname | cut -c1-5 ) 
 
-    if [[ $hst4 == borg || $hst4 = warp ]];then
+    if [[ "$hst5" == "athfe" ]];then
+        local thishost="athfe"
+    elif [[ $hst4 == borg || $hst4 = warp ]];then
         #note:  borg and warp are starting charcters of computing nodes name.
         local thishost=dis
 
@@ -580,54 +585,13 @@ pbs_jname() {
     local _f=$1
     if [[ -z $_f ]] ;then die "a name of gcm_*.j file is a required input";exit;fi
 
-    if [[ "$hstshort" == "pfe" ]];then
+    if [[ "$hstshort" == "pfe" || "$hstshort" == "athfe" ]];then
         local _vout=$( grep -i pbs $_f 2>/dev/null | grep -v "##"| grep "\-N" | head -1 | tr -s '[:space:]' | rev | cut -d' ' -f1 | rev )
     elif [[ "$hstshort" == "dis" ]];then 
         local _vout=$( grep -i sbatch $_f 2>/dev/null | grep -v "##"| grep "\--job-name=" | head -1 | tr -s '[:space:]' | rev | cut -d'=' -f1 | rev )
     fi
 
     echo $_vout
-}
-
-cnt_jobs() {
-    local _dexp=$1
-    local fgrn=gcm_run.j
-    local farc=archive/run_${strscr}.sh
-
-    [[   -z $_dexp       ]] && die "(${FUNCNAME[0]}) a full path to a exp dir is required input"
-    [[ ! -f $_dexp/$fgrn ]] && die "(${FUNCNAME[0]}) $fgrn does not exists"
-    [[ ! -f $_dexp/$farc ]] && die "(${FUNCNAME[0]}) $farc does not exists"
-
-    #todo:  check fcomp file and exit if it exists
-    jname_grn=$( pbs_jname $_dexp/$fgrn )
-    jname_arc=$( pbs_jname $_dexp/$farc )
-
-    #todo: get number of jobs running or on queue.
-    [[ -n $jname_grn ]] && num_rgrn=$( $cmd_gjob | grep -w $jname_grn 2>/dev/null | wc -l ) || num_rgrn=0
-    [[ -n $jname_arc ]] && num_rarc=$( $cmd_gjob | grep -w $jname_arc 2>/dev/null | wc -l ) || num_rarc=0
-
-    return
-}
-
-
-cnt_jobs() {
-    local _dexp=$1
-    local fgrn=gcm_run.j
-    local farc=archive/run_${strscr}.sh
-
-    [[   -z $_dexp       ]] && die "(${FUNCNAME[0]}) a full path to a exp dir is required input"
-    [[ ! -f $_dexp/$fgrn ]] && die "(${FUNCNAME[0]}) $fgrn does not exists"
-    [[ ! -f $_dexp/$farc ]] && die "(${FUNCNAME[0]}) $farc does not exists"
-
-    #todo:  check fcomp file and exit if it exists
-    jname_grn=$( pbs_jname $_dexp/$fgrn )
-    jname_arc=$( pbs_jname $_dexp/$farc )
-
-    #todo: get number of jobs running or on queue.
-    [[ -n $jname_grn ]] && num_rgrn=$( $cmd_qstat -e -u $USER -W 'fmt_Queue=-maxw 20' -W o=+Rank0 | grep -w $jname_grn 2>/dev/null | wc -l ) || num_rgrn=0
-    [[ -n $jname_arc ]] && num_rarc=$( $cmd_qstat -e -u $USER -W 'fmt_Queue=-maxw 20' -W o=+Rank0 | grep -w $jname_arc 2>/dev/null | wc -l ) || num_rarc=0
-
-    return
 }
 
 nextXmonths() {
@@ -1179,7 +1143,7 @@ calc_seg_endyyyymmdd(){
         #Note 06/26/2024 - num_seg = 0 if you use CAP_0.rc
         #local num_seg=0
         local num_seg=1
-    elif [[ "$hstshort" == "pfe" ]];then 
+    elif [[ "$hstshort" == "pfe" || "$hstshort" == "athfe" ]];then 
         local num_seg=1
     fi
    
@@ -1244,7 +1208,7 @@ fnamearc(){
     local _ftmp=_tmp_${FUNCNAME[0]}
     #local thiscmd="$cmd_sup shiftc --no-cron --no-mail --wait"
 
-    if $blnode_nas || [[ "$hstshort" == "pfe" ]];then 
+    if $blnode_nas || [[ "$hstshort" == "pfe" || "$hstshort" == "athfe" ]];then 
         ssh -q $hst "find $darc/* -maxdepth 1 -mindepth 1 -type f -name '$fcstdate.*.nc*' -o -name '${strrst}.*.tar' | grep -v bbftp.tmp | xargs -i stat --printf="'"'"%Y %s %n\n"'"'" {} > $fexistarc" 2>/dev/null
         ssh -q $hst "find $darc/$strmom/* -type f | grep -v bbftp.tmp | xargs -i stat --printf="'"'"%Y %s %n\n"'"'" {} >> $fexistarc" 2>/dev/null
         cat $fexistarc 2>/dev/null | sed "s#$darc/##g" >| $fexistarc_nop
@@ -1323,7 +1287,7 @@ getfname_arc() {
     fi
 
     #todo:  delete tar-1 files which is a product of an unsuccessful shiftc operation
-    if ! $blrsync && [[ "$hstshort" == "pfe" ]];then 
+    if ! $blrsync && [[ "$hstshort" == "pfe" || "$hstshort" == "athfe" ]];then 
         local arrarcrmf=($( grep "tar-1" $fexistarc 2>/dev/null | cut -d' ' -f3 ))
         while (( ${#arrarcrmf[@]} > 0 ));do
             ssh -q $hostarc rm -f ${arrarcrmf[@]}
@@ -1469,6 +1433,7 @@ local str="\
 
     (( ${#_arrfmiss_nop[@]}      > 0 )) &&      arrfmiss=($( printf "$dexp/%s\n" ${_arrfmiss_nop[@]}      | sort -V )) 
     (( ${#_arrfdelrdyexp_nop[@]} > 0 )) && arrfdelrdyexp=($( printf "$dexp/%s\n" ${_arrfdelrdyexp_nop[@]} | sort -V )) 
+    numdiff_mkfname=$( cat $fdiff_nop 2>/dev/null | wc -l ) 
    
     [[ -s $_ftmp_fdeldone_nop ]] && mv $_ftmp_fdeldone_nop $fdelout_nop || touch $fdelout_nop
 
@@ -1533,6 +1498,9 @@ find_partialinhold(){
 
 count_files(){
 
+    local _ftmp=$cdir/tmp_${strscr}_${FUNCNAME[0]}
+    [[ -f $_ftmp ]] && rm -f $_ftmp
+
     #----------------------------------------
     #          Count Files in DEXP            
     #----------------------------------------
@@ -1558,8 +1526,11 @@ count_files(){
         numfexp_dmn_cnt=0
     fi
 
-        numfexp_del_cnt=$( cat $fdelout 2>/dev/null | grep -v "${strrst}" 2>/dev/null | sort -V | uniq | wc -l ) 
-        numfexp_mis_cnt=$( echo "$numftotal_calc - $numfexp_total_cnt - $numfexp_del_cnt" | bc )
+    numfexp_del_cnt=$( cat $fdelout 2>/dev/null | cut -d' ' -f3 | grep -v "${strrst}" 2>/dev/null | sort -V | uniq | \
+                           while read fname;do
+                               [[ ! -f $fname ]] && echo $fname
+                           done | wc -l ) 
+    numfexp_mis_cnt=$( echo "$numftotal_calc - $numfexp_total_cnt - $numfexp_del_cnt" | bc )
 
     #note:  add delete output from 3mon-run. This number give # of output on pfe after 3mon output are deleted but before 10mon
     #       output are deleted
@@ -1628,6 +1599,9 @@ count_files(){
             numfarc_rst_cnt=$( cat $fexistarc | grep $strrst          | wc -l )
             numfarc_mom_cnt=$( cat $fexistarc | grep $strmom_search   | wc -l )
             numfarc_mis_cnt=$( echo "$numftotal_calc - $numfarc_fmomfout_cnt" | bc )
+
+#wmessage "@$LINENO This calc should resulted in 0:"            
+#wmessage "$numfarc_mis_cnt = $numftotal_calc - $numfarc_fmomfout_cnt"
 
     fi
     
@@ -1746,7 +1720,7 @@ sherlock_findcorruptedtar(){
 write_table(){
     local _ftmp=$cdir/tmp_${FUNCNAME[0]}_1
     local _thishost_up=$( echo $hstshort | tr '[:lower:]' '[:upper:]' )
-    if [[ "$hstshort" == "pfe" ]];then 
+    if [[ "$hstshort" == "pfe" || "$hstshort" == "athfe" ]];then 
         local _darchost="LFE"
     elif [[ "$hstshort" == "dis" ]];then 
         local _darchost="ARC"
@@ -1787,7 +1761,13 @@ write_table(){
     fi
     wmessage
     ((  ${#arrpst[@]} >  0 )) && wmessage " Incompleted gcm_post: ${#arrpst[@]} "
-    (( $blrmarchready == 0 )) && wmessage "       Missing on $_thishost_up: $numfexp_mis_cnt"
+    if (( $blrmarchready == 0 ));then 
+        if [[ "$hstshort" == "athfe" ]];then 
+            wmessage "     Missing on $_thishost_up: $numfexp_mis_cnt"
+        elif [[ "$hstshort" == "pfe" ]];then 
+            wmessage "       Missing on $_thishost_up: $numfexp_mis_cnt"
+        fi
+    fi
     wmessage "       Missing on $_darchost: $numfarc_mis_cnt"
     wmessage "Timestamp/Size Differ: $numfmissing"
     $bldelhold && wmessage "   YYYYMM Dir Removed: ${#arrdelyyyymm[@]}"
@@ -1796,12 +1776,20 @@ write_table(){
     local _numdiff=$( cat $fdiff_nop 2>/dev/null | wc -l ) 
 
     if (( $_numdiff > 0 ));then 
+        fmkfname_vs_fexist=${cdate}_data_${strscr}_${FUNCNAME[0]}_diff_mkfname_vs_fexist
+        
         local _strmsg="\
 @$LINENO ***WARNING: These files do not exist in DEXP/DARC ( diff mkfname vs. file living in dexp/darc )***
 $( cat $fdiff_nop 2>/dev/null | sort -V | sed 's#^#    #g' )
  Total = $( cat $fdiff_nop | wc -l ) 
 "
-        wmessage "$_strmsg"
+        echo "$_strmsg" >| $cdir/tmp/$fmkfname_vs_fexist
+
+        _strmsg="\
+@$LINENO ***WARNING: $( cat $fdiff_nop 2>/dev/null | sort -V | uniq | wc -l ) files do not exist in DEXP/DARC ( diff mkfname vs. file living in dexp/darc )***
+See tmp/$fmkfname_vs_fexist
+"        
+        wmessage "$_strmsg" 
         wmessage
     fi
 
@@ -1964,7 +1952,7 @@ prepare_archiving() {
 
     #todo:  mv mapl monthly partial files
     if (( ${#arrmvpartial[@]} > 0 ));then 
-        if [[ "$hstshort" == "pfe" ]] || $blnode_nas;then
+        if [[ "$hstshort" == "pfe" || "$hstshort" == "athfe" ]] || $blnode_nas;then
             ! $blheader && writeheader && blheader=true
             move_partial
             find_partialinhold
@@ -1995,7 +1983,7 @@ prepare_archiving() {
     cat $fexistexp_sst | sed "s#$dexp/##g" >| $fexistexp_sst_nop
 
     #todo:  find missing and existing output files on arc. arrfmiss 
-    #       and arrfdelrdyexp, global arrays, are returned
+    #       and arrfdelrdyexp, numdiff_mkfname, global arrays, are defined
     get_fmiss_fexist
 
 #    #ref:   s2smkdymean.20240908ens3.atm_inst_6hr_glo_L720x361_p49.completed
@@ -2015,7 +2003,7 @@ check_shiftc(){
     local _arrrunning=()
     local fsft
 
-    if [[ "$hstshort" == "pfe" ]];then 
+    if [[ "$hstshort" == "pfe" || "$hstshort" == "athfe" ]];then 
         local thiscmd="$cmd_shiftc --status=csv"
     elif [[ "$hstshort" == "dis" ]];then 
         local thiscmd="$cmd_sup shiftc --status=csv"
@@ -2170,7 +2158,7 @@ cooking_archiving() {
     local _statushere=999
     local fin
     
-    if [[ "$hstshort" == "pfe" ]];then  
+    if [[ "$hstshort" == "pfe" || "$hstshort" == "athfe" ]];then  
         local thiscmd="$cmd_shiftc --no-cron --no-mail --wait -f -d"
     elif [[ "$hstshort" == "dis" ]];then 
         local thiscmd="$cmd_sup shiftc --no-cron --no-mail --wait -f -d"
@@ -2226,7 +2214,7 @@ cooking_archiving_nowait() {
         
     if $blnode_nas;then
         local thiscmd="$cmd_shiftc --streams=1 --hosts=1 --no-cron --no-mail -f -d"
-    elif [[ "$hstshort" == "pfe" ]];then
+    elif [[ "$hstshort" == "pfe" || "$hstshort" == "athfe" ]];then
         local thiscmd="$cmd_shiftc --no-cron --no-mail -f -d" 
     elif [[ "$hstshort" == "dis" ]];then
         local thiscmd="$cmd_sup shiftc --no-cron --no-mail -f -d" 
@@ -2359,7 +2347,7 @@ cooking_archiving_rsync_dis(){
             if [[ -s $thisftmp ]];then
                 wmessage "... $(date +'%I:%M%P') ... $( printf "%02g" $_cntcoll ) of $( printf "%02g" ${#_arrcoll_sortedbysize[@]}) ... $_coll ( #files = $( cat $thisftmp | wc -l ); total size = $totsize_fmt ) ..."
 
-                if [[ "$hstshort" == "pfe" ]];then 
+                if [[ "$hstshort" == "pfe" || "$hstshort" == "athfe" ]];then 
                     rsync -avzRPqW --files-from=$thisftmp / $hostarc:$_thisdfout
                     local status_rsync=$?
 
@@ -2464,7 +2452,7 @@ cooking_archiving_rsync(){
         local _str1=$( basename $_ftmp | rev | cut -d'_' -f1-2 | rev ) 
         local scrname=${scrnamersync_base}$_str1
 
-        if [[ "$hstshort" == "pfe" ]];then 
+        if [[ "$hstshort" == "pfe"  || "$hstshort" == "athfe"  ]];then 
 
             local thisferr=$cdir/${ferrrsync_base}$_str1
             [[ -f $thisferr ]] && rm -f $thisferr
@@ -2792,7 +2780,7 @@ EOF
     chmod 755 $_fpst
     [[ -f $_fsed ]] && rm -f $_fsed
 
-    [[ -f $_fpst ]] && return 0 || return 1
+    [[ -f $_fpst ]] && echo 0 || echo 1
 }
 
 exp_editfpst() {
@@ -2824,7 +2812,8 @@ cooking_configarch (){
 
     shopt -s nullglob
     local _arrfconfig1=( AGCM.rc AGCM_*.rc CAP_*.rc HISTORY_*.rc input.nml gcm_run.j \
-archive/run_gcm*.sh archive/stderr_gcmarch cap_* note*_cont note_ocnpert_* message_rstmkpert_* $fnote )
+cap_* note*_cont note_ocnpert_* message_rstmkpert_* $fnote \
+archive/run_gcm*.sh archive/stderr_gcmarch archive/data_gcmarch_* archive/gcmarch_mkfname_* archive/gcmarch_delout* )
     [[ -f $frstpert ]] && _arrfconfig1+=( $frstpert ) 
     shopt -u nullglob
 
@@ -2845,7 +2834,7 @@ archive/run_gcm*.sh archive/stderr_gcmarch cap_* note*_cont note_ocnpert_* messa
     wmessage "$( date +'%m/%d/%Y %H:%M' ) ... archiving config files"
     wmessage
 
-    if [[ "$hstshort" == "pfe" ]];then
+    if [[ "$hstshort" == "pfe" || "$hstshort" == "athfe"  ]];then
         #$cmd_shiftc --no-cron --no-mail --wait -L ${_arrfconfig[@]} $hostarc:$darc/
         #ssh -q $hostarc $cmd_rsync -azPqW ${_arrfconfig[@]} $darc/
         [[ -f $_dtmp/$_ftar ]] && ssh -q $hostarc $cmd_rsync -azqW $_dtmp/$_ftar $darc/
@@ -3216,7 +3205,7 @@ hstname=$( hostname )
 hstshort=$( get_host )
 blnode_nas=false
 blnode_nccs=false
-if [[ ${hstname:0:3} == "pfe" ]];then
+if [[ ${hstname:0:3} == "pfe" || ${hstname:0:5} == "athfe" ]];then
     :
 elif [[ ${hstname:0:3} == dis ]];then
     :
@@ -3315,14 +3304,32 @@ fi
 #                             Set Host Specific Vars
 #================================================================================
 #todo:  archiving host
-if [[ "$hstshort" == "pfe" ]];then 
+if [[ "$hstshort" == "athfe" ]];then 
+    strhere="\
+        @$LINENO NOTE: 06/01/2026 Work on here!
+        These command have not been tested while jobs are running:
+            cmd_gjobjlong 
+            cmd_gjob
+        "
+#wmessage "$strhere"
+
+    hostarc=lfe
+         cmd_rsync=/usr/bin/rsync
+        cmd_submit=/PBS/bin/qsub
+     cmd_qstat_nas=/usr/local/bin/nas_qstat
+     cmd_qstat_pbs=/PBS/bin/qstat
+        cmd_shiftc=/usr/local/bin/shiftc
+          cmd_gjob=
+     cmd_gjobjlong=
+
+elif [[ "$hstshort" == "pfe" ]];then 
     hostarc=@HOSTARC_GCMARC
          cmd_rsync=/usr/bin/rsync
         cmd_submit=/PBS/bin/qsub
-          cmd_gjob=cmd_gjob_nas
-     cmd_gjobjlong=cmd_gjob_nas_jlong
          cmd_qstat=/u/scicon/tools/bin/qstat
         cmd_shiftc=/usr/local/bin/shiftc
+          cmd_gjob=cmd_gjob_nas
+     cmd_gjobjlong=cmd_gjob_nas_jlong
 
 elif [[ "$hstshort" == "dis" ]];then 
     hostarc=@HOSTARC_GCMARC
@@ -3469,7 +3476,7 @@ if ! $bldarcsame && [[ "$hstshort" == "dis" && "$hostarc" == "lfe" ]];then
     else
         blhostarc_avail=false
     fi
-elif [[ "$hstshort" == "pfe" ]];then 
+elif [[ "$hstshort" == "pfe" || "$hstshort" == "athfe" ]];then 
     if ssh -q $hostarc true >>/dev/null 2>&1; then
         blhostarc_avail=true
     else
@@ -3511,7 +3518,8 @@ strsid="Shift id is "
 strpbs_output="Output_Path"
 strsbt_wrkdir="WorkDir"
 strpbs_resource="Resource_List.select"
-model_default=sky_ele
+
+model_default=@MODELPOST
 
 if $optq;then 
     numdelimit=$( echo $userqid | grep -o ":" | wc -l ) 
@@ -3545,9 +3553,48 @@ fi
 
 numflast=1
 
-#todo: check if gcm_post are running 
+#todo: check if gcm_post and ensmean daily scripts are running 
 arrjobs=()
-if [[ "$hstshort" == "pfe" ]];then 
+
+if [[ "$hstshort" == "athfe" ]];then 
+    fgjob_pbs=data_${strscr}_qstat_f_F_dsv__grep_u_USER
+    fgjob_nas=test_data_${strscr}_nasqstat_f_u_USER
+
+    $cmd_qstat_pbs -f -F dsv | grep $USER >| tmp/${cdate}_$fgjob_pbs
+    $cmd_qstat_nas -f -u $USER            >| $fgjob_nas
+
+    arrpstjobs=($( grep -i "$strpbs_output" $fgjob_nas | rev | cut -d':' -f1 | rev | \
+                                                    while read lnoutput;do 
+                                                        thisdir=$( dirname $lnoutput )
+                                                        [[ "$thisdir" == "$dexp/post" ]] && echo $thisdir
+                                                    done ))
+
+    arrmkdjobs=($( grep -i "$strpbs_output" $fgjob_nas | rev | cut -d':' -f1 | rev | \
+                                                    while read lnoutput;do 
+                                                        thisdir=$( dirname $lnoutput )
+                                                        [[ "$thisdir" == "$dutl" ]] && echo $thisdir
+                                                    done ))
+
+    numpstjobs=${#arrpstjobs[@]} 
+    nummkdjobs=${#arrmkdjobs[@]} 
+
+wmessage "***********************"
+wmessage "@$LINENO $( date )"
+wmessage
+wmessage "Note 06/26/2026 Make sure that these number make sens."
+wmessage
+wmessage "@$LINENO (numpstjobs,nummkdjobs) = $numpstjobs,$nummkdjobs"
+ahand_print ${arrpstjobs[@]}
+wmessage 
+ahand_print ${arrmkdjobs[@]}
+wmessage 
+cp -p $fgjob_nas tmp/${cdate}_$fgjob_nas
+wmessage "Copy of $fgjob_nas is saved in tmp dir as"
+wmessage "tmp/${cdate}_$fgjob_nas"
+wmessage "***********************"
+wmessage
+
+elif [[ "$hstshort" == "pfe" ]];then 
     dexp_realpath=$dexp
 
     arrjobid=($( $cmd_gjob | grep P$fcstdate$ensm 2>/dev/null | cut -d' ' -f1 )) 
@@ -3564,6 +3611,9 @@ if [[ "$hstshort" == "pfe" ]];then
             [[ "$thisdexp" == "$dexp" ]] && arrjobs_mkdy+=( $jobid )
         done
     fi
+
+    numpstjobs=${#arrjobs[@]} 
+    nummkdjobs=${#arrjobs_mkdy[@]} 
 
 elif [[ "$hstshort" == "dis" ]];then 
     dexp_realpath=$( /usr/bin/realpath $dexp ) 
@@ -3582,10 +3632,12 @@ elif [[ "$hstshort" == "dis" ]];then
             [[ "$thisdexp" == "$dexp" || "$thisdexp" == "$dexp_realpath" ]] && arrjobs_mkdy+=( $jobid )
         done
     fi
+    numpstjobs=${#arrjobs[@]} 
+    nummkdjobs=${#arrjobs_mkdy[@]} 
 fi
 
-(( ${#arrjobs[@]}      == 0 )) && blpstrunning=false  || blpstrunning=true
-(( ${#arrjobs_mkdy[@]} == 0 )) && blmkdyrunning=false || blmkdyrunning=true
+(( $numpstjobs == 0 )) && blpstrunning=false  || blpstrunning=true
+(( $nummkdjobs == 0 )) && blmkdyrunning=false || blmkdyrunning=true
 
 #todo:  delete unnecessary files
 rm -f $cdir/${strscr}_??? 2>/dev/null
@@ -3606,7 +3658,7 @@ write_table
 $optt && wmessage "exit @$LINENO" && exit
 
 #todo:  delete output files from collection dir.
-if (( $rundelfout == 1 && ${#arrfmiss[@]} == 0 ));then
+if (( $rundelfout == 1 && ${#arrfmiss[@]} == 0 && $numdiff_mkfname ));then
     wmessage "@$LINENO Unknown error: $( basename $fcomp ) exists, but $( basename $fcomp_del ) does not."
     wmessage 
 fi
@@ -3646,8 +3698,8 @@ if ! $blpstrunning;then
           thiscoll=$( echo $fpstcoll_miss | rev | cut -d'.' -f2 | rev )
         thisyyyymm=$( echo $fpstcoll_miss | rev | cut -d'.' -f1 | cut -c1-6 | rev )
         wmessage "Make $fpstcoll_miss"
-        exp_mkcollgcmpost $dexp $thiscoll $thisyyyymm
-        (( $? == 0 )) && arrpst+=( $( basename $fpstcoll_miss ) )
+        status_return=$( exp_mkcollgcmpost $dexp $thiscoll $thisyyyymm ) 
+        (( $status_return == 0 )) && arrpst+=( $( basename $fpstcoll_miss ) )
     done 
 
     (( ${#arrfpst_exist[@]} > 0 )) && arrpst+=( ${arrfpst_exist[@]} ) 
@@ -3657,7 +3709,7 @@ if ! $blpstrunning;then
     if $blsubpst && (( ${#arrpst[@]} > 0 )) ;then
         ! $blheader && writeheader && blheader=true
 
-        if [[ "$hstshort" == "pfe" ]];then 
+        if [[ "$hstshort" == "pfe" || "$hstshort" == "athfe" ]];then 
             arrsub=($( exp_editfpst ${arrpst[@]} ))
         elif [[ "$hstshort" == "dis" ]];then 
             arrsub=( ${arrpst[@]} )
@@ -3854,11 +3906,11 @@ fi
 #todo:  double check before delete outputs!!
 blrmarchready=$( double_checking ) 
 
-#wmessage "@$LINENO blrmarchready = $blrmarchready"
+wmessage "@$LINENO blrmarchready = $blrmarchready"
 #wmessage "exit @$LINENO" && exit
 
 
-if [[ -f $fcomp ]] && (( ${#arrfmiss[@]} == 0 && ${#arrmkdy_fmiss[@]} == 0 ));then
+if [[ -f $fcomp ]] && (( ${#arrfmiss[@]} == 0 && ${#arrmkdy_fmiss[@]} == 0 && $numdiff_mkfname == 0 ));then
 
     if $bldarcsame;then 
         #todo:  keep all output files when dexp and archive dir are the same

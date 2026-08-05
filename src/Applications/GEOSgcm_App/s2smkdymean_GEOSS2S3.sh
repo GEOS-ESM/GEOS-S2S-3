@@ -138,8 +138,11 @@ get_host(){
     local hst1=$( hostname | cut -c1 ) 
     local hst3=$( hostname | cut -c1-3 ) 
     local hst4=$( hostname | cut -c1-4 ) 
-
-    if [[ $hst4 == borg || $hst4 = warp ]];then
+    local hst5=$( hostname | cut -c1-5 ) 
+        
+    if [[ "$hst5" == "athfe" ]];then
+        local thishost="athfe"
+    elif [[ $hst4 == borg || $hst4 = warp ]];then
         #note:  borg and warp are starting charcters of computing nodes name.
         local thishost=dis
 
@@ -360,7 +363,7 @@ createfsed() {
     [[ -f $fsed ]] && rm -f $fsed
 
     if $blexe_dexp;then 
-        if [[ $hstshort == pfe ]];then
+        if [[ "$hstshort" == "pfe" || "$hstshort" == "athfe" ]];then
     
             cat > $fsed << EOF  
 s?@\<S2SMKDYMEAN_STRSCR\>?$strscr?g
@@ -375,7 +378,7 @@ s?@\<S2SMKDYMEAN_BLWHIST\>?${blwhist^^}?g
 s?@\<STREXPID\>?$strexpid?g
 EOF
 
-        elif [[ $hstshort == dis ]];then
+        elif [[ "$hstshort" == "dis" ]];then
     
             cat > $fsed << EOF
 s?@\<S2SMKDYMEAN_STRSCR\>?$strscr?g
@@ -392,7 +395,7 @@ EOF
         fi
     else
 
-        if [[ $hstshort == pfe ]];then
+        if [[ "$hstshort" == "pfe" || "$hstshort" == "athfe" ]];then
    
 #s?@\<NCPUSS2SMKDYMEAN\>?$s2smkdymean_ncpus?g
 #s?@\<MODELS2SMKDYMEAN\>?$s2smkdymean_model?g
@@ -432,7 +435,7 @@ s?@\<S2SMKDYMEAN_BLTHREADS\>?${blthreads^^}?g
 s?@\<S2SMKDYMEAN_BLWHIST\>?${blwhist^^}?g
 s?@\<STREXPID\>?$strexpid?g
 EOF
-        elif [[ $hstshort == dis ]];then
+        elif [[ "$hstshort" == "dis" ]];then
     
             cat > $fsed << EOF  
 s?@\<S2SMKDYMEAN_STRSCR\>?$strscr?g
@@ -462,7 +465,7 @@ set_varfixed() {
 
     else
         #note:  s2smkdymean_* vars should be set in srcme_* file if srcme files is used.  
-        if [[ $hstshort == pfe ]];then
+        if [[ "$hstshort" == "pfe" || "$hstshort" == "athfe" ]];then
 
             [[ -n $DBUILD                 ]] && geosdir=$( dirname $DBUILD )       || geosdir=
             [[ -n $s2smkdymean_numthreads ]] && numthreads=$s2smkdymean_numthreads || numthreads=$numthreads_default
@@ -503,7 +506,7 @@ set_varfixed() {
                       geossrc=$DBUILD
 
 
-        elif [[ $hstshort == dis ]];then
+        elif [[ "$hstshort" == "dis" ]];then
 
             [[ -n $s2smkdymean_numthreads ]] && numthreads=$s2smkdymean_numthreads || numthreads=$numthreads_default
             [[ -n $s2smkdymean_blthreads  ]] &&  blthreads=$s2smkdymean_blthreads  ||  blthreads=$blthreads_default
@@ -971,7 +974,7 @@ clean_dir() {
 #starthere
 hst=$( hostname )
 blnode=false
-if [[ "${hst:0:3}" == "pfe" ]];then
+if [[ "${hst:0:3}" == "pfe" || ${hst:0:5} == "athfe" ]];then
     :
 elif [[ "${hst:0:3}" == "dis" ]];then
     :
@@ -1068,9 +1071,6 @@ while :; do
     shift
     cnt=$(( cnt + 1 ))
 done
-
-#                --redo  re-process data. 
-#                         *Input file has to have a list of exp dir with full paths
 #================================================================================
 #                               Check User Inputs
 #================================================================================
@@ -1078,25 +1078,19 @@ i=0
 inputcheck
 $optsrcme && source $userinput_srcme
 
-#[[ -z $blnrt ]] && blnrt=false
-
 #================================================================================
 #                             Set Host Specific Vars
 #================================================================================
 
-if [[ "$hstshort" == "pfe" ]];then
-    #do something here (i.e. load modules, location of applications etc)
-    #module load cdo/1.9.0
-    #. /usr/share/modules/init/bash
+if [[ "$hstshort" == "athfe" ]];then
+    cmd_submit=/PBS/bin/qsub
+
+elif [[ "$hstshort" == "pfe" ]];then
     cmd_submit=/PBS/bin/qsub
 
     [[ -z $hstarc ]] && hstarc=lfe
 
 elif [[ "$hstshort" == "dis" ]];then
-    #do something here (i.e. load modules, location of applications etc)
-    #. /usr/share/modules/init/bash
-    #module load other/cdo-1.9.1
-    #module load other/comp/gcc-5.3-sp3 other/SSSO_Ana-PyD/SApd_4.3.1_py2.7_gcc-5.3-sp3
     cmd_submit=/usr/slurm/bin/sbatch
 
 elif $blnode;then 
@@ -1365,24 +1359,6 @@ for coll in ${arrfinal[@]};do
             cd - >/dev/null
             #+++++ cd thisdscratch ( end ) +++++
 
-            #else
-            #    msg_wheader_userdefined 40 - "$coll"
-
-            #    if [[ ! -f $thisdscratch/${strscr}_inputready && ! -f $thisfscr ]] ;then 
-            #        wmessage "Input Files - Not Ready"
-            #        wmessage
-            #    elif [[ -f $thisdscratch/${strscr}_inputready &&   -f $thisfscr ]] ;then 
-            #        #wmessage "$fscr_basename - Ready"
-            #        #wmessage
-
-            #        wmessage "$fscr_basename - Resubmit"
-            #        #+++++ cd thisdscratch (start) +++++
-            #        cd $thisdscratch
-            #        wmessage "$( $cmd_submit $fscr_basename )"
-            #        cd - >/dev/null
-            #        #+++++ cd thisdscratch ( end ) +++++
-            #    fi
-            #fi
         fi
     fi
 done

@@ -36,7 +36,34 @@ setenv GEOSUTIL  @GEOSSRC/GMAO_Shared/GEOS_Util
 source $GEOSBIN/g5_modules
 
 if ( $SITE == NAS ) then
-    set cmd_cdo = "cdo -O -s -P 8 --no_warnings"
+
+    set strhst = `hostname | cut -c1`
+    
+    if ( "$strhst" == "x" ) then 
+        echo "I am on tur_ath"
+        set cmd_ncatted = /nasa/spack/views/gcc-4.8/nco/4.6.7/bin/ncatted
+        set  cmd_bincdo = /nasa/spack/views/gcc-4.8/cdo/1.9.0/bin/cdo
+        
+        if ( ! -e $cmd_bincdo  ) then 
+            echo "file not exist: $cmd_bincdo"
+            exit
+        endif
+
+        if ( ! -e $cmd_ncatted ) then 
+            echo "file not exist: $cmd_ncatted"
+            exit
+        endif
+
+        set cmd_cdo = "$cmd_bincdo -O -s -P 8 --no_warnings"
+
+    else 
+        echo "I am on rom_ait or sky_ele"
+        module load nco
+        module load cdo
+        
+        set cmd_cdo = "cdo -O -s -P 8 --no_warnings"
+        set cmd_ncatted = ncatted
+    endif 
 
 else if ( $SITE == NCCS ) then 
     setenv PATH $BASEDIR/Linux/bin:$PATH
@@ -45,8 +72,6 @@ endif
 
 setenv LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:${BASEDIR}/${ARCH}/lib
 
-module load nco
-module load cdo
 module list 
 
 echo 
@@ -304,7 +329,7 @@ if ( $#arryyyymm == $#arrfouttar ) then
     #+++++ cd $dscratch (start) +++++
     cd $dscratch
     echo "Daily Mean Calculations - COMPLETED"
-    echo "Total # of Dailymean Files: $#arrfouttar ( supposed to be $numdyout )"
+    echo "Total # of Dailymean Files: $#arrfout_all ( supposed to be $numdyout )"
     printf '%s\n' $arrfout_all | sort -V | xargs -i stat --printf='%s %n\n' {} | xargs -n 2 bash -c 'echo "    " $( numfmt --to=iec $1 ) $2' bash
     cd - >/dev/null
     #+++++ cd $dscratch ( end ) +++++

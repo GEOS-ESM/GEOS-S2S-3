@@ -141,6 +141,15 @@ if ( $SITE != 'NCCS' && $SITE != 'NAS' ) then
    set NOCVS = TRUE
 endif
 
+if ( $SITE == 'NAS') then
+   set OS_VERSION_ID=`grep VERSION_ID /etc/os-release | cut -d= -f2 | cut -d. -f1 | sed 's/"//g'`
+   if ( "$OS_VERSION_ID" == "8" ) then
+      set TOSS_VERSION = "TOSS4"
+   else if ( "$OS_VERSION_ID" == "9" ) then
+      set TOSS_VERSION = "TOSS5"
+   endif
+endif
+
 #######################################################################
 #           CVS: Test for Environment Variable
 #######################################################################
@@ -148,8 +157,7 @@ endif
 if ( $?ESMA_NOCVS ) then
    set NOCVS = TRUE
 endif
-# FOR COUPLED WE WANT NOCVS=TRUE JM
-#set NOCVS = TRUE
+
 #######################################################################
 #           CVS: Test if we are on a compute node
 #######################################################################
@@ -194,6 +202,8 @@ else if ( `echo $BASEDIR | grep -i intelmpi` != '') then
    set MPI = intelmpi
 else if ( `echo $BASEDIR | grep -i mpt`      != '') then
    set MPI = mpt
+else if ( `echo $BASEDIR | grep -i craympich` != '') then
+   set MPI = craympich
 else
    # Assume default is Intel MPI in case of older baselibs
    set MPI = intelmpi 
@@ -212,6 +222,8 @@ if ( $MPI == mvapich2 ) then
 else if ( $MPI == openmpi ) then
    setenv RUN_CMD 'mpirun -map-by core -bind-to core -np ' # mpi run for OpenMPI 
 else if ( $MPI == intelmpi ) then
+   setenv RUN_CMD 'mpirun -np '              # mpi run for Intel MPI
+else if ( $MPI == craympich ) then
    setenv RUN_CMD 'mpirun -np '              # mpi run for Intel MPI
 else if ( $MPI == mpt ) then
    setenv RUN_CMD 'mpiexec_mpt -np '         # mpi run for MPT
@@ -243,7 +255,6 @@ echo "ENTERED $EXPDSC"
 echo
 
 GEOSTAG:
-#set GEOSTAG = `cat $APPDIR/.AGCM_VERSION`
 set GEOSTAG = `cat .AGCM_VERSION`
 #echo "${C1}CVS BASE Source Tag${CN} used for Experiment: ${C2}${GEOSTAG}${CN}"
 
@@ -472,6 +483,8 @@ if( $OGCM == "TRUE" ) then
     @   OGCM_NPROCS = $OGCM_NX * $OGCM_NY
 
 else
+
+    set DEFAULT_HISTORY_TEMPLATE = "HISTORY.AGCM.rc.tmpl"
 
     # OGCM = FALSE (Data Ocean Resolution)
     # ------------------------------------
@@ -1474,9 +1487,21 @@ echo "knnote: @1445 NCUS,NPES,NCPUS = $NCUS,$NPES,$NCPUS"
               setenv        POSTPRC_P "PBS -l select=1:ncpus=${NCPUSPOST}:mpiprocs=${NCPUSPOST}:model=${MODELPOST}"                    # PE Configuration for gcm_post.j
               setenv    S2SMKDYMEAN_P "PBS -l select=1:ncpus=${NCPUSS2SMKDYMEAN}:mpiprocs=${NCPUSS2SMKDYMEAN}:model=${MODELS2SMKDYMEAN}"      # PE Configuration for gcm_post.j
               setenv         RUN_QRES "PBS -q @RESNAME"                                                                                # batch queue name for gcm_run.j for reserved nodes
-              setenv         RUN_PRES "PBS -l select=${NCUS}:ncpus=${NUMC}:mpiprocs=${NUMC}:model=${MODEL}:aoe=${AOEGCMRUN}"           # PE Configuration for gcm_run.j for reserved nodes
+
+              if ( $MODEL == "tur_ath" ) then
+                  setenv         RUN_PRES "PBS -l select=${NCUS}:ncpus=${NUMC}:mpiprocs=${NUMC}:model=${MODEL}"                        # PE Configuration for gcm_run.j for reserved nodes
+              else
+                  setenv         RUN_PRES "PBS -l select=${NCUS}:ncpus=${NUMC}:mpiprocs=${NUMC}:model=${MODEL}:aoe=${AOEGCMRUN}"       # PE Configuration for gcm_run.j for reserved nodes
+              endif
+
               setenv     POSTPRC_QRES "PBS -q @RESNAMEPOST"                                                                            # batch queue name for gcm_post.j for reserved nodes
-              setenv     POSTPRC_PRES "PBS -l select=1:ncpus=${NCPUSPOST}:mpiprocs=${NCPUSPOST}:model=${MODELPOST}:aoe=${AOEGCMPOST}"  # PE Configuration for gcm_post.j for reserved nodes
+
+              if ( $MODELPOST == "tur_ath" ) then
+                  setenv     POSTPRC_PRES "PBS -l select=1:ncpus=${NCPUSPOST}:mpiprocs=${NCPUSPOST}:model=${MODELPOST}"  # PE Configuration for gcm_post.j for reserved nodes
+              else
+                  setenv     POSTPRC_PRES "PBS -l select=1:ncpus=${NCPUSPOST}:mpiprocs=${NCPUSPOST}:model=${MODELPOST}:aoe=${AOEGCMPOST}"  # PE Configuration for gcm_post.j for reserved nodes
+              endif
+
               setenv S2SMKDYMEAN_QRES "PBS -q @S2SMKDYMEAN_RESNAME"                                                                            # batch queue name for gcm_post.j for reserved nodes
               setenv S2SMKDYMEAN_PRES "PBS -l select=1:ncpus=${NCPUSS2SMKDYMEAN}:mpiprocs=${NCPUSS2SMKDYMEAN}:model=${MODELS2SMKDYMEAN}"      # PE Configuration for gcm_post.j
               setenv     ARCHIVE_QRES "PBS -q @RESNAMEARCH"                                                                            # batch queue name for run_gcmarch.sh for reserved nodes
@@ -2069,6 +2094,23 @@ EOF
 
 endif # if NCCS
 
+else if ( $MPI == craympich ) then
+
+if ( $SITE == 'NAS' ) then
+
+cat > $HOMDIR/SETENV.commands << EOF
+# Testing on Athena/Turin at NAS shows these
+# settings are needed for oserver use
+# NOTE: These should probably only be used by
+# *Cray* MPICH at NAS, but for now, that's
+# the only MPICH being used there.
+
+setenv FI_CXI_OPTIMIZED_MRS 0
+setenv FI_CXI_RX_MATCH_MODE hybrid
+EOF
+
+endif # if NAS
+
 endif # if mpi
 
 #######################################################################
@@ -2246,6 +2288,7 @@ s?@\<RUN_PRES\>?$RUN_PRES?g
 s?@RUN_FP?$RUN_FP?g
 s?@\<RUN_Q\>?$RUN_Q?g
 s?@\<RUN_QRES\>?$RUN_QRES?g
+s?@\<MODELPOST\>?$MODELPOST?g
 s?@\<S2SMKDYMEAN_WALLTIME\>?$S2SMKDYMEAN_WALLTIME?g
 s?@\<S2SMKDYMEAN_BLQOS\>?$S2SMKDYMEAN_BLQOS?g
 s?@POST_N?$POST_N?g
