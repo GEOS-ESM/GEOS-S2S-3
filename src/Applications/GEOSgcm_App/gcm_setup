@@ -1397,6 +1397,9 @@ if( $SITE == 'NAS' ) then
               setenv     RUN_Q  "PBS -q ${QTYPE}"                                                           # batch queue name for gcm_run.j
               setenv     RUN_P  "PBS -l select=${NCUS}:ncpus=${NCPUS}:mpiprocs=${NCPUS}:model=${MODEL}"     # PE Configuration for gcm_run.j
               setenv     RUN_P2 NULL                                                                        # PE Configuration for gcm_run.j - no need for P2 at NAS
+              setenv    RUN_SP  DELETE                                                                      # SBATCH partition for gcm_run.j
+              setenv    RUN_SQ  DELETE                                                                      # SBATCH qos       for gcm_run.j
+              setenv    RUN_SO  DELETE                                                                      # SBATCH output    for gcm_run.j
               setenv    RUN_FP  "PBS -l select=24:ncpus=${NCPUS}:mpiprocs=${NCPUS}:model=${MODEL}"          # PE Configuration for gcm_forecast.j
               setenv    POST_Q  "PBS -q normal"                                                             # batch queue name for gcm_post.j
               setenv    PLOT_Q  "PBS -q normal"                                                             # batch queue name for gcm_plot.j
@@ -1443,6 +1446,19 @@ else if( $SITE == 'NCCS' ) then
               endif
               setenv    RUN_P   "SBATCH --ntasks=${NPES}"                              # PE Configuration for gcm_run.j
               setenv    RUN_P2  "SBATCH --nodes=18 --ntasks-per-node=120"              # PE Configuration for gcm_run.j
+              if( $LOGNAME == 'gmaofcst' ) then
+                 setenv RUN_SP  "SBATCH --partition=preops"                            # SBATCH partition for gcm_run.j
+                 setenv RUN_SQ  "SBATCH --qos=s2s"                                     # SBATCH qos       for gcm_run.j
+                 setenv RUN_SO  "SBATCH --output=GiOcean-NRT_RUN.%j.FAILED"            # SBATCH output    for gcm_run.j
+                 setenv BATCH_OUTPUTNAME "DELETE"                                      # SLURM Syntax for job output name
+                 setenv BATCH_OUTPUTNAME_AMENDMENT ""
+              else
+                 setenv RUN_SP  DELETE                                                 # SBATCH partition for gcm_run.j
+                 setenv RUN_SQ  DELETE                                                 # SBATCH qos       for gcm_run.j
+                 setenv RUN_SO  DELETE                                                 # SBATCH output    for gcm_run.j
+                 setenv BATCH_OUTPUTNAME "SBATCH --output="                            # SLURM Syntax for job output name
+                 setenv BATCH_OUTPUTNAME_AMENDMENT ".%j.FAILED"
+              endif
               setenv    RUN_FP  "SBATCH --ntasks=\&NPES"                               # PE Configuration for gcm_forecast.j
               setenv    POST_Q  'SBATCH --constraint="[cas]"'                      # batch queue name for gcm_post.j
               setenv    PLOT_Q  'SBATCH --constraint="[cas]"'                      # batch queue name for gcm_plot.j
@@ -1479,6 +1495,9 @@ else
               setenv  RUN_Q     NULL                                                   # batch queue name for gcm_run.j
               setenv  RUN_P     NULL                                                   # PE Configuration for gcm_run.j
               setenv  RUN_P2    NULL                                                   # PE Configuration for gcm_run.j
+              setenv  RUN_SP    DELETE                                                 # SBATCH partition for gcm_run.j
+              setenv  RUN_SQ    DELETE                                                 # SBATCH qos       for gcm_run.j
+              setenv  RUN_SO    DELETE                                                 # SBATCH output    for gcm_run.j
               setenv  RUN_FP    NULL                                                   # PE Configuration for gcm_forecast.j
               setenv    POST_Q  NULL                                                   # batch queue name for gcm_post.j
               setenv    PLOT_Q  NULL                                                   # batch queue name for gcm_plot.j
@@ -2126,6 +2145,9 @@ s?@RUN_P2?$RUN_P2?g
 s?@RUN_P?$RUN_P?g
 s?@RUN_FP?$RUN_FP?g
 s?@RUN_Q?$RUN_Q?g
+s?@RUN_SP?$RUN_SP?g
+s?@RUN_SQ?$RUN_SQ?g
+s?@RUN_SO?$RUN_SO?g
 s?@POST_N?$POST_N?g
 s?@POST_T?$POST_T?g
 s?@POST_P?$POST_P?g

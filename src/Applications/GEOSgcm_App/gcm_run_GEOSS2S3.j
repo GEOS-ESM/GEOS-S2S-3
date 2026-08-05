@@ -40,9 +40,6 @@ setenv GCMVER           @GCMVER
 
 source $GEOSBIN/g5_modules
 
-#if( $SITE == NAS ) then
-#   module swap mpi-hpe/mpt.2.23 mpi-hpe/mpt.2.25
-#endif
 module list
 
 setenv LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:${BASEDIR}/${ARCH}/lib
