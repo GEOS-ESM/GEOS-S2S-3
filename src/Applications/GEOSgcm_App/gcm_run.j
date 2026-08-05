@@ -9,6 +9,8 @@
 #@RUN_P2
 #@BATCH_JOBNAME@RUN_N
 #@RUN_Q
+#@RUN_SP
+#@RUN_SQ
 #@BATCH_GROUP
 #@BATCH_JOINOUTERR
 #@BATCH_OUTPUTNAME@RUN_N@BATCH_OUTPUTNAME_AMENDMENT
@@ -35,10 +37,6 @@ setenv RUN_CMD         "@RUN_CMD"
 setenv GCMVER           @GCMVER
 
 source $GEOSBIN/g5_modules
-
-if( $SITE == NAS ) then
-#   module swap mpi-hpe/mpt.2.23 mpi-hpe/mpt.2.25
-endif
 
 setenv LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:${BASEDIR}/${ARCH}/lib
 
