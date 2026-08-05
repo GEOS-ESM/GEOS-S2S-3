@@ -1399,7 +1399,6 @@ if( $SITE == 'NAS' ) then
               setenv     RUN_P2 NULL                                                                        # PE Configuration for gcm_run.j - no need for P2 at NAS
               setenv    RUN_SP  DELETE                                                                      # SBATCH partition for gcm_run.j
               setenv    RUN_SQ  DELETE                                                                      # SBATCH qos       for gcm_run.j
-              setenv    RUN_SO  DELETE                                                                      # SBATCH output    for gcm_run.j
               setenv    RUN_FP  "PBS -l select=24:ncpus=${NCPUS}:mpiprocs=${NCPUS}:model=${MODEL}"          # PE Configuration for gcm_forecast.j
               setenv    POST_Q  "PBS -q normal"                                                             # batch queue name for gcm_post.j
               setenv    PLOT_Q  "PBS -q normal"                                                             # batch queue name for gcm_plot.j
@@ -1429,10 +1428,10 @@ else if( $SITE == 'NCCS' ) then
               setenv BATCH_GROUP "SBATCH --account="                                   # SLURM Syntax for account name
               setenv BATCH_TIME "SBATCH --time="                                       # SLURM Syntax for walltime
               setenv BATCH_JOBNAME "SBATCH --job-name="                                # SLURM Syntax for job name
-              setenv BATCH_OUTPUTNAME "SBATCH --output="                               # SLURM Syntax for job output name
+              setenv BATCH_OUTPUTNAME "DELETE"                                         # SLURM Syntax for job output name
               setenv BATCH_CHANGE_JOBNAME 'scontrol update JobId=${SLURM_JOB_ID} JobName=${EXPID}.${RUN_STATUS}'
               setenv BATCH_CHANGE_OUTPUTNAME 'scontrol update JobId=${SLURM_JOB_ID} comment="stdout=${EXPDIR}/${EXPID}.${qdate}.${SLURM_JOB_ID}.${RUN_STATUS}"'
-              setenv BATCH_OUTPUTNAME_AMENDMENT ".%j.FAILED"
+              setenv BATCH_OUTPUTNAME_AMENDMENT ""
               setenv BATCH_JOINOUTERR "DELETE"                                         # SLURM joins out and err by default
               setenv     RUN_FT "06:00:00"                                             # Wallclock Time   for gcm_forecast.j
               setenv     RUN_T  "12:00:00"                                             # Wallclock Time   for gcm_run.j
@@ -1449,15 +1448,9 @@ else if( $SITE == 'NCCS' ) then
               if( $LOGNAME == 'gmaofcst' ) then
                  setenv RUN_SP  "SBATCH --partition=preops"                            # SBATCH partition for gcm_run.j
                  setenv RUN_SQ  "SBATCH --qos=s2s"                                     # SBATCH qos       for gcm_run.j
-                 setenv RUN_SO  "SBATCH --output=GiOcean-NRT_RUN.%j.FAILED"            # SBATCH output    for gcm_run.j
-                 setenv BATCH_OUTPUTNAME "DELETE"                                      # SLURM Syntax for job output name
-                 setenv BATCH_OUTPUTNAME_AMENDMENT ""
               else
                  setenv RUN_SP  DELETE                                                 # SBATCH partition for gcm_run.j
                  setenv RUN_SQ  DELETE                                                 # SBATCH qos       for gcm_run.j
-                 setenv RUN_SO  DELETE                                                 # SBATCH output    for gcm_run.j
-                 setenv BATCH_OUTPUTNAME "SBATCH --output="                            # SLURM Syntax for job output name
-                 setenv BATCH_OUTPUTNAME_AMENDMENT ".%j.FAILED"
               endif
               setenv    RUN_FP  "SBATCH --ntasks=\&NPES"                               # PE Configuration for gcm_forecast.j
               setenv    POST_Q  'SBATCH --constraint="[cas]"'                      # batch queue name for gcm_post.j
@@ -1497,7 +1490,6 @@ else
               setenv  RUN_P2    NULL                                                   # PE Configuration for gcm_run.j
               setenv  RUN_SP    DELETE                                                 # SBATCH partition for gcm_run.j
               setenv  RUN_SQ    DELETE                                                 # SBATCH qos       for gcm_run.j
-              setenv  RUN_SO    DELETE                                                 # SBATCH output    for gcm_run.j
               setenv  RUN_FP    NULL                                                   # PE Configuration for gcm_forecast.j
               setenv    POST_Q  NULL                                                   # batch queue name for gcm_post.j
               setenv    PLOT_Q  NULL                                                   # batch queue name for gcm_plot.j
@@ -2147,7 +2139,6 @@ s?@RUN_FP?$RUN_FP?g
 s?@RUN_Q?$RUN_Q?g
 s?@RUN_SP?$RUN_SP?g
 s?@RUN_SQ?$RUN_SQ?g
-s?@RUN_SO?$RUN_SO?g
 s?@POST_N?$POST_N?g
 s?@POST_T?$POST_T?g
 s?@POST_P?$POST_P?g
