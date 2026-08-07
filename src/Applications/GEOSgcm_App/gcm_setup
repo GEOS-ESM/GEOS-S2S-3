@@ -1428,7 +1428,7 @@ else if( $SITE == 'NCCS' ) then
               setenv BATCH_GROUP "SBATCH --account="                                   # SLURM Syntax for account name
               setenv BATCH_TIME "SBATCH --time="                                       # SLURM Syntax for walltime
               setenv BATCH_JOBNAME "SBATCH --job-name="                                # SLURM Syntax for job name
-              setenv BATCH_OUTPUTNAME "DELETE"                                         # SLURM Syntax for job output name
+              setenv BATCH_OUTPUTNAME "SBATCH --output="                               # SLURM Syntax for job output name
               setenv BATCH_CHANGE_JOBNAME 'scontrol update JobId=${SLURM_JOB_ID} JobName=${EXPID}.${RUN_STATUS}'
               setenv BATCH_CHANGE_OUTPUTNAME 'scontrol update JobId=${SLURM_JOB_ID} comment="stdout=${EXPDIR}/${EXPID}.${qdate}.${SLURM_JOB_ID}.${RUN_STATUS}"'
               setenv BATCH_OUTPUTNAME_AMENDMENT ""
@@ -1448,9 +1448,11 @@ else if( $SITE == 'NCCS' ) then
               if( $LOGNAME == 'gmaofcst' ) then
                  setenv RUN_SP  "SBATCH --partition=preops"                            # SBATCH partition for gcm_run.j
                  setenv RUN_SQ  "SBATCH --qos=s2s"                                     # SBATCH qos       for gcm_run.j
+                 setenv BATCH_OUTPUTNAME_AMENDMENT ".%j.FAILED"
               else
                  setenv RUN_SP  DELETE                                                 # SBATCH partition for gcm_run.j
                  setenv RUN_SQ  DELETE                                                 # SBATCH qos       for gcm_run.j
+                 setenv BATCH_OUTPUTNAME_AMENDMENT ""
               endif
               setenv    RUN_FP  "SBATCH --ntasks=\&NPES"                               # PE Configuration for gcm_forecast.j
               setenv    POST_Q  'SBATCH --constraint="[cas]"'                      # batch queue name for gcm_post.j
