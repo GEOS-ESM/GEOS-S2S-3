@@ -4,9 +4,9 @@
 #                     Batch Parameters for Run Job
 #######################################################################
 
-#PBS -l walltime=@CONVERT_T
+#@BATCH_TIME@ARCHIVE_T
 #@CONVERT_P
-#PBS -N @CONVERT_N
+#@BATCH_JOBNAME@ARCHIVE_N
 #@RUN_Q
 #@BATCH_GROUP
 
