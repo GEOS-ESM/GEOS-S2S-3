@@ -1337,6 +1337,15 @@ endif # DATA_ATMOS
 # -------------
 set  RATS_PROVIDER   = PCHEM
 
+
+# Check for qos options
+# ---------------------
+set QOSLEVEL = ""
+if ( $LOGNAME == 'gmaofcst') then
+ ASKQOS:
+ echo "For gmaofcst user: Type an optional ${C1}qos${CN} (Default: ${C2}NO qos${CN})"
+ set   QOSLEVEL  = $<
+endif
 #######################################################################
 #                  Architecture Specific Variables
 #######################################################################
@@ -1445,9 +1454,13 @@ else if( $SITE == 'NCCS' ) then
               endif
               setenv    RUN_P   "SBATCH --ntasks=${NPES}"                              # PE Configuration for gcm_run.j
               setenv    RUN_P2  "SBATCH --nodes=18 --ntasks-per-node=120"              # PE Configuration for gcm_run.j
-              if( $LOGNAME == 'gmaofcst' ) then
+              if( $LOGNAME == 'gmaofcst' & $QOSLEVEL == "s2s" ) then
                  setenv RUN_SP  "SBATCH --partition=preops"                            # SBATCH partition for gcm_run.j
                  setenv RUN_SQ  "SBATCH --qos=s2s"                                     # SBATCH qos       for gcm_run.j
+                 setenv BATCH_OUTPUTNAME_AMENDMENT ".%j.FAILED"
+              else if ( $LOGNAME == 'gmaofcst') then
+                 setenv RUN_SP  DELETE                                                 # SBATCH partition for gcm_run.j
+                 setenv RUN_SQ  "SBATCH --qos=gmaofcst"                                # SBATCH qos       for gcm_run.j
                  setenv BATCH_OUTPUTNAME_AMENDMENT ".%j.FAILED"
               else
                  setenv RUN_SP  DELETE                                                 # SBATCH partition for gcm_run.j
@@ -1455,8 +1468,8 @@ else if( $SITE == 'NCCS' ) then
                  setenv BATCH_OUTPUTNAME_AMENDMENT ""
               endif
               setenv    RUN_FP  "SBATCH --ntasks=\&NPES"                               # PE Configuration for gcm_forecast.j
-              setenv    POST_Q  'SBATCH --constraint="[cas]"'                      # batch queue name for gcm_post.j
-              setenv    PLOT_Q  'SBATCH --constraint="[cas]"'                      # batch queue name for gcm_plot.j
+              setenv    POST_Q  'SBATCH --constraint="[mil]"'                      # batch queue name for gcm_post.j
+              setenv    PLOT_Q  'SBATCH --constraint="[mil]"'                      # batch queue name for gcm_plot.j
               setenv    MOVE_Q  "SBATCH --partition=datamove"                          # batch queue name for gcm_moveplot.j
               setenv ARCHIVE_Q  "SBATCH --partition=datamove"                          # batch queue name for gcm_archive.j
               setenv    POST_P  "SBATCH --ntasks=${POST_NPES}"                         # PE Configuration for gcm_post.j
