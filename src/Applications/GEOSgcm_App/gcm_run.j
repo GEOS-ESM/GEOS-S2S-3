@@ -1000,7 +1000,6 @@ endif
 >>>withODAS<<< set RUN_STATUS = 'out'
 >>>withODAS<<< @BATCH_CHANGE_JOBNAME
 >>>withODAS<<< @BATCH_CHANGE_OUTPUTNAME
->>>withODAS<<< exit
 
 if ( $rc == 0 ) then
       cd  $HOMDIR
