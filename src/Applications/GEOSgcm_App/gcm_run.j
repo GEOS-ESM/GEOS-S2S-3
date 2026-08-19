@@ -996,6 +996,7 @@ endif
 >>>withODAS<<< echo "Running plot_V3_rt.csh"
 >>>withODAS<<< setenv ODAS_MAILLIST "kazumi.nakada@nasa.gov,andrea.m.molod@nasa.gov,veronica.i.ruizxomchuk@nasa.gov"
 >>>withODAS<<< $GEOSUTIL/plots/odas_plots/plot_V3_rt.csh
+>>>withODAS<<< wait
 >>>withODAS<<< set RUN_STATUS = 'out'
 >>>withODAS<<< @BATCH_CHANGE_JOBNAME
 >>>withODAS<<< @BATCH_CHANGE_OUTPUTNAME
