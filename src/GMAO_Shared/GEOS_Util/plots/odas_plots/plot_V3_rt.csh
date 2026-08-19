@@ -1,4 +1,4 @@
-#!/bin/csh -v
+#!/bin/csh -vf
 
 #module load other/ImageMagick/latest
 #module load ncview/2.1.7
