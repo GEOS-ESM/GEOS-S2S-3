@@ -717,8 +717,8 @@ if ( -x $GEOSBIN/rs_numtiles.x ) then
    if ( $N_SALT_TILES_EXPECTED != $N_SALT_TILES_FOUND ) then
       echo "Error! Found $N_SALT_TILES_FOUND tiles in saltwater. Expect to find $N_SALT_TILES_EXPECTED tiles."
       echo "Your restarts are probably for a different ocean."
-      mkdir -p $EXPDIR/morgue/${init_date}
-      mv $SCRDIR $EXPDIR/morgue/${init_date}
+      mkdir -p $EXPDIR/morgue/${firstdate}
+      mv $SCRDIR $EXPDIR/morgue/${firstdate}
       exit 7
    endif    
 
@@ -772,8 +772,8 @@ if( $USE_SHMEM == 1 ) $GEOSBIN/RmShmKeys_sshmpi.csh
 >>>withODAS<<<   set RUN_STATUS = 'ODAS_FAILED'
 >>>withODAS<<<   @BATCH_CHANGE_JOBNAME
 >>>withODAS<<<   @BATCH_CHANGE_OUTPUTNAME
->>>withODAS<<<   mkdir -p $EXPDIR/morgue/${init_date}
->>>withODAS<<<   mv $SCRDIR $EXPDIR/morgue/${init_date}
+>>>withODAS<<<   mkdir -p $EXPDIR/morgue/${firstdate}
+>>>withODAS<<<   mv $SCRDIR $EXPDIR/morgue/${firstdate}
 >>>withODAS<<<   exit(1)
 >>>withODAS<<<endif
 >>>withODAS<<<
