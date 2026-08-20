@@ -1,4 +1,4 @@
-#!/bin/csh -f
+#!/bin/csh -fx
 
 #######################################################################
 #                     Batch Parameters for Run Job
@@ -55,8 +55,6 @@ setenv  GCMEMIP @GCMEMIP
 set year  = `echo $firstdate | cut -d_ -f1 | cut -b1-4`
 set month = `echo $firstdate | cut -d_ -f1 | cut -b5-6`
 set init_date = `echo $firstdate | cut -d_ -f1 | cut -b1-8`
-
-set qdate = `${GEOSBIN}/tick ${init_date} 000000 4 0 | cut -c1-8`
 set RUN_STATUS = 'BEGINNING'
 @BATCH_CHANGE_JOBNAME
 
@@ -719,8 +717,8 @@ if ( -x $GEOSBIN/rs_numtiles.x ) then
    if ( $N_SALT_TILES_EXPECTED != $N_SALT_TILES_FOUND ) then
       echo "Error! Found $N_SALT_TILES_FOUND tiles in saltwater. Expect to find $N_SALT_TILES_EXPECTED tiles."
       echo "Your restarts are probably for a different ocean."
-      mkdir -p $EXPDIR/morgue/${qdate}
-      mv $SCRDIR $EXPDIR/morgue/${qdate}
+      mkdir -p $EXPDIR/morgue/${init_date}
+      mv $SCRDIR $EXPDIR/morgue/${init_date}
       exit 7
    endif    
 
@@ -774,8 +772,8 @@ if( $USE_SHMEM == 1 ) $GEOSBIN/RmShmKeys_sshmpi.csh
 >>>withODAS<<<   set RUN_STATUS = 'ODAS_FAILED'
 >>>withODAS<<<   @BATCH_CHANGE_JOBNAME
 >>>withODAS<<<   @BATCH_CHANGE_OUTPUTNAME
->>>withODAS<<<   mkdir -p $EXPDIR/morgue/${qdate}
->>>withODAS<<<   mv $SCRDIR $EXPDIR/morgue/${qdate}
+>>>withODAS<<<   mkdir -p $EXPDIR/morgue/${init_date}
+>>>withODAS<<<   mv $SCRDIR $EXPDIR/morgue/${init_date}
 >>>withODAS<<<   exit(1)
 >>>withODAS<<<endif
 >>>withODAS<<<
