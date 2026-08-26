@@ -36,6 +36,7 @@ set scriptname = $name
 set BUILD_LOG_DIR = BUILD_LOG_DIR
 
 setenv ARCH `uname -s`
+setenv PYTHONNOUSERSITE 1
 #--set time = (1000 "%Uu %Ss %E  %X+%Dk %Mk %I+%Oio %Fpf+%Ww")
 set time = ( 1000 "%Uu %Ss %E" )
 set NCPUs_min = 6
@@ -694,6 +695,7 @@ echo2 ""
 #================
 # set environment  
 #================
+setenv PYTHONNOUSERSITE 1
 source $SRCDIR/g5_modules
 
 $SRCDIR/Assert.pl >>& $buildinfo
@@ -714,6 +716,9 @@ echo1 "SITE: $SITE"
 echo1 "$sdflag"
 if ($?TMPDIR) then
    echo1 "TMPDIR = $TMPDIR"
+endif
+if ($?PYTHONNOUSERSITE) then
+   echo1 "PYTHONNOUSERSITE: $PYTHONNOUSERSITE"
 endif
 if ($?ESMA_FC) then
    echo1 "ESMA_FC: $ESMA_FC"
