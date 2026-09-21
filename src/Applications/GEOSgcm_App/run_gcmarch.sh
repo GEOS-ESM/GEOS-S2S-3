@@ -1209,8 +1209,12 @@ fnamearc(){
     #local thiscmd="$cmd_sup shiftc --no-cron --no-mail --wait"
 
     if $blnode_nas || [[ "$hstshort" == "pfe" || "$hstshort" == "athfe" ]];then 
-        ssh -q $hst "find $darc/* -maxdepth 1 -mindepth 1 -type f -name '$fcstdate.*.nc*' -o -name '${strrst}.*.tar' | grep -v bbftp.tmp | xargs -i stat --printf="'"'"%Y %s %n\n"'"'" {} > $fexistarc" 2>/dev/null
-        ssh -q $hst "find $darc/$strmom/* -type f | grep -v bbftp.tmp | xargs -i stat --printf="'"'"%Y %s %n\n"'"'" {} >> $fexistarc" 2>/dev/null
+        #ssh -q $hst "find $darc/* -maxdepth 1 -mindepth 1 -type f -name '$fcstdate.*.nc*' -o -name '${strrst}.*.tar' | grep -v bbftp.tmp | xargs -i stat --printf="'"'"%Y %s %n\n"'"'" {} > $fexistarc" 2>/dev/null
+        #ssh -q $hst "find $darc/$strmom/* -type f | grep -v bbftp.tmp | xargs -i stat --printf="'"'"%Y %s %n\n"'"'" {} >> $fexistarc" 2>/dev/null
+
+        local _remote_cmd1="find \"$darc\" -mindepth 2 -maxdepth 2 -type f \( -name \"$fcstdate.*.nc*\" -o -name \"${strrst}.*.tar\" \) ! -name '*bbftp.tmp*' -printf '%T@ %s %p\n'"
+        local _remote_cmd2="find \"$darc/$strmom\" -type f ! -name '*bbftp.tmp*' -printf '%T@ %s %p\n' "
+        ssh -q "$hst" "$_remote_cmd1; $_remote_cmd2;" 2>/dev/null | sed -E 's/^([0-9]+)\.[0-9]+ /\1 /' > "$fexistarc" 
         cat $fexistarc 2>/dev/null | sed "s#$darc/##g" >| $fexistarc_nop
 
     elif $blnode_nccs || [[ "$hstshort" == "dis" ]];then 
