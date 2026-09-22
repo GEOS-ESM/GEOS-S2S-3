@@ -13,6 +13,7 @@ module GEOS_OceanbiogeochemGridCompMod
   use ESMF
   use MAPL_Mod
   use MAPL_ConstantsMod, only : MAPL_TICE, MAPL_RHOWTR
+  use oaemip_data
 #ifdef USE_ODAS
       use obio_iodas_iau_mod
 #endif
@@ -180,6 +181,30 @@ module GEOS_OceanbiogeochemGridCompMod
     VERIFY_(STATUS)
 
     call MAPL_AddExportSpec(GC,                               &
+    SHORT_NAME = 'KW',                                        &
+    LONG_NAME  = 'Air-sea piston velocity',                   &
+    UNITS      = 'm s-1',                                     &
+    DIMS       = MAPL_DimsHorzOnly,                           &
+    VLOCATION  = MAPL_VLocationNone,                RC=STATUS  )
+    VERIFY_(STATUS)
+
+    call MAPL_AddExportSpec(GC,                               &
+    SHORT_NAME = 'PCO2ATM',                                   &
+    LONG_NAME  = 'Atmospheric pCO2 ',                         &
+    UNITS      = 'uatm',                                      &
+    DIMS       = MAPL_DimsHorzOnly,                           &
+    VLOCATION  = MAPL_VLocationNone,                RC=STATUS  )
+    VERIFY_(STATUS)
+
+    call MAPL_AddExportSpec(GC,                               &
+    SHORT_NAME = 'ALPHA',                                     &
+    LONG_NAME  = 'CO2 solubility',                            &
+    UNITS      = 'mol kg-1 atm-1',                            &
+    DIMS       = MAPL_DimsHorzOnly,                           &
+    VLOCATION  = MAPL_VLocationNone,                RC=STATUS  )
+    VERIFY_(STATUS)
+
+    call MAPL_AddExportSpec(GC,                               &
     SHORT_NAME = 'DEP_IRON',                                  &
     LONG_NAME  = 'dissolved_atm_iron_concentration',          &
     UNITS      = 'nM',                                        &
@@ -261,6 +286,14 @@ module GEOS_OceanbiogeochemGridCompMod
     RC=STATUS  )
     VERIFY_(STATUS)
 
+    call MAPL_AddExportSpec(GC,                               &
+    SHORT_NAME = 'FRACICE',                                   &
+    LONG_NAME  = 'fractional_cover_of_seaice',                &
+    UNITS      = '1',                                         &
+    DIMS       = MAPL_DimsHorzOnly,                           &
+    VLOCATION  = MAPL_VLocationNone,                          &
+    RC=STATUS  )
+    VERIFY_(STATUS)
 !  !IMPORT STATE:
 
     call MAPL_AddImportSpec(GC,                               &
@@ -1024,6 +1057,9 @@ module GEOS_OceanbiogeochemGridCompMod
     real, pointer, dimension(:,:)   :: PCO2 => null()
     real, pointer, dimension(:,:)   :: FCO2 => null()
     real, pointer, dimension(:,:)   :: PH => null()
+    real, pointer, dimension(:,:)   :: KW => null()             
+    real, pointer, dimension(:,:)   :: PCO2ATM => null()        
+    real, pointer, dimension(:,:)   :: ALPHA => null()          
     real, pointer, dimension(:,:)   :: DEP_IRON => null()
     real, pointer, dimension(:,:)   :: ppDIATOM => null()
     real, pointer, dimension(:,:)   :: ppCHLORO => null()
@@ -1032,6 +1068,7 @@ module GEOS_OceanbiogeochemGridCompMod
     real, pointer, dimension(:,:)   :: ppDINO => null()
     real, pointer, dimension(:,:)   :: ppPHAEO => null()
     real, pointer, dimension(:,:)   :: dout => null()
+    real, pointer, dimension(:,:)   :: FRICEe => null()
 
 ! pointers to internal
 
@@ -1134,6 +1171,12 @@ module GEOS_OceanbiogeochemGridCompMod
     VERIFY_(STATUS)
     call MAPL_GetPointer(EXPORT, PH,       'PH',       RC=STATUS)
     VERIFY_(STATUS)
+    call MAPL_GetPointer(EXPORT, KW,       'KW',       RC=STATUS)
+    VERIFY_(STATUS)
+    call MAPL_GetPointer(EXPORT, PCO2ATM,  'PCO2ATM',  RC=STATUS)
+    VERIFY_(STATUS)
+    call MAPL_GetPointer(EXPORT, ALPHA,    'ALPHA',    RC=STATUS)
+    VERIFY_(STATUS)
     call MAPL_GetPointer(EXPORT, DEP_IRON, 'DEP_IRON', RC=STATUS)
     VERIFY_(STATUS)
     call MAPL_GetPointer(EXPORT, ppDIATOM, 'PPDIATOM', RC=STATUS)
@@ -1149,6 +1192,8 @@ module GEOS_OceanbiogeochemGridCompMod
     call MAPL_GetPointer(EXPORT, ppPHAEO,  'PPPHAEO',  RC=STATUS)
     VERIFY_(STATUS)
     call MAPL_GetPointer(EXPORT, DOUT,  'DISCHARGE',  RC=STATUS)
+    VERIFY_(STATUS)
+    call MAPL_GetPointer(EXPORT, FRICEe, 'FRACICE', RC=STATUS)
     VERIFY_(STATUS)
 
 ! Pointers to Imports
@@ -1319,6 +1364,8 @@ module GEOS_OceanbiogeochemGridCompMod
 !--------------------------
 !    allocate(FRICE(IM,JM), __STAT__)
 !    FRICE = SUM(FRACICE, DIM=3)
+    
+    if ( associated(FRICEe) ) FRICEe = FRICE
 
 ! Allocate BIO and other variables
 !---------------------------------
@@ -1470,6 +1517,9 @@ BIO = max(BIO,0.0)    !reduce MOM4 propensity for negative values
        if ( associated(PCO2) ) PCO2(i,j) = PCO
        if ( associated(FCO2) ) FCO2(i,j) = CFLX
        if ( associated(PH) ) PH(i,j) = pHsfc
+       if ( associated(KW) ) KW(i,j) = rkwco2
+       if ( associated(PCO2ATM) ) PCO2ATM(i,j) = xco2
+       if ( associated(ALPHA) ) ALPHA(i,j) = ffco2
        if ( associated(DEP_IRON) ) DEP_IRON(i,j) = atmFesw
 
       endif

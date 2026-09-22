@@ -142,7 +142,11 @@
 !      fraction of grazing for this group
        Pn = max(P(n),0.0)
        zoo(n) = gzoo*Pn/ptot
-       dphy(n) = drate*Pn
+!       if (Pn .gt. 1.0) then
+         dphy(n) = drate*Pn*Pn
+!       else
+!         dphy(n) = drate*Pn
+!       endif
        P_tend(n) = (-zoo(n)-dphy(n))*fnoice
       enddo
       exc = greff*gzoo

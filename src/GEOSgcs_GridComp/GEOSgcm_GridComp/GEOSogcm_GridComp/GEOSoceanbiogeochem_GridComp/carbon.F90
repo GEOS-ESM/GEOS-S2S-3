@@ -2,6 +2,8 @@
        fnoice,tzoo,tirrq,cdomabsq,gro,picdis,                        &
        atmco2,wspd,slp,T,S,H,P_tend,pco2,cflx,pHsfc)
 
+      use oaemip_data
+
 !  Computes carbon cycling.  Uses Aumont et al (2002; JGR) for
 !  semi-labile DOC (because of basic similarities in model
 !  formulation, specifically, presense of grazers and particulate
@@ -26,7 +28,8 @@
 !                                for nitrate by mult*10.0, based on 
 !                                Conkright et al. 1994
       real, parameter :: rkdoc2=15.0    !DOC-dep half-sat uM(C)
-      real, parameter :: rlampoc=0.05/sday  !detrital breakdown/s
+!      real, parameter :: rlampoc=0.05/sday  !detrital breakdown/s
+      real, parameter :: rlampoc=0.1/sday  !detrital breakdown/s
       real, parameter :: uMtomgm3=12.0  !conversion uM to mg/m3
       real, parameter :: Pzo=1.0*uMtomgm3/50.0 !zoopl half-sat for 
                                   !DOC excretion mg/m3(chl,assuming
@@ -161,6 +164,8 @@
        flxmolm3 = flxmolm2/H                 !mol/m3/s
        P_tend(ncs+1) = P_tend(ncs+1) + flxmolm3*1000.0*fnoice
                                              !uM/s
+       ffco2 = ff
+
       endif
 
       return
