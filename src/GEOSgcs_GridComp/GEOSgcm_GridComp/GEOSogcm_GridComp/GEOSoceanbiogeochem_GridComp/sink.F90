@@ -57,12 +57,6 @@
       trnd = P(k,n)*ws(k,n)
       P_tend(k,n) = P_tend(k,n) - trnd
 
-! Return 1 mole of DIC for every mole of PIC dissolved ! added by Lionel Arteaga
-      P_tend(k,ncs+1) = P_tend(k,ncs+1) + trnd/uMtomgm3
-      
-! Return 2 moles of Alkalinity for every mole of PIC dissolved ! added by Lionel Arteaga
-      P_tend(k,ncs+2) = P_tend(k,ncs+2) + 2.0*(trnd/uMtomgm3)
-
 !  Convert to concentrations per second, e.g., mg/m3/s
       do k = 1,kend
        do n = 1,ntyp
@@ -72,3 +66,4 @@
  
       return
       end
+
