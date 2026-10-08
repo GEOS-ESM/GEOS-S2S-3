@@ -325,7 +325,10 @@ cat << _EOF_ > $FILE
 >>>COUPLED_DUAL<<<#/bin/ln -s /discover/nobackup/projects/gmao/share/gmao_ops/fvInput/merra_land/precip_CPCUexcludeAfrica-CMAP_corrected_MERRA/GEOSdas-2_1_4 ExtData/PCP
 
 >>>COUPLED_DUAL<<<# 2017
->>>COUPLED_DUAL<<</bin/ln -s /discover/nobackup/projects/gmao/share/gmao_ops/fvInput/merra_land/precip_CPCUexcludeAfrica-CMAP_corrected_MERRA/GEOSadas-5_12_4 ExtData/PCP
+>>>COUPLED_DUAL<<<#/bin/ln -s /discover/nobackup/projects/gmao/share/gmao_ops/fvInput/merra_land/precip_CPCUexcludeAfrica-CMAP_corrected_MERRA/GEOSadas-5_12_4 ExtData/PCP
+
+>>>COUPLED_DUAL<<<# cap restart = 20261003 000000 | Precip Corr w / GEOS-IT
+>>>COUPLED_DUAL<<</bin/ln -s /discover/nobackup/projects/gmao/share/gmao_ops/fvInput/merra_land/precip_CPCUexcludeAfrica-CMAP_corrected_MERRA/GEOSadas-5_29_4/d5294_geosit_jan18 ExtData/PCP
 
 >>>COUPLED_DUAL<<<# Fortuna from Qing
 >>>COUPLED_DUAL<<<#/discover/nobackup/qliu/merra_land/precip_corr_SSD_near-present/f516_fp/diag/Y2017/
