@@ -297,6 +297,33 @@ setenv EMISSIONS @EMISSIONS
 >>>COUPLED<<<setenv BCTAG `basename $GRIDDIR`
 >>>DATAOCEAN<<<setenv BCTAG `basename $BCSDIR`
 
+# Select Precip Correction datastream based on cap_restart date
+# ----------------------------------------------------------------------------------------------
+>>>COUPLED_DUAL<<<set PRECIP_ROOT = /discover/nobackup/projects/gmao/share/gmao_ops/fvInput/merra_land/precip_CPCUexcludeAfrica-CMAP_corrected_MERRA
+>>>COUPLED_DUAL<<<set PCORR_NYMD  = `cat cap_restart | cut -c1-8`
+
+>>>COUPLED_DUAL<<<if( $PCORR_NYMD < 20150101 ) then
+>>>COUPLED_DUAL<<<   set PRECIP_LINK_DIR   = $PRECIP_ROOT/GEOSdas-2_1_4
+>>>COUPLED_DUAL<<<   set PRECIP_FILE_TOKEN = d5_merra/Y%y4/M%m2/d5_merra.tavg1_2d_lfo_Nx_corr.%y4%m2%d2_%h230z.nc
+>>>COUPLED_DUAL<<<else if( $PCORR_NYMD < 20170101 ) then
+>>>COUPLED_DUAL<<<   set PRECIP_LINK_DIR   = $PRECIP_ROOT/GEOSdas-2_1_4
+>>>COUPLED_DUAL<<<   set PRECIP_FILE_TOKEN = d591_fpit/Y%y4/M%m2/d591_fpit.tavg1_2d_lfo_Nx_corr.%y4%m2%d2_%h230z.nc
+>>>COUPLED_DUAL<<<else if( $PCORR_NYMD < 20261003 ) then
+>>>COUPLED_DUAL<<<   set PRECIP_LINK_DIR   = $PRECIP_ROOT/GEOSadas-5_12_4
+>>>COUPLED_DUAL<<<   set PRECIP_FILE_TOKEN = d5124_rpit_jan12/Y%y4/M%m2/d5124_rpit_jan12.tavg1_2d_lfo_Nx_corr.%y4%m2%d2_%h230z.nc
+>>>COUPLED_DUAL<<<else
+>>>COUPLED_DUAL<<<   set PRECIP_LINK_DIR   = $PRECIP_ROOT/GEOSadas-5_29_4
+>>>COUPLED_DUAL<<<   set PRECIP_FILE_TOKEN = d5294_geosit_jan18/Y%y4/M%m2/d5294_geosit_jan18.tavg1_2d_lfo_Nx_corr.%y4%m2%d2_%h230z.nc
+>>>COUPLED_DUAL<<<endif
+
+# AGCM.rc is already present in $SCRDIR at this point; keep its PRECIP_FILE
+# token in sync with the datastream selected above.
+>>>COUPLED_DUAL<<<set oldstring = `grep "PRECIP_FILE:" AGCM.rc`
+>>>COUPLED_DUAL<<<set newstring = " PRECIP_FILE: ExtData/PCP/$PRECIP_FILE_TOKEN"
+>>>COUPLED_DUAL<<</bin/mv AGCM.rc AGCM.tmp
+>>>COUPLED_DUAL<<<cat AGCM.tmp | sed -e "s?$oldstring?$newstring?g" > AGCM.rc
+>>>COUPLED_DUAL<<</bin/rm AGCM.tmp
+
 set             FILE = linkbcs
 /bin/rm -f     $FILE
 cat << _EOF_ > $FILE
@@ -318,17 +345,16 @@ cat << _EOF_ > $FILE
 #/bin/ln -s /discover/nobackup/projects/gmao/share/gmao_ops/fvInput/merra_land/precip_CPCUexcludeAfrica-CMAP_corrected_MERRA/GEOSdas-2_1_4 ExtData/PCP
 >>>COUPLED_DUAL<<<rm -f ExtData/PCP
 
->>>COUPLED_DUAL<<<# 1981-2014
->>>COUPLED_DUAL<<<#/bin/ln -s /discover/nobackup/projects/gmao/share/gmao_ops/fvInput/merra_land/precip_CPCUexcludeAfrica-CMAP_corrected_MERRA/GEOSdas-2_1_4 ExtData/PCP
+# === Start of precip correction links ===
 
->>>COUPLED_DUAL<<<#2015
->>>COUPLED_DUAL<<<#/bin/ln -s /discover/nobackup/projects/gmao/share/gmao_ops/fvInput/merra_land/precip_CPCUexcludeAfrica-CMAP_corrected_MERRA/GEOSdas-2_1_4 ExtData/PCP
+# The datastream era (1981-2014, 2015-2016, 2017-2026/10/02, or
+# 2026/10/03-present) is selected automatically above from cap_restart,
+# and $PRECIP_LINK_DIR points at the root of the matching GEOSxxx dataset.
+>>>COUPLED_DUAL<<</bin/ln -s $PRECIP_LINK_DIR ExtData/PCP
 
->>>COUPLED_DUAL<<<# 2017
->>>COUPLED_DUAL<<<#/bin/ln -s /discover/nobackup/projects/gmao/share/gmao_ops/fvInput/merra_land/precip_CPCUexcludeAfrica-CMAP_corrected_MERRA/GEOSadas-5_12_4 ExtData/PCP
+# === End of precip correction links ===
 
->>>COUPLED_DUAL<<<# cap restart = 20261003 000000 | Precip Corr w / GEOS-IT
->>>COUPLED_DUAL<<</bin/ln -s /discover/nobackup/projects/gmao/share/gmao_ops/fvInput/merra_land/precip_CPCUexcludeAfrica-CMAP_corrected_MERRA/GEOSadas-5_29_4/d5294_geosit_jan18 ExtData/PCP
+# === Supplemental precip correction links for other uses ===
 
 >>>COUPLED_DUAL<<<# Fortuna from Qing
 >>>COUPLED_DUAL<<<#/discover/nobackup/qliu/merra_land/precip_corr_SSD_near-present/f516_fp/diag/Y2017/
