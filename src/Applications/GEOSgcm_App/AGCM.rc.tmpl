@@ -319,16 +319,26 @@ RECORD_FINAL:  >>>RECFINL<<<
 #
 #    Option 2) CMAP-GPCP Corrected (from MERRA-Land)
 #    -----------------------------------------------
-#    /bin/ln -s /discover/nobackup/projects/gmao/share/gmao_ops/fvInput/merra_land/precip_CPCUexcludeAfrica-CMAP_corrected_MERRA/GEOSdas-2_1_4 ExtData/PCP
+#    /bin/ln -s /discover/nobackup/projects/gmao/share/gmao_ops/fvInput/merra_land/precip_CPCUexcludeAfrica-CMAP_corrected_MERRA/<GEOSxxx> ExtData/PCP
 #
-#         Then, you must replace the token after PRECIP_FILE with the proper datastream:
+#         Then, you must replace the token after PRECIP_FILE with the proper datastream for the desired years:
 #         -----------------------------------------------------------------------------------------------------------
-#         Years 1979-2014: d5_merra/Y%y4/M%m2/d5_merra.tavg1_2d_lfo_Nx_corr.%y4%m2%d2_%h230z.nc
+#         Years 1979-2014:       GEOSdas-2_1_4/d5_merra/Y%y4/M%m2/d5_merra.tavg1_2d_lfo_Nx_corr.%y4%m2%d2_%h230z.nc
+#         Years 2015-2016:       GEOSdas-2_1_4/d591_fpit/Y%y4/M%m2/d591_fpit.tavg1_2d_lfo_Nx_corr.%y4%m2%d2_%h230z.nc
+#         2017-2026/10/02:       GEOSadas-5_12_4/d5124_rpit_jan12/Y%y4/M%m2/d5124_rpit_jan12.tavg1_2d_lfo_Nx_corr.%y4%m2%d2_%h230z.nc
+#         2026/10/03-present:    GEOSadas-5_29_4/d5294_geosit_jan18/Y%y4/M%m2/d5294_geosit_jan18.tavg1_2d_lfo_Nx_corr.%y4%m2%d2_%h230z.nc
 #         ---------------
 #
 # Possible REPLAY PRECIP Files:
 # -----------------------------
 #PRECIP_FILE: ExtData/PCP/@PRECIP_FILE
+#
+# NOTE: For COUPLED_DUAL experiments, gcm_run.j now selects the ExtData/PCP
+#       symlink and the PRECIP_FILE datastream below automatically every
+#       segment, based on the cap_restart date (see the "Select Precip
+#       Correction datastream" block in gcm_run.j). The line below is a
+#       placeholder that is overwritten each segment and does not need to
+#       be edited by hand.
 #
 >>>COUPLED_DUAL<<< PRECIP_FILE: ExtData/PCP/d5124_rpit_jan12/Y%y4/M%m2/d5124_rpit_jan12.tavg1_2d_lfo_Nx_corr.%y4%m2%d2_%h230z.nc
 #
