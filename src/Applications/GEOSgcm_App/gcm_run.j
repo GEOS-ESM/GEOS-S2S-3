@@ -318,7 +318,7 @@ setenv EMISSIONS @EMISSIONS
 
 # AGCM.rc is already present in $SCRDIR at this point; keep its PRECIP_FILE
 # token in sync with the datastream selected above.
->>>COUPLED_DUAL<<<set oldstring = `grep "PRECIP_FILE:" AGCM.rc`
+>>>COUPLED_DUAL<<<set oldstring = `grep "PRECIP_FILE:" AGCM.rc | grep -v ^#`
 >>>COUPLED_DUAL<<<set newstring = " PRECIP_FILE: ExtData/PCP/$PRECIP_FILE_TOKEN"
 >>>COUPLED_DUAL<<</bin/mv AGCM.rc AGCM.tmp
 >>>COUPLED_DUAL<<<cat AGCM.tmp | sed -e "s?$oldstring?$newstring?g" > AGCM.rc
