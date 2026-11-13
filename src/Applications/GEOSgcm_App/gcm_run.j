@@ -213,14 +213,21 @@ endif
 #######################################################################
 
 cd $SCRDIR
-/bin/rm -rf *
-                             /bin/ln -sf $EXPDIR/RC/* .
-                             @CPEXEC     $EXPDIR/cap_restart .
-                             @CPEXEC -f  $HOMDIR/*.rc .
-                             @CPEXEC -f  $HOMDIR/*.rc.tmpl .
-                             @CPEXEC -f  $HOMDIR/*.nml .
 
-                             cat fvcore_layout.rc >> input.nml
+if ( $status == 0 ) then 
+
+  /bin/rm -rf *
+  /bin/ln -sf $EXPDIR/RC/* .
+  @CPEXEC     $EXPDIR/cap_restart .
+  @CPEXEC -f  $HOMDIR/*.rc .
+  @CPEXEC -f  $HOMDIR/*.rc.tmpl .
+  @CPEXEC -f  $HOMDIR/*.nml .
+
+  cat fvcore_layout.rc >> input.nml
+else
+   echo "Failed cd into scratch dir, exiting.\n"
+   exit 1
+endif
 
 if( $GCMEMIP == TRUE ) then
     @CPEXEC -f  $EXPDIR/restarts/$RSTDATE/cap_restart .
