@@ -1,0 +1,29 @@
+# run_odas_workflow.py configuration for the GiOCEAN_e1 experiment.
+#
+# Primary workflow: with no date argument, plot this experiment's own latest
+# complete production block and publish the PNG directory to the portal.
+#
+# Needs EXPDIR. When running standalone in csh:
+#   setenv EXPDIR /discover/nobackup/projects/gmao/geos-s2s-3/GiOCEAN_e1
+# The literal $VAR references below are expanded from the environment by
+# run_odas_workflow.py. Plots go to $EXPDIR/www/<oana-date>/.
+#
+# Usage (from this directory):
+#   ./run_odas_workflow.py -c config.yaml
+#
+# Any value here can be overridden on the command line, e.g.:
+#   ./run_odas_workflow.py -c config.yaml -tw 3m
+
+exp-dir: $EXPDIR
+plot-dir: $EXPDIR/www
+exp-history-file: $EXPDIR/www/obs_counts_history.csv
+
+# Raw observation archive, used only by the secondary generation mode.
+assim: /discover/nobackup/projects/gmao/m2oasf/aogcm/g5odas/obs/assim/
+
+webserver-host: gs6101-polar.gsfc.nasa.gov
+webserver-base: /www/html/gmao-py-6315/GMAO-website/media/giocean
+publish-dir: e1
+
+extra-exp-files:
+  - $EXPDIR/stats_combined.png
