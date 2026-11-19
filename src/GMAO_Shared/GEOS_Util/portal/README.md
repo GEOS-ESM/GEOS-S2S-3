@@ -141,7 +141,7 @@ produces the same plot set in `<outdir>/plots/` (default
 
 This mode requires:
 
-- the `$ODAS_OBS` environment variable, containing the space-separated
+- the `$ODAS_OBS_TYPE_1` environment variable, containing the space-separated
   observation-type list (see §4.1); the encompassing workflow provides it;
 - the raw observation archive. A path to `assim` given in `config.yaml`, is the path
 to observation files in gmao format that are ingested by S2S3 ODAS. The
@@ -172,7 +172,7 @@ above for production deployment.
 `reproduce_gmao_files.py` is an on-demand utility (it imports only
 `generate_gmao_nc_optimized.py`, no plotting stack). Use it when an experiment
 has lost some or all of its own `gmao-obs-*.nc` output but the raw observation
-archive is still available. It uses `$ODAS_OBS` for the observation-type list
+archive is still available. It uses `$ODAS_OBS_TYPE_1` for the observation-type list
 and writes the files back in the layout consumed by the plotting workflow:
 
 ```text
@@ -182,7 +182,7 @@ and writes the files back in the layout consumed by the plotting workflow:
 ```csh
 # When running outside the encompassing workflow, set the obs-type list first
 # (csh syntax):
-setenv ODAS_OBS "Argo CTD TAO PIRATA RAMA Jason-2"
+setenv ODAS_OBS_TYPE_1 "Argo CTD TAO PIRATA RAMA Jason-2"
 
 # Exact pentad start dates (preferred -- take them from surviving oana-*_00
 # directory names so the reconstructed tree lines up with the experiment):
@@ -249,16 +249,16 @@ With that default, the primary mode uses:
 - extra published file: `$EXPDIR/stats_combined.png`
 
 The secondary NetCDF-generation mode and the optional recovery utility read the
-observation-type list from the `$ODAS_OBS` environment variable. The
+observation-type list from the `$ODAS_OBS_TYPE_1` environment variable. The
 encompassing workflow sets this variable before invoking either script. When
 running outside that workflow in a csh shell, set it explicitly first:
 
 ```csh
-setenv ODAS_OBS "Argo CTD TAO PIRATA RAMA Jason-2"
+setenv ODAS_OBS_TYPE_1 "Argo CTD TAO PIRATA RAMA Jason-2"
 ```
 
 The value is the space-separated list of observation types, not a path to a
-file. The primary plotting/portal mode does not use `$ODAS_OBS` and does not
+file. The primary plotting/portal mode does not use `$ODAS_OBS_TYPE_1` and does not
 require it to be set. An unset variable referenced by the YAML config is reported
 with a csh `setenv` hint rather than being left as a literal `$VAR` path.
 
@@ -333,7 +333,7 @@ This writes `gmao-obs-2026090612.nc` in the current directory.
 ### `reproduce_gmao_files.py` (optional recovery utility)
 
 See §3.1 for purpose and caveats. Reads the observation-type list from
-`$ODAS_OBS` (§4.1). Options: `--outdir <dir>`, `--assim <path>`, and either
+`$ODAS_OBS_TYPE_1` (§4.1). Options: `--outdir <dir>`, `--assim <path>`, and either
 `--pentads <YYYYMMDD ...>` or `--range START END`.
 
 ---

@@ -14,7 +14,7 @@ subdirectory per 6-hourly cycle, and each file name carries only the calendar
 date (the hour is encoded in the directory name).
 
 Regeneration uses generate_nc_batch() from this directory and the observation
-type list from the $ODAS_OBS environment variable (provided by the encompassing
+type list from the $ODAS_OBS_TYPE_1 environment variable (provided by the encompassing
 workflow). Pass --assim for the raw archive, or run from a directory where
 `assim/` resolves to the same archive the experiment originally read. The
 reconstructed files are a best-effort approximation, not a faithful recovery
@@ -27,7 +27,7 @@ of the previous files:
   - Observation-error rescaling and the centred +/-3 h assimilation window use
     the defaults in generate_gmao_nc_optimized.py. If the experiment used
     non-default settings (ODAS_T_prof_sigo, ODAS_S_prof_sigo, ODAS_ADT_sigo,
-    ODAS_SSS_sigo, ODAS_NDAYS -- not recorded in $ODAS_OBS), the result will
+    ODAS_SSS_sigo, ODAS_NDAYS -- not recorded in $ODAS_OBS_TYPE_1), the result will
     not match what was originally produced.
   - The raw archive is assumed unchanged since the original run; upstream
     reprocessing of source files can also change counts/values.
@@ -41,9 +41,9 @@ Requirements:
     - --assim /path/to/assim/ (the raw observation archive), or an assim/
       symlink in the directory you run from
     - generate_gmao_nc_optimized.py (sibling module)
-    - $ODAS_OBS set to the observation-type list. The encompassing workflow
+    - $ODAS_OBS_TYPE_1 set to the observation-type list. The encompassing workflow
       provides it; when running standalone in csh, set it first with:
-          setenv ODAS_OBS "Argo CTD TAO PIRATA RAMA Jason-2"
+          setenv ODAS_OBS_TYPE_1 "Argo CTD TAO PIRATA RAMA Jason-2"
 
 Usage:
     ./reproduce_gmao_files.py --outdir recovered_ocean_das \
@@ -67,16 +67,16 @@ from generate_gmao_nc_optimized import generate_nc_batch
 
 
 def load_obs_types():
-    """Returns the observation-type list from the $ODAS_OBS environment variable.
+    """Returns the observation-type list from the $ODAS_OBS_TYPE_1 environment variable.
 
-    The encompassing workflow sets ODAS_OBS; when running standalone in csh,
-    set it with: setenv ODAS_OBS "Argo CTD TAO ..."
+    The encompassing workflow sets ODAS_OBS_TYPE_1; when running standalone in csh,
+    set it with: setenv ODAS_OBS_TYPE_1 "Argo CTD TAO ..."
     """
-    value = os.environ.get('ODAS_OBS')
+    value = os.environ.get('ODAS_OBS_TYPE_1')
     if not value or not value.split():
         raise SystemExit(
-            'ODAS_OBS environment variable is not set or is empty. '
-            'In csh, set it with: setenv ODAS_OBS "Argo CTD TAO ..."'
+            'ODAS_OBS_TYPE_1 environment variable is not set or is empty. '
+            'In csh, set it with: setenv ODAS_OBS_TYPE_1 "Argo CTD TAO ..."'
         )
     return value.split()
 

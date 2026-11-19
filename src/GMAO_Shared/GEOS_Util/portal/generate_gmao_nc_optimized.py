@@ -608,7 +608,7 @@ def generate_nc_batch(cycle_times, obs_types):
     cycle_times : list of (yyyy, mm, dd, hh) string tuples, e.g.
                   [('2026','04','06','06'), ('2026','04','06','12'), ...]
     obs_types   : list of obs type strings (same as generate_nc), e.g. the
-                  list read from the $ODAS_OBS environment variable
+                  list read from the $ODAS_OBS_TYPE_1 environment variable
 
     Returns:
     --------

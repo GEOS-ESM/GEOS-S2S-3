@@ -64,7 +64,7 @@ Configuration:
     sets these variables. When running standalone from a csh shell, set them
     first with:
         setenv EXPDIR /path/to/experiment
-        setenv ODAS_OBS "Argo CTD TAO PIRATA RAMA Jason-2"
+        setenv ODAS_OBS_TYPE_1 "Argo CTD TAO PIRATA RAMA Jason-2"
         setenv CARTOPY_DATA_DIR /discover/nobackup/projects/gmao/SIteam/CartopyDownloads
 
     $CARTOPY_DATA_DIR supplies the pre-populated Natural Earth shapefile cache
@@ -76,16 +76,16 @@ Configuration:
     /discover/nobackup/projects/gmao/m2oasf/aogcm/g5odas/obs/assim/; a
     temporary `assim` symlink to that path is used during generation. Without
     `assim`/--assim, the current directory must already contain an assim/
-    symlink or directory. The observation-type list is read from $ODAS_OBS;
+    symlink or directory. The observation-type list is read from $ODAS_OBS_TYPE_1;
     the primary mode uses neither.
 
 Requirements:
     Primary mode: a readable experiment directory from $EXPDIR (or -exp)
     containing ocean_das/oana-*_00/ocean_observer_*/gmao-obs-*.nc, plus
-    ssh/scp access to the portal host when --publish-dir is given. $ODAS_OBS
+    ssh/scp access to the portal host when --publish-dir is given. $ODAS_OBS_TYPE_1
     is not needed.
 
-    Secondary mode: $ODAS_OBS and either the `assim` config key / --assim
+    Secondary mode: $ODAS_OBS_TYPE_1 and either the `assim` config key / --assim
     archive path or an `assim/` observation data tree in the working directory.
 """
 
@@ -144,16 +144,16 @@ _ENV_VAR_RE = re.compile(r'\$(?:\{([A-Za-z_][A-Za-z0-9_]*)\}|([A-Za-z_][A-Za-z0-
 
 
 def load_obs_types():
-    """Returns the observation-type list from the $ODAS_OBS environment variable.
+    """Returns the observation-type list from the $ODAS_OBS_TYPE_1 environment variable.
 
-    The encompassing workflow sets ODAS_OBS; when running standalone in csh,
-    set it with: setenv ODAS_OBS "Argo CTD TAO ..."
+    The encompassing workflow sets ODAS_OBS_TYPE_1; when running standalone in csh,
+    set it with: setenv ODAS_OBS_TYPE_1 "Argo CTD TAO ..."
     """
-    value = os.environ.get('ODAS_OBS')
+    value = os.environ.get('ODAS_OBS_TYPE_1')
     if not value or not value.split():
         raise SystemExit(
-            'ODAS_OBS environment variable is not set or is empty. '
-            'In csh, set it with: setenv ODAS_OBS "Argo CTD TAO ..."'
+            'ODAS_OBS_TYPE_1 environment variable is not set or is empty. '
+            'In csh, set it with: setenv ODAS_OBS_TYPE_1 "Argo CTD TAO ..."'
         )
     return value.split()
 
