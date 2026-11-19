@@ -1364,6 +1364,7 @@ setenv SITE `$GEOSDEF/src/g5_modules site`
               setenv    POST_N  `echo $EXPID | cut -b1-10`_POST                        # POST     Job Name
               setenv    PLOT_N  `echo $EXPID | cut -b1-11`_PLT                         # PLOT     Job Name
               setenv    MOVE_N  `echo $EXPID | cut -b1-11`_MOVE                        # MOVE     Job Name
+              setenv PUBLISH_N  `echo $EXPID | cut -b1-11`_PUB                         # PUBLISH  Job Name
               setenv ARCHIVE_N  `echo $EXPID | cut -b1-10`_ARCH                        # ARCHIVE  Job Name
               setenv REGRESS_N  `echo $EXPID | cut -b1-10`_RGRS                        # REGRESS  Job Name
               setenv CONVERT_N  `echo $EXPID | cut -b1-11`_CNV                         # CONVERT  Job Name
@@ -1386,6 +1387,7 @@ if( $SITE == 'NAS' ) then
               setenv    POST_T  "8:00:00"                                              # Wallclock Time   for gcm_post.j
               setenv    PLOT_T  "8:00:00"                                              # Wallclock Time   for gcm_plot.j
               setenv ARCHIVE_T  "8:00:00"                                              # Wallclock Time   for gcm_archive.j
+              setenv PUBLISH_T  "1:00:00"                                              # Wallclock Time   for gcm_publish.j
               if( $GPU == "TRUE" ) then
                  set NCPUS = 16                                                        # CPUS per node
                  set MODEL = "san_gpu"                                                 # Model of CPU
@@ -1412,12 +1414,14 @@ if( $SITE == 'NAS' ) then
               setenv    POST_Q  "PBS -q normal"                                                             # batch queue name for gcm_post.j
               setenv    PLOT_Q  "PBS -q normal"                                                             # batch queue name for gcm_plot.j
               setenv    MOVE_Q  "PBS -q normal"                                                             # batch queue name for gcm_moveplot.j
+              setenv PUBLISH_Q  "PBS -q normal"                                                             # batch queue name for gcm_publish.j
               setenv ARCHIVE_Q  "PBS -q normal"                                                             # batch queue name for gcm_archive.j
               setenv    POST_P  "PBS -l select=${NPCUS}:ncpus=${NCPUS}:mpiprocs=${NCPUS}:model=${MODEL}"    # PE Configuration for gcm_post.j
               setenv    PLOT_P  "PBS -l select=1:ncpus=${NCPUS}:mpiprocs=1:model=${MODEL}"                  # PE Configuration for gcm_plot.j
               setenv ARCHIVE_P  "PBS -l select=1:ncpus=${NCPUS}:mpiprocs=${NCPUS}:model=${MODEL}"           # PE Configuration for gcm_archive.j
               setenv CONVERT_P  "PBS -l select=${CNV_NX}:ncpus=${NCPUS}:mpiprocs=${NCPUS}:model=${MODEL}"   # PE Configuration for gcm_convert.j
               setenv    MOVE_P  "PBS -l select=1:ncpus=1"                                                                      # PE Configuration for gcm_moveplot.j
+              setenv PUBLISH_P  "PBS -l select=1:ncpus=1"                                                                      # PE Configuration for gcm_publish.j
               setenv BCSDIR     /nobackup/gmao_SIteam/ModelData/bcs/Icarus/$BCSTAG                          # location of Boundary Conditions
               if( ${OGCM_IM}x${OGCM_JM} == "1440x720" ) then
                    setenv SSTDIR     /nobackup/gmao_SIteam/ModelData/fvInput/g5gcm/bcs/SST/${OGCM_IM}x${OGCM_JM}  # location of SST Boundary Conditions
@@ -1447,6 +1451,7 @@ else if( $SITE == 'NCCS' ) then
               setenv    POST_T  "8:00:00"                                              # Wallclock Time   for gcm_post.j
               setenv    PLOT_T  "12:00:00"                                             # Wallclock Time   for gcm_plot.j
               setenv ARCHIVE_T  "2:00:00"                                              # Wallclock Time   for gcm_archive.j
+              setenv PUBLISH_T  "1:00:00"                                              # Wallclock Time   for gcm_publish.j
               if( $GPU == "TRUE" ) then
                  setenv  RUN_Q  "SBATCH --constraint=k40"                              # batch queue name for gcm_run.j
               else
@@ -1471,12 +1476,14 @@ else if( $SITE == 'NCCS' ) then
               setenv    POST_Q  'SBATCH --constraint="[mil]"'                      # batch queue name for gcm_post.j
               setenv    PLOT_Q  'SBATCH --constraint="[mil]"'                      # batch queue name for gcm_plot.j
               setenv    MOVE_Q  "SBATCH --partition=datamove"                          # batch queue name for gcm_moveplot.j
+              setenv PUBLISH_Q  "SBATCH --partition=datamove"                          # batch queue name for gcm_publish.j
               setenv ARCHIVE_Q  "SBATCH --partition=datamove"                          # batch queue name for gcm_archive.j
               setenv    POST_P  "SBATCH --ntasks=${POST_NPES}"                         # PE Configuration for gcm_post.j
               setenv    PLOT_P  "SBATCH --nodes=4 --ntasks=4"                          # PE Configuration for gcm_plot.j
               setenv ARCHIVE_P  "SBATCH --ntasks=1"                                    # PE Configuration for gcm_archive.j
               setenv CONVERT_P  "SBATCH --ntasks=${CNV_NPES}"                          # PE Configuration for gcm_convert.j
               setenv    MOVE_P  "SBATCH --ntasks=1"                                    # PE Configuration for gcm_moveplot.j
+              setenv PUBLISH_P  "SBATCH --ntasks=1"                                    # PE Configuration for gcm_publish.j
               setenv BCSDIR     /discover/nobackup/projects/gmao/bcs_shared/legacy_bcs/Icarus/Icarus_Reynolds/         # location of     Boundary Conditions
               if( ${OGCM_IM}x${OGCM_JM} == "1440x720" ) then
                    setenv SSTDIR     $SHARE/dao_ops/fvInput/g5gcm/bcs/SST/${OGCM_IM}x${OGCM_JM} # location of SST Boundary Conditions
@@ -1500,6 +1507,7 @@ else
               setenv    POST_T  "8:00:00"                                              # Wallclock Time   for gcm_post.j
               setenv    PLOT_T  "12:00:00"                                             # Wallclock Time   for gcm_plot.j
               setenv ARCHIVE_T  "1:00:00"                                              # Wallclock Time   for gcm_archive.j
+              setenv PUBLISH_T  "1:00:00"                                              # Wallclock Time   for gcm_publish.j
               setenv  RUN_Q     NULL                                                   # batch queue name for gcm_run.j
               setenv  RUN_P     NULL                                                   # PE Configuration for gcm_run.j
               setenv  RUN_P2    NULL                                                   # PE Configuration for gcm_run.j
@@ -1509,10 +1517,12 @@ else
               setenv    POST_Q  NULL                                                   # batch queue name for gcm_post.j
               setenv    PLOT_Q  NULL                                                   # batch queue name for gcm_plot.j
               setenv    MOVE_Q  NULL                                                   # batch queue name for gcm_moveplot.j
+              setenv PUBLISH_Q  NULL                                                   # batch queue name for gcm_publish.j
               setenv ARCHIVE_Q  NULL                                                   # batch queue name for gcm_archive.j
               setenv    POST_P  NULL                                                   # PE Configuration for gcm_run.j
               setenv    PLOT_P  NULL                                                   # PE Configuration for gcm_post.j
               setenv ARCHIVE_P  NULL                                                   # PE Configuration for gcm_archive.j
+              setenv PUBLISH_P  NULL                                                   # PE Configuration for gcm_publish.j
               setenv CONVERT_P  NULL                                                   # PE Configuration for gcm_convert.j
               setenv BCSDIR     /ford1/share/gmao_SIteam/ModelData/bcs/Icarus/$BCSTAG  # location of     Boundary Conditions
               setenv SSTDIR     /ford1/share/gmao_SIteam/ModelData/@SSTNAME/${OGCM_IM}x${OGCM_JM}  # location of SST Boundary Conditions
@@ -2052,6 +2062,7 @@ set FILES = "gcm_run.j          \
              gcm_plot.tmpl      \
              gcm_quickplot.csh  \
              gcm_moveplot.j     \
+             gcm_publish.j      \
              gcm_stats.j        \
              gcm_forecast.tmpl  \
              gcm_forecast.setup \
@@ -2062,6 +2073,10 @@ set FILES = "gcm_run.j          \
              ocean_das_config.tmpl \
              HISTORY.rc.tmpl    "
 set FILES = `echo $FILES`
+
+# The ODAS portal publish job lives with the portal toolkit, not in APPDIR.
+# Copy it into the staging area so it goes through the same substitution pass.
+/bin/cp ${GEOSUTIL}/portal/gcm_publish.j $tmpDIR
 
 if( $OGCM == "TRUE" ) then
 
@@ -2159,6 +2174,10 @@ s?@POST_T?$POST_T?g
 s?@POST_P?$POST_P?g
 s?@POST_Q?$POST_Q?g
 s?@MOVE_N?$MOVE_N?g
+s?@PUBLISH_N?$PUBLISH_N?g
+s?@PUBLISH_T?$PUBLISH_T?g
+s?@PUBLISH_P?$PUBLISH_P?g
+s?@PUBLISH_Q?$PUBLISH_Q?g
 s?@PLOT_N?$PLOT_N?g
 s?@PLOT_T?$PLOT_T?g
 s?@PLOT_P?$PLOT_P?g
@@ -2421,6 +2440,7 @@ chmod   +x $HOMDIR/gcm_forecast.setup
 chmod   +x $HOMDIR/gcm_regress.j
 chmod   +x $HOMDIR/gcm_post.j
 chmod   +x $HOMDIR/gcm_emip.setup
+chmod   +x $HOMDIR/gcm_publish.j
 
 #######################################################################
 #         Finalizing Experiment Directories and Chem Registry
@@ -2430,6 +2450,7 @@ chmod   +x $HOMDIR/gcm_emip.setup
 # ------------------------------------
 if(! -e $EXPDIR/post      ) mkdir -p $EXPDIR/post
 if(! -e $EXPDIR/plot      ) mkdir -p $EXPDIR/plot
+if(! -e $EXPDIR/portal    ) mkdir -p $EXPDIR/portal
 if(! -e $EXPDIR/archive   ) mkdir -p $EXPDIR/archive
 if(! -e $EXPDIR/regress   ) mkdir -p $EXPDIR/regress
 if(! -e $EXPDIR/forecasts ) mkdir -p $EXPDIR/forecasts
@@ -2447,6 +2468,9 @@ if( $OGCM == "TRUE" ) if(! -e $EXPDIR/RESTART ) mkdir -p $EXPDIR/RESTART
 /bin/mv $HOMDIR/gcm_plot.tmpl       $EXPDIR/plot
 /bin/mv $HOMDIR/gcm_quickplot.csh   $EXPDIR/plot
 /bin/mv $HOMDIR/gcm_moveplot.j      $EXPDIR/plot
+/bin/mv $HOMDIR/gcm_publish.j       $EXPDIR/portal
+# Ship a default ODAS portal config alongside the job; keep any user edits on re-setup
+if( ! -e $EXPDIR/portal/config.yaml ) /bin/cp ${GEOSUTIL}/portal/config.yaml $EXPDIR/portal/config.yaml
 /bin/mv $HOMDIR/gcm_archive.j       $EXPDIR/archive
 /bin/mv $HOMDIR/gcm_regress.j       $EXPDIR/regress
 /bin/mv $HOMDIR/gcm_convert.j       $EXPDIR/convert
@@ -3011,6 +3035,8 @@ EXPDIR/post/gcm_post.j
 EXPDIR/plot/gcm_plot.tmpl
 EXPDIR/plot/gcm_quickplot.csh
 EXPDIR/plot/gcm_moveplot.j
+EXPDIR/portal/gcm_publish.j
+EXPDIR/portal/config.yaml
 EXPDIR/archive/gcm_archive.j
 EXPDIR/regress/gcm_regress.j
 EXPDIR/convert/gcm_convert.j
@@ -3131,6 +3157,7 @@ end
    set POST_N=`echo $NEWEXPID | cut -b1-10`_POST
    set PLOT_N=`echo $NEWEXPID | cut -b1-11`_PLT
    set MOVE_N=`echo $NEWEXPID | cut -b1-11`_MOVE
+set PUBLISH_N=`echo $NEWEXPID | cut -b1-11`_PUB
 set ARCHIVE_N=`echo $NEWEXPID | cut -b1-10`_ARCH
 set REGRESS_N=`echo $NEWEXPID | cut -b1-10`_RGRS
 set CONVERT_N=`echo $NEWEXPID | cut -b1-11`_CNV
@@ -3150,6 +3177,11 @@ sed -i -e "/^#PBS -N/ s#\(PBS -N \)\(.*\)#\1$PLOT_N#"    \
 if ( -e $NEWEXPDIR/plot/gcm_moveplot.j ) then
    sed -i -e "/^#PBS -N/ s#\(PBS -N \)\(.*\)#\1$MOVE_N#"    \
           -e "/^#SBATCH --job-name=/ s#\(SBATCH --job-name=\)\(.*\)#\1$MOVE_N#" $NEWEXPDIR/plot/gcm_moveplot.j
+endif
+
+if ( -e $NEWEXPDIR/portal/gcm_publish.j ) then
+   sed -i -e "/^#PBS -N/ s#\(PBS -N \)\(.*\)#\1$PUBLISH_N#"    \
+          -e "/^#SBATCH --job-name=/ s#\(SBATCH --job-name=\)\(.*\)#\1$PUBLISH_N#" $NEWEXPDIR/portal/gcm_publish.j
 endif
 
 sed -i -e "/^#PBS -N/ s#\(PBS -N \)\(.*\)#\1$ARCHIVE_N#" \

@@ -31,6 +31,7 @@ workflow (see §3.1).
 | `generate_gmao_nc_optimized.py` | Standalone extraction of observations into `gmao-obs-*.nc` files. Used only by the secondary mode and the recovery utility. |
 | `reproduce_gmao_files.py` | Optional recovery utility: rebuilds a missing experiment observation tree from the raw archive, in the production `ocean_das/...` layout (§3.1). |
 | `config.yaml` | Configuration for the `GiOCEAN_e1` experiment (plots + portal publication). |
+| `gcm_publish.j` | Batch job template for the datamove queue. `gcm_setup` fills it in, installs it as `$EXPDIR/portal/gcm_publish.j`, and copies `config.yaml` alongside it. |
 
 The scripts locate their sibling modules relative to their own file location,
 so they can be invoked from any working directory. The NetCDF generator reads
@@ -41,6 +42,10 @@ resolves.
 
 Directories/files created at runtime:
 
+- `$EXPDIR/portal/` — created by `gcm_setup`; holds the templated
+  `gcm_publish.j` and a default `config.yaml`. The publish job runs
+  `run_odas_workflow.py` on a datamove queue so `scp` is not attempted from a
+  compute node with no internet access.
 - `$EXPDIR/www/` — base directory for the primary plotting/portal mode. It
   holds `<oana-date>/` plot directories and the experiment-derived counts
   history `obs_counts_history.csv`.
