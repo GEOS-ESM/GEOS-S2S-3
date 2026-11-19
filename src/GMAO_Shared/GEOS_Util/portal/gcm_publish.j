@@ -10,6 +10,7 @@
 #@PUBLISH_Q
 #@BATCH_GROUP
 #@BATCH_OUTPUTNAME@EXPDIR/portal/gcm_publish.o
+#@PUBLISH_OPENMODE
 
 #######################################################################
 #                  System Environment Variables
@@ -52,6 +53,6 @@ setenv HOMDIR  @HOMDIR
 
 cd $EXPDIR
 
-$GEOSUTIL/portal/run_odas_workflow.py -c $EXPDIR/portal/config.yaml
+$GEOSUTIL/portal/run_odas_workflow.py -c $EXPDIR/portal/config.yaml -tw 3m
 
 exit $status
