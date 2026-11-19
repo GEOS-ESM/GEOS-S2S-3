@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added the ODAS portal plot-and-publish workflow and its `gcm_setup`/`gcm_run.j` integration.
 
 ### Changed
 -- As of 8/4/2025, a series of updates were added that fixed a series of bugs, added features and new compilers, operating systems and environment variables.
