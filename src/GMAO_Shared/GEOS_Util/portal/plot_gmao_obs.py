@@ -164,10 +164,34 @@ def extract_date_from_filename(filename):
             return f"{yyyy}-{mm}-{dd}", f"{yyyy}{mm}{dd}"
     return None, None
 
+
+def da_day_for_file(filepath):
+    """Returns the DA day (date) a cycle file belongs to, or None.
+
+    A DA day runs 06Z -> next-day 00Z: the 00Z cycle closes the preceding
+    day's 6-hourly window, so it belongs to that day, not to the date in its
+    filename or `ocean_observer_YYYYMMDD_00` directory name.
+    """
+    m = re.search(r'ocean_observer_(\d{8})_(\d{2})', filepath)
+    if m:
+        day = datetime.strptime(m.group(1), '%Y%m%d').date()
+        hh = m.group(2)
+    else:
+        d_str, d_sort = extract_date_from_filename(os.path.basename(filepath))
+        if not d_sort:
+            return None
+        day = datetime.strptime(d_sort[:8], '%Y%m%d').date()
+        hh = d_sort[8:10]
+    if hh == '00':
+        day -= timedelta(days=1)
+    return day
+
+
 def aggregate_daily_counts(filepaths, typ_list=None, instid_list=None):
     """
-    Aggregates observation counts per calendar day across `filepaths`, keyed
-    by (typ_id, instid). Returns {date (datetime.date): {(typ, inst): count}}.
+    Aggregates observation counts per DA day (06Z through next-day 00Z)
+    across `filepaths`, keyed by (typ_id, instid). Returns
+    {date (datetime.date): {(typ, inst): count}}.
 
     `typ_list`/`instid_list`, if given, must already be resolved lists of
     integer IDs (use `_format_input_list()` at the call site to accept the
@@ -180,11 +204,9 @@ def aggregate_daily_counts(filepaths, typ_list=None, instid_list=None):
 
     daily = {}
     for fp in filepaths:
-        fname = os.path.basename(fp)
-        _, d_sort = extract_date_from_filename(fname)
-        if not d_sort:
+        day = da_day_for_file(fp)
+        if day is None:
             continue
-        day = datetime.strptime(d_sort[:8], "%Y%m%d").date()
         daily.setdefault(day, {})
 
         with xr.open_dataset(fp) as ds:
@@ -332,23 +354,21 @@ def discover_exp_gmao_files(exp_dir, start_date=None, end_date=None):
         <exp_dir>/ocean_das/oana-*_00/ocean_observer_*_HH/gmao-obs-YYYYMMDD.nc
     Each `oana-YYYYMMDD_00` pentad directory contains one
     `ocean_observer_YYYYMMDD_HH` subdirectory per 6-hourly cycle across the
-    whole 5-day pentad (HH in 00/06/12/18) -- so UP TO FOUR gmao-obs-YYYYMMDD.nc
-    files, one per cycle, can share the same calendar day (mirroring how
-    standalone-generated 6-hourly cycles get summed into one daily total).
+    whole 5-day pentad (HH in 00/06/12/18) -- four gmao-obs-*.nc files, one per
+    cycle, make up each DA day (06Z, 12Z, 18Z and the following 00Z).
 
-    Returns {date (datetime.date): [filepath, ...]}, restricted to the
-    half-open range [start_date, end_date) if given.
+    Returns {DA day (datetime.date): [filepath, ...]}, restricted to the
+    half-open range [start_date, end_date) if given. Days are DA days
+    (06Z through next-day 00Z), so a cycle with HH=00 is assigned to the
+    preceding date by da_day_for_file().
 
     Deduplicates per 6-hourly CYCLE (the `ocean_observer_YYYYMMDD_HH`
-    directory), not per calendar day. A pentad's FIRST cycle (<pentad
-    date>_00) is actually written by the PREVIOUS pentad (a pentad covers
-    <date>_06 through <date+5>_00), so deduplicating "latest oana- per day"
-    would incorrectly treat that `_00` file as a stale duplicate of the next
-    pentad and drop it -- undercounting every pentad-start day by one cycle.
-    Deduplicating per cycle instead only discards a file when the SAME cycle
-    genuinely appears in more than one pentad (shouldn't happen with
-    non-overlapping pentads, but just in case), keeping the one from the
-    chronologically latest `oana-`.
+    directory), not per day. A pentad's first cycle (<pentad date>_06) and
+    last (<pentad date+5>_00) sit at opposite ends of the pentad's DA days,
+    so deduplicating "latest oana- per day" would drop a cycle at a boundary.
+    Deduplicating per cycle only discards a file when the SAME cycle genuinely
+    appears in more than one pentad (shouldn't happen with non-overlapping
+    pentads, but just in case), keeping the one from the latest `oana-`.
     """
     pattern = os.path.join(exp_dir, 'ocean_das', 'oana-*_00', 'ocean_observer_*', 'gmao-obs-*.nc')
     best_oana = {}  # cycle_key ('YYYYMMDD_HH') -> oana_date_str of the latest pentad seen so far
@@ -359,7 +379,7 @@ def discover_exp_gmao_files(exp_dir, start_date=None, end_date=None):
         if not m_cycle:
             continue
         cycle_key = m_cycle.group(1)
-        day = datetime.strptime(cycle_key[:8], '%Y%m%d').date()
+        day = da_day_for_file(fp)
         if start_date is not None and day < start_date:
             continue
         if end_date is not None and day >= end_date:
@@ -377,7 +397,7 @@ def discover_exp_gmao_files(exp_dir, start_date=None, end_date=None):
 
     best_files = {}
     for cycle_key, fp in best_file.items():
-        day = datetime.strptime(cycle_key[:8], '%Y%m%d').date()
+        day = da_day_for_file(fp)
         best_files.setdefault(day, []).append(fp)
 
     return best_files
@@ -404,14 +424,15 @@ def update_exp_counts_history(exp_dir, history_file, start_date, end_date, cycle
     `history_file` are opened and aggregated -- once a window has been read
     once, repeat calls covering the same (or an overlapping) window are cheap,
     since only the still-missing dates get read from disk. All sub-cycle files
-    sharing a calendar day are passed to save_counts_history() together, so
+    sharing a DA day are passed to save_counts_history() together, so
     their counts are correctly summed into one daily total (the same way a
     day is aggregated from standalone-generated 6-hourly cycles).
 
-    Only CALENDAR DAYS with all `cycles_per_day` 6-hourly cycles found are
-    written to `history_file`. A day belonging to a still-running pentad (e.g.
-    its latest cycles haven't been produced yet) is left out and re-checked on
-    a later call, rather than being permanently cached at a partial count.
+    Only DA DAYS (06Z through next-day 00Z) with all `cycles_per_day` 6-hourly
+    cycles found are written to `history_file`. A day belonging to a
+    still-running pentad (e.g. its latest cycles haven't been produced yet)
+    is left out and re-checked on a later call, rather than being permanently
+    cached at a partial count.
     """
     already = _dates_in_history(history_file)
     exp_files = discover_exp_gmao_files(exp_dir, start_date, end_date)
@@ -437,19 +458,54 @@ def update_exp_counts_history(exp_dir, history_file, start_date, end_date, cycle
     save_counts_history(all_new_files, history_file)
 
 
+def _pentad_cycle_files(exp_dir, oana_date, pentad_days, cycles_per_day):
+    """
+    Returns (expected_cycles, files_by_cycle) for one oana-<date>_00 pentad.
+
+    A reanalysis pentad runs from 00Z on the oana date to 00Z
+    `pentad_days` later, which is also the start of the next pentad. Its
+    oana- directory holds exactly `pentad_days * cycles_per_day` 6-hourly
+    cycles: <date>_06 through <date+pentad_days>_00. The closing 00Z cycle
+    holds the observations used in the final 6-hourly DA window, so it is part
+    of the pentad's data, not a boundary to discard.
+
+    `files_by_cycle` maps a cycle key ('YYYYMMDD_HH') to its deduplicated
+    production file from discover_exp_gmao_files().
+    """
+    step = timedelta(hours=24 // cycles_per_day)
+    first = datetime(oana_date.year, oana_date.month, oana_date.day, 6)
+    expected = [(first + i * step).strftime('%Y%m%d_%H')
+                for i in range(pentad_days * cycles_per_day)]
+    expected_set = set(expected)
+
+    # Include the following calendar day so the closing <date+pentad_days>_00
+    # cycle is part of the scan.
+    scan_end = oana_date + timedelta(days=pentad_days + 1)
+    files_by_cycle = {}
+    for fps in discover_exp_gmao_files(exp_dir, oana_date, scan_end).values():
+        for fp in fps:
+            m = re.search(r'ocean_observer_(\d{8}_\d{2})', fp)
+            if m and m.group(1) in expected_set:
+                files_by_cycle[m.group(1)] = fp
+    return expected, files_by_cycle
+
+
 def find_latest_complete_pentad(exp_dir, pentad_days=5, cycles_per_day=4):
     """
     Scans <exp_dir>/ocean_das for oana-*_00 directories and returns the
-    NEWEST one whose `pentad_days` consecutive calendar days (starting at
-    that oana's own date) are ALL complete (`cycles_per_day` cycles found for
-    each), using the same per-cycle, cross-pentad-boundary counting as
-    discover_exp_gmao_files() -- so a day's production is not considered
-    complete until cycles contributed by the FOLLOWING oana- directory (e.g.
-    the `_00` cycle closing out the window) have actually landed on disk.
+    NEWEST one that has all of its cycles on disk.
 
-    Returns (oana_date: date, files: {date: [filepath, ...]}) for just those
-    `pentad_days` days, or (None, {}) if no candidate is fully complete (e.g.
-    every oana- directory found is still being written, or none exist).
+    A pentad covers <date>_06 through <date+pentad_days>_00 (the closing
+    00Z cycle is the last 6-hourly DA window and the start of the next
+    pentad). Waiting for every one of those cycles, rather than for four
+    cycles on each calendar day in [date, date+pentad_days), correctly handles
+    both ends of the first pentad of an experiment: it has no previous pentad
+    to supply <date>_00, and its <date+pentad_days>_00 cycle is not part of a
+    following pentad yet.
+
+    Returns (oana_date: date, files: {date: [filepath, ...]}) covering all
+    `pentad_days` DA days, each with `cycles_per_day` cycles (06Z, 12Z, 18Z
+    and the following 00Z), or (None, {}) if no pentad is complete.
     """
     pattern = os.path.join(exp_dir, 'ocean_das', 'oana-*_00')
     oana_dates = sorted(
@@ -459,10 +515,16 @@ def find_latest_complete_pentad(exp_dir, pentad_days=5, cycles_per_day=4):
     )
 
     for oana_date in oana_dates:
-        end_date = oana_date + timedelta(days=pentad_days)
-        files = discover_exp_gmao_files(exp_dir, oana_date, end_date)
-        if len(files) == pentad_days and all(len(fps) >= cycles_per_day for fps in files.values()):
-            return oana_date, files
+        expected, by_cycle = _pentad_cycle_files(exp_dir, oana_date, pentad_days,
+                                                 cycles_per_day)
+        if len(by_cycle) != len(expected):
+            continue
+
+        files = {}
+        for i, cycle in enumerate(expected):
+            day = oana_date + timedelta(days=i // cycles_per_day)
+            files.setdefault(day, []).append(by_cycle[cycle])
+        return oana_date, files
 
     return None, {}
 

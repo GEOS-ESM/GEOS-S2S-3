@@ -91,13 +91,18 @@ environment at load time. The supplied config uses `$EXPDIR` for
 
 Steps performed in this mode:
 
-1. Scan `<exp-dir>/ocean_das/oana-*_00/` for the newest pentad whose
-   `--days` calendar days are all complete (four 6-hourly cycles per day).
-   Production files are discovered at
+1. Scan `<exp-dir>/ocean_das/oana-*_00/` for the newest pentad whose 6-hourly
+   cycles are all on disk. A pentad runs from `<date>_06` to
+   `<date+days>_00`, i.e. five DA days of 06Z, 12Z, 18Z and the following 00Z.
+   The closing 00Z cycle closes the fifth day's last 6-hourly DA window, so it
+   belongs to that day. Plots therefore show exactly the observations ingested
+   by that reanalysis, and the first pentad of an experiment needs no previous
+   pentad to be complete. Production files are discovered at
    `<exp-dir>/ocean_das/oana-*_00/ocean_observer_*/gmao-obs-*.nc`.
 2. Write plots to `<plot-dir>/<oana-date>/` (by default
    `$EXPDIR/www/<oana-date>/`):
-   - `obs_map_YYYYMMDD.png` — global observation map for each complete day;
+   - `obs_map_YYYYMMDD.png` — global observation map for each DA day (four
+     6-hourly cycles, ending with the following 00Z);
    - `timeseries_temp_salt_tao_pirata_rama.png`;
    - `timeseries_argo_temp_salt.png`;
    - `timeseries_sss_smos_smap.png`;
@@ -297,8 +302,10 @@ or a list of them; dates are parsed from names such as
   date axis.
 - `plot_timeseries_stacked_area_panels()` — panels configured independently
   (used for CTD and XBT).
+- `da_day_for_file()` — maps a cycle file to its DA day (00Z belongs to the
+  preceding date).
 - `aggregate_daily_counts()` — shared `{date: {(typ, instid): count}}`
-  counting primitive.
+  counting primitive, keyed by DA day.
 - `save_counts_history()` / `load_counts_history()` — upsert/read the flat
   counts CSV (`date,typ,instid,count`).
 - `parse_trailing_window()` — parses `30d` / `2w` / `3m` / `1y` specifications.
@@ -306,7 +313,7 @@ or a list of them; dates are parsed from names such as
   experiment, deduplicating by 6-hourly cycle across pentad boundaries so
   pentad-start days are not undercounted.
 - `find_latest_complete_pentad()` — selects the newest fully written block for
-  the primary workflow.
+  the primary workflow, including the first pentad of a new experiment.
 - `update_exp_counts_history()` — incrementally caches complete days from an
   experiment into its own counts-history CSV.
 

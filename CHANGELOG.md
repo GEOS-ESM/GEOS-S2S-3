@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fixed a bug affecting TerminateImport
+- Fixed ODAS portal plots to group cycles into five DA days, with the final 00Z cycle on the fifth day.
 
 
 ### Added

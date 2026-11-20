@@ -22,7 +22,7 @@ SECONDARY MODE -- a start date (YYYYMMDD) is given:
   2. Persist per-day, per-(type, instrument) observation counts to a history
      CSV so later runs can overlay past counts without re-reading raw data.
   3. Produce the same diagnostic plot set in <outdir>/plots/:
-        - one global obs map per complete calendar day (obs_map_YYYYMMDD.png);
+        - one global obs map per DA day (obs_map_YYYYMMDD.png);
         - combined TEMP+SALT time series for TAO/PIRATA/RAMA and for Argo;
         - SSS time series for SMOS/SMAP; ADT for all altimeters;
         - combined CTD (TEMP+SALT) / XBT (TEMP) time series, which may be
@@ -117,7 +117,7 @@ from plot_gmao_obs import (
     plot_timeseries_stacked_area_combined,
     plot_timeseries_stacked_area_multi,
     plot_timeseries_stacked_area_panels,
-    extract_date_from_filename,
+    da_day_for_file,
     save_counts_history,
     update_exp_counts_history,
     parse_trailing_window,
@@ -292,32 +292,19 @@ def generate_files(start_date, start_hour, days, obs_types, outdir, source_dir, 
 
 
 def group_files_by_day(filepaths):
-    """Groups a list of gmao file paths into calendar-day buckets, where a
-    day's window is [00z inclusive, next day's 00z exclusive).
+    """Groups cycle files into DA-day buckets (06Z through next-day 00Z).
 
-    Because `filepaths` is itself a half-open series (it stops at the
-    requested end time), its very last calendar day can end up containing
-    only the lone 00z file that marks the *start* of what would be the next
-    day's window -- there's no 06z/12z/18z data for it, and by the exclusive
-    upper-bound rule it isn't really "a day" of this run's data. That trailing
-    single-file day is dropped (unless it's the only day present at all).
+    The 00Z cycle closes the preceding day's 6-hourly window, so it is
+    grouped with that day's 06Z/12Z/18Z cycles rather than forming its own
+    bucket. See da_day_for_file().
     """
     days = {}
     for fp in filepaths:
-        fname = os.path.basename(fp)
-        _, d_sort = extract_date_from_filename(fname)
-        if not d_sort:
+        day = da_day_for_file(fp)
+        if day is None:
             continue
-        day, hh = d_sort[:8], d_sort[8:10]
-        days.setdefault(day, []).append((hh, fp))
-
-    ordered_days = sorted(days.items())
-    if len(ordered_days) > 1:
-        last_day, last_entries = ordered_days[-1]
-        if len(last_entries) == 1 and last_entries[0][0] == '00':
-            ordered_days = ordered_days[:-1]
-
-    return {day: [fp for _, fp in sorted(entries)] for day, entries in ordered_days}
+        days.setdefault(day.strftime('%Y%m%d'), []).append(fp)
+    return {day: sorted(fps) for day, fps in sorted(days.items())}
 
 
 def save_fig(fig, path):
@@ -378,8 +365,8 @@ def resolve_extra_exp_files(exp_dir, filenames=EXTRA_EXP_FILES):
 
 
 def save_daily_maps(files, plot_dir):
-    """Saves one global obs map per complete calendar day in `files`, named
-    obs_map_YYYYMMDD.png."""
+    """Saves one global obs map per DA day (06Z through next-day 00Z),
+    named obs_map_YYYYMMDD.png."""
     days = group_files_by_day(files)
     for day, day_files in sorted(days.items()):
         fig, ax = plot_obs(day_files, markersize=1)
@@ -444,7 +431,7 @@ def run_experiment_only(args, source_dir):
     plot_dir = os.path.join(args.plot_dir, oana_str)
     os.makedirs(plot_dir, exist_ok=True)
     print(f"Latest complete block: oana-{oana_str}_00 "
-          f"({oana_date} through {oana_date + timedelta(days=args.days - 1)}) -> '{plot_dir}/'\n")
+          f"({oana_date} 06Z through {oana_date + timedelta(days=args.days)} 00Z) -> '{plot_dir}/'\n")
 
     files = sorted(fp for fps in files_by_day.values() for fp in fps)
 
@@ -453,11 +440,14 @@ def run_experiment_only(args, source_dir):
         exp_history_file = args.exp_history_file or os.path.join(args.exp_dir, 'www', 'obs_counts_history.csv')
         os.makedirs(os.path.dirname(exp_history_file), exist_ok=True)
         window_start = parse_trailing_window(args.trailing_window)(oana_date)
-        run_end_date = oana_date + timedelta(days=args.days)
 
         print(f"Trailing window enabled: {args.trailing_window} of additional history from "
               f"experiment '{args.exp_dir}' (cached in {exp_history_file})")
-        update_exp_counts_history(args.exp_dir, exp_history_file, window_start, run_end_date)
+        # Cache only days BEFORE this pentad. Its own 06Z/00Z boundary days
+        # hold just 3 and 1 cycles respectively, so the time series must take
+        # the whole window from this pentad's files to show exactly the
+        # observations used in the DA.
+        update_exp_counts_history(args.exp_dir, exp_history_file, window_start, oana_date)
         history_kwargs = dict(exp_history_file=exp_history_file, trailing_window=args.trailing_window)
 
     print("=" * 70)
@@ -705,7 +695,7 @@ def main():
         print(f"Trailing window enabled: {args.trailing_window} of history from {history_file}")
         history_kwargs = dict(history_file=history_file, trailing_window=args.trailing_window)
 
-    # --- 3. Daily global obs maps (all obs types), one per complete calendar day ---
+    # --- 3. Daily global obs maps (all obs types), one per DA day ---
     print("=" * 70)
     print("STEP 3: Daily observation maps (all obs types)")
     print("=" * 70)
